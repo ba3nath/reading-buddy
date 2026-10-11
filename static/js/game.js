@@ -12,6 +12,8 @@ const state = {
   level: 1,
   buddy: "cat",
   closeAgainPending: false,
+  /** When set, another read is required for the current word. */
+  readAgain: null, // { tryNumber, triesMax, reason } | null
   replay: [],
   replayIndex: 0,
   phase: "read", // "read" | "replay"
@@ -116,6 +118,36 @@ async function loadBuddySvg(name) {
 
 function setMessage(text) {
   $("[data-message]").textContent = text || "";
+}
+
+function setMicLabel(text) {
+  const label = $(".mic-label");
+  if (label) label.textContent = text;
+}
+
+function setReadAgain(info) {
+  state.readAgain = info;
+  const el = $("[data-read-again]");
+  if (!el) return;
+  if (!info) {
+    el.hidden = true;
+    el.textContent = "Read again";
+    return;
+  }
+  const n = Number(info.tryNumber) || 0;
+  const max = Number(info.triesMax) || 0;
+  el.textContent =
+    n && max ? `Read again · ${n} of ${max}` : "Read again";
+  el.hidden = false;
+  // Retrigger pulse when a new retry arrives.
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
+}
+
+function clearReadAgain() {
+  setReadAgain(null);
+  setMicLabel("Tap to read");
 }
 
 function setWord(text, { highlight = false } = {}) {
@@ -330,6 +362,7 @@ async function chooseBuddy(name) {
 }
 
 async function startSession(level) {
+  clearReadAgain();
   setMessage("Starting…");
   setMicEnabled(false);
   const body =
@@ -376,7 +409,15 @@ async function showListen() {
   }
   setState("listen");
   setWord(item.text);
-  setMessage(item.kind === "line" ? "Listen to the line…" : "Listen…");
+  if (state.readAgain) {
+    setMessage(
+      item.kind === "line" ? "Listen again, then read the line" : "Listen again, then read it"
+    );
+    setMicLabel("Tap to read again");
+  } else {
+    setMessage(item.kind === "line" ? "Listen to the line…" : "Listen…");
+    setMicLabel("Tap to read");
+  }
   setProgress();
   setMicEnabled(false);
   try {
@@ -390,11 +431,21 @@ async function showListen() {
 function enterIdle() {
   setState("idle");
   const item = currentItem();
-  setMessage(
-    item && item.kind === "line"
-      ? "Your turn — tap and read the line"
-      : "Your turn — tap and read the word"
-  );
+  if (state.readAgain) {
+    setMessage(
+      item && item.kind === "line"
+        ? "Your turn again — tap and read the line"
+        : "Your turn again — tap and read it"
+    );
+    setMicLabel("Tap to read again");
+  } else {
+    setMessage(
+      item && item.kind === "line"
+        ? "Your turn — tap and read the line"
+        : "Your turn — tap and read the word"
+    );
+    setMicLabel("Tap to read");
+  }
   setMicEnabled(true);
 }
 
@@ -408,10 +459,13 @@ async function onMicTap() {
   }
   if (state.id !== "idle") return;
   setState("recording");
-  setMessage("I hear you — read the word, then tap again when done");
+  setMessage(
+    state.readAgain
+      ? "I hear you — read it again, then tap when done"
+      : "I hear you — read the word, then tap again when done"
+  );
   setMicEnabled(false);
-  const label = $(".mic-label");
-  if (label) label.textContent = "Tap when done";
+  setMicLabel("Tap when done");
   await state.recorder.start({
     oncomplete: (blob) => onRecordComplete(blob),
     onarmed: () => {
@@ -423,7 +477,7 @@ async function onMicTap() {
       setMessage("We need the microphone to hear you. Ask an adult to allow it.");
       setState("idle");
       setMicEnabled(true);
-      if (label) label.textContent = "Tap to read";
+      setMicLabel(state.readAgain ? "Tap to read again" : "Tap to read");
     },
   });
 }
@@ -432,8 +486,7 @@ async function onRecordComplete(blob) {
   setState("scoring");
   setMessage("Listening…");
   setMicEnabled(false);
-  const label = $(".mic-label");
-  if (label) label.textContent = "Tap to read";
+  setMicLabel(state.readAgain ? "Tap to read again" : "Tap to read");
   const form = new FormData();
   form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");
@@ -529,28 +582,39 @@ function handleAttempt(result) {
     setMessage(result.message || "");
     setState("result-skip");
     state.closeAgainPending = false;
+    clearReadAgain();
     setTimeout(() => maybeSingAlongThen(advance), 1400);
     return;
   }
   if (result.retry || result.result === "retry") {
     setStars(result.stars_total);
-    setMessage(result.message || "");
+    const tryNumber = Number(result.try_number) || 1;
+    const triesMax = Number(result.tries_max) || 3;
+    setReadAgain({ tryNumber, triesMax, reason: "retry" });
+    setMessage(result.message || "Please read it again");
+    setMicLabel("Tap to read again");
     setState("result-retry");
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();
       else showListen();
-    }, 1400);
+    }, 1600);
     return;
   }
   if (result.result === "close" && result.again) {
     setStars(result.stars_total);
-    setMessage(result.message || "");
+    setReadAgain({
+      tryNumber: Number(result.try_number) || 1,
+      triesMax: Number(result.tries_max) || 2,
+      reason: "close",
+    });
+    setMessage(result.message || "Almost — read it one more time!");
+    setMicLabel("Tap to read again");
     setState("result-close");
     state.closeAgainPending = true;
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();
       else showListen();
-    }, 1400);
+    }, 1600);
     return;
   }
   if (result.result === "correct") {
@@ -558,6 +622,7 @@ function handleAttempt(result) {
     setMessage(result.message || "");
     setState("result-correct");
     state.closeAgainPending = false;
+    clearReadAgain();
     setTimeout(() => maybeSingAlongThen(advance), 1200);
     return;
   }
@@ -565,6 +630,7 @@ function handleAttempt(result) {
   setMessage(result.message || "");
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
+  clearReadAgain();
   setTimeout(() => maybeSingAlongThen(advance), 1400);
 }
 
@@ -650,7 +716,13 @@ async function showReplayItem() {
   }
   setState("session-replay");
   setWord(entry.text, { highlight: true });
-  setMessage("Listen, then try again");
+  if (state.readAgain) {
+    setMessage("Listen again, then read it");
+    setMicLabel("Tap to read again");
+  } else {
+    setMessage("Listen, then try again");
+    setMicLabel("Tap to read");
+  }
   setProgress();
   setMicEnabled(false);
   const url = entry.audio_url || `/api/audio/${encodeURIComponent(entry.text)}`;
@@ -661,13 +733,20 @@ async function showReplayItem() {
   }
   if (state.id === "session-replay") {
     setState("idle");
-    setMessage("Your turn — tap and read the word");
+    if (state.readAgain) {
+      setMessage("Your turn again — tap and read it");
+      setMicLabel("Tap to read again");
+    } else {
+      setMessage("Your turn — tap and read the word");
+      setMicLabel("Tap to read");
+    }
     setMicEnabled(true);
   }
 }
 
 function finishReplay() {
   state.phase = "read";
+  clearReadAgain();
   setWord("");
   setMessage("Nice reading!");
   setProgress();

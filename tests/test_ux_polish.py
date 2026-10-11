@@ -43,3 +43,11 @@ def test_start_primary_and_more_levels():
     assert "more-levels" in HTML
     assert 'data-level-pick="2"' in HTML
     assert 'data-level-pick="1"' not in HTML
+
+
+def test_read_again_indicator_when_retry_needed():
+    assert 'data-read-again' in HTML
+    assert "setReadAgain" in JS
+    assert "Tap to read again" in JS
+    assert "read it again" in JS.lower() or "read again" in JS.lower()
+    assert ".read-again" in CSS

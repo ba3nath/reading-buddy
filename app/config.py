@@ -48,11 +48,19 @@ DEFAULT_SESSION_LENGTH = 10
 MASTERED_EVERY_N_SESSIONS = 7
 AUTO_STRICT_SESSIONS = 3  # consecutive move-up sessions → mode=strict when auto_strict
 
-MSG_RETRY = "I didn't hear that — try again."
-MSG_CLOSE = "Almost, one more go!"
+MSG_RETRY = "I didn't catch that — please read it again."
+MSG_CLOSE = "Almost — read it one more time!"
+MSG_CLOSE_OK = "Almost!"
 MSG_MISS = "That one's tricky, we'll visit it again."
 MSG_SKIP = "We'll try that one another time."
 MSG_CORRECT = "You got it!"
+
+
+def msg_retry(try_number: int, tries_max: int) -> str:
+    """Kind prompt that another read is required (with try count)."""
+    n = max(1, int(try_number))
+    m = max(n, int(tries_max))
+    return f"I didn't catch that — please read it again ({n} of {m})."
 
 DEFAULT_SETTINGS = {
     "profile_name": "",

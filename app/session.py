@@ -532,6 +532,7 @@ def apply_attempt(
                     "skipped": True,
                     "attempt_id": attempt_id,
                 }
+            try_number = prior + 1
             attempt_id = _insert_attempt(
                 conn,
                 session_id,
@@ -555,9 +556,12 @@ def apply_attempt(
                 "words_total": words_total,
                 "stars_awarded": 0,
                 "stars_total": stars_total,
-                "message": config.MSG_RETRY,
+                "message": config.msg_retry(try_number, config.MAX_RETRIES_PER_ITEM),
                 "retry": True,
                 "again": True,
+                "read_again": True,
+                "try_number": try_number,
+                "tries_max": config.MAX_RETRIES_PER_ITEM,
                 "skipped": False,
                 "attempt_id": attempt_id,
             }
@@ -604,6 +608,7 @@ def apply_attempt(
                 "attempt_id": attempt_id,
             }
 
+        try_number = prior_retries + 1
         attempt_id = _insert_attempt(
             conn,
             session_id,
@@ -627,9 +632,12 @@ def apply_attempt(
             "words_total": words_total,
             "stars_awarded": 0,
             "stars_total": stars_total,
-            "message": config.MSG_RETRY,
+            "message": config.msg_retry(try_number, config.MAX_RETRIES_PER_ITEM),
             "retry": True,
             "again": True,
+            "read_again": True,
+            "try_number": try_number,
+            "tries_max": config.MAX_RETRIES_PER_ITEM,
             "skipped": False,
             "attempt_id": attempt_id,
         }
@@ -655,7 +663,7 @@ def apply_attempt(
             message = config.MSG_CORRECT
             credit_mastery_correct(conn, item_id)
         elif result == "close":
-            message = config.MSG_CLOSE
+            message = config.MSG_CLOSE_OK
         else:
             message = config.MSG_MISS
         again = False
@@ -704,7 +712,8 @@ def apply_attempt(
                     conn, item_id, keep_plus_one_day=bool(earlier_miss)
                 )
             elif result == "close":
-                message = config.MSG_CLOSE
+                # Second close take locks — no further read required.
+                message = config.MSG_CLOSE_OK
                 again = False
             else:
                 message = config.MSG_MISS
@@ -756,6 +765,9 @@ def apply_attempt(
         "message": message,
         "retry": False,
         "again": again,
+        "read_again": bool(again),
+        "try_number": 1 if again else None,
+        "tries_max": 2 if again else None,
         "skipped": False,
         "reinsert": reinsert_info,
         "attempt_id": attempt_id,

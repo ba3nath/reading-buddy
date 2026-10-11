@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.config import MSG_CLOSE, MSG_MISS, MSG_RETRY, MSG_SKIP
+from app.config import MSG_CLOSE, MSG_MISS, MSG_SKIP, msg_retry
 from app.whisper_engine import AttemptTranscript, TranscriptWord
 from tests.helpers import post_attempt
 
@@ -94,8 +94,10 @@ def test_attempt_close(client, whisper_double, tone_wav, assert_attempt_shape):
     if item["text"] == "cat":
         assert body["result"] == "close"
         assert body["again"] is True
+        assert body["read_again"] is True
         assert body["message"] == MSG_CLOSE
         assert body["stars_awarded"] == 0
+        assert "read it one more time" in body["message"].lower()
 
 
 def test_attempt_miss(client, whisper_double, tone_wav, assert_attempt_shape):
@@ -126,8 +128,12 @@ def test_attempt_retry_empty_audio(client, tmp_env, assert_attempt_shape):
     assert body["result"] == "retry"
     assert body["retry"] is True
     assert body["again"] is True
+    assert body["read_again"] is True
+    assert body["try_number"] == 1
+    assert body["tries_max"] == 3
     assert body["skipped"] is False
-    assert body["message"] == MSG_RETRY
+    assert body["message"] == msg_retry(1, 3)
+    assert "read it again" in body["message"].lower()
     assert body["transcript"] == ""
     assert body["word_scores"] == []
     assert body["words_correct"] == 0
