@@ -82,6 +82,19 @@ def test_mouse_buddy_migrates_to_unicorn(client, tmp_env):
     assert migrated.json()["buddy"] == "unicorn"
 
 
+def test_cat_buddy_migrates_to_krishna(client, tmp_env):
+    """Retired cat persona rewrites to Krishna on load and via settings PUT."""
+    save_settings({**load_settings(), "buddy": "cat"})
+    assert load_settings()["buddy"] == "krishna"
+    migrated = client.put("/api/parent/settings", json={"buddy": "cat"})
+    assert migrated.status_code == 200
+    assert migrated.json()["buddy"] == "krishna"
+    parent = client.get("/parent").text
+    assert 'value="krishna"' in parent
+    assert 'value="unicorn"' in parent
+    assert 'value="cat"' not in parent
+
+
 def test_keep_audio_false_leaves_no_kept(client, whisper_double, tone_wav, tmp_env):
     client.put("/api/parent/settings", json={"keep_audio": False})
     start = client.post("/api/sessions", json={"level": 1}).json()
@@ -231,13 +244,14 @@ def test_accuracy_and_mastered_shapes(client, whisper_double, tone_wav, tmp_env)
 def test_mascot_svgs_served(client):
     import xml.etree.ElementTree as ET
 
-    for name in ("cat", "krishna", "unicorn", "garden"):
+    for name in ("krishna", "unicorn", "garden"):
         res = client.get(f"/static/mascots/{name}.svg")
         assert res.status_code == 200, name
         # <img src="…svg"> uses a strict XML parser — control chars break the tile.
         raw = res.content
         assert not any(b < 32 and b not in (9, 10, 13) for b in raw), name
         ET.fromstring(raw)
+    assert client.get("/static/mascots/cat.svg").status_code == 404
     unicorn = client.get("/static/mascots/unicorn.svg").text.lower()
     assert "mickey" not in unicorn
     assert "buddy-root" in unicorn

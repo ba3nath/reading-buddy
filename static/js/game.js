@@ -1,7 +1,7 @@
 import { RecordingSession } from "./record.js";
 
 const $ = (sel) => document.querySelector(sel);
-const BUDDIES = ["cat", "krishna", "unicorn"];
+const BUDDIES = ["krishna", "unicorn"];
 
 /** Function words we skip when picking a picture for a sentence. */
 const ILLUSTRATION_STOPWORDS = new Set([
@@ -87,7 +87,7 @@ const state = {
   index: 0,
   stars: 0,
   level: 1,
-  buddy: "cat",
+  buddy: "krishna",
   closeAgainPending: false,
   /** When set, another read is required for the current word. */
   readAgain: null, // { tryNumber, triesMax, reason } | null
@@ -167,8 +167,10 @@ async function fetchBuddySvg(name) {
 }
 
 async function loadBuddySvg(name) {
-  const raw = name === "mouse" ? "unicorn" : name; // migrate retired mouse
-  const buddy = BUDDIES.includes(raw) ? raw : "cat";
+  let raw = name;
+  if (raw === "mouse") raw = "unicorn"; // migrate retired mouse
+  if (raw === "cat") raw = "krishna"; // migrate retired cat
+  const buddy = BUDDIES.includes(raw) ? raw : "krishna";
   state.buddy = buddy;
   const host = $("[data-buddy]");
   if (host) host.dataset.buddy = buddy;
@@ -184,7 +186,7 @@ async function loadBuddySvg(name) {
     }
     const greet = $("[data-home-greeting]");
     if (greet) {
-      const labels = { cat: "Cat", krishna: "Krishna", unicorn: "Unicorn" };
+      const labels = { krishna: "Krishna", unicorn: "Unicorn" };
       greet.textContent = `Hi — I'm ${labels[buddy]}! Ready when you are.`;
     }
     syncBuddyAnim();
@@ -597,7 +599,7 @@ async function boot() {
     }
     await loadIllustrationKeys();
     const settings = await api("/api/parent/settings");
-    await loadBuddySvg(settings.buddy || "cat");
+    await loadBuddySvg(settings.buddy || "krishna");
     showGardenHome(Number(settings.garden_growth) || 0);
     renderPlayHud(settings.play || {
       lifetime_stars: settings.lifetime_stars || 0,

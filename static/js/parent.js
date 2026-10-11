@@ -74,8 +74,10 @@ function renderSounds(payload) {
 function syncBuddyThumb(buddy) {
   const thumb = $("[data-buddy-thumb]");
   if (!thumb) return;
-  const raw = buddy === "mouse" ? "unicorn" : buddy; // migrate retired mouse
-  const name = ["cat", "krishna", "unicorn"].includes(raw) ? raw : "cat";
+  let raw = buddy;
+  if (raw === "mouse") raw = "unicorn";
+  if (raw === "cat") raw = "krishna";
+  const name = ["krishna", "unicorn"].includes(raw) ? raw : "krishna";
   thumb.src = `/static/mascots/${name}.svg`;
 }
 
@@ -86,7 +88,7 @@ function fillSettings(settings) {
   form.mode.value = settings.mode || "beginner";
   form.level.value = settings.level ?? 1;
   form.session_length.value = settings.session_length ?? 10;
-  form.buddy.value = settings.buddy || "cat";
+  form.buddy.value = settings.buddy || "krishna";
   form.keep_audio.checked = Boolean(settings.keep_audio);
   form.auto_strict.checked = settings.auto_strict !== false;
   syncBuddyThumb(form.buddy.value);

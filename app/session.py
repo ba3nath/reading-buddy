@@ -111,7 +111,7 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
         "session_id": session_id,
         "level": target_level,
         "mode": mode,
-        "buddy": settings.get("buddy", "cat"),
+        "buddy": settings.get("buddy", "krishna"),
         "items": [item_public(row) for row in queue],
     }
 
@@ -882,7 +882,7 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "level_after": level_after,
         "mode": load_settings().get("mode", session["mode"]),
         "garden": garden,
-        "buddy": load_settings().get("buddy", "cat"),
+        "buddy": load_settings().get("buddy", "krishna"),
         "play": play,
         "home": play_summary(),
     }

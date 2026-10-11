@@ -13,10 +13,11 @@ JS = (ROOT / "static" / "js" / "game.js").read_text(encoding="utf-8")
 def test_home_has_large_buddy_and_illustrated_tiles():
     assert 'data-home-buddy-slot' in HTML
     assert "buddy-tile" in HTML
-    assert 'data-buddy-choice="cat"' in HTML
+    assert 'data-buddy-choice="cat"' not in HTML
     assert 'data-buddy-choice="krishna"' in HTML
     assert 'data-buddy-choice="unicorn"' in HTML
-    assert 'src="/static/mascots/cat.svg"' in HTML
+    assert 'src="/static/mascots/cat.svg"' not in HTML
+    assert 'src="/static/mascots/krishna.svg"' in HTML
     assert 'src="/static/mascots/unicorn.svg"' in HTML
     assert "mickey" not in HTML.lower()
 
@@ -34,7 +35,7 @@ def test_home_greeting_does_not_sit_in_fixed_square():
 def test_home_landing_is_colorful():
     assert 'class="home-sky"' in HTML or "home-sky" in HTML
     assert "home-blob-sun" in HTML
-    assert "buddy-tile-cat" in HTML
+    assert "buddy-tile-cat" not in HTML
     assert "buddy-tile-krishna" in HTML
     assert "buddy-tile-unicorn" in HTML
     assert "--sky:" in CSS
@@ -48,6 +49,15 @@ def test_home_lede_is_playful_without_timer_copy():
     assert "No timers" not in HTML
     assert "lost points" not in HTML
     assert "Read words aloud" not in HTML
+
+
+def test_buddies_are_krishna_and_unicorn_only():
+    assert 'BUDDIES = ["krishna", "unicorn"]' in JS
+    assert '"cat"' not in JS.split("const BUDDIES")[1].split(";")[0]
+    assert "buddy-tile-cat" not in CSS
+    assert (ROOT / "static" / "mascots" / "cat.svg").exists() is False
+    assert (ROOT / "static" / "mascots" / "krishna.svg").exists()
+    assert (ROOT / "static" / "mascots" / "unicorn.svg").exists()
 
 
 def test_home_brand_is_not_clipped():
