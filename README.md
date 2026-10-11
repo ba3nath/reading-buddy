@@ -57,4 +57,5 @@ Matcher and session tests use fixture transcripts. API tests use a Whisper doubl
 
 ## Privacy
 
-Temp audio is deleted in a `finally` block after scoring when `keep_audio` is false (default in `data/settings.json`).
+Temp audio is always deleted in a `finally` block after scoring in Milestone 1.
+`keep_audio` defaults to false in `data/settings.json`; moving clips to `data/kept/` is Milestone 4.

@@ -145,7 +145,7 @@ def client(tmp_env, whisper_double, monkeypatch):
 
 @pytest.fixture
 def assert_attempt_shape():
-    def _assert(payload: dict) -> None:
+    def _assert(payload: dict, *, words_total: int | None = None) -> None:
         required = {
             "result",
             "transcript",
@@ -169,8 +169,42 @@ def assert_attempt_shape():
         }
         assert isinstance(payload["transcript"], str)
         assert isinstance(payload["word_scores"], list)
+        assert isinstance(payload["words_correct"], int)
+        assert isinstance(payload["words_total"], int)
+        assert isinstance(payload["stars_awarded"], int)
+        assert isinstance(payload["stars_total"], int)
+        assert isinstance(payload["message"], str)
+        assert isinstance(payload["retry"], bool)
+        assert isinstance(payload["again"], bool)
+        assert isinstance(payload["skipped"], bool)
         assert payload["retry"] == (payload["result"] == "retry")
         assert payload["skipped"] == (payload["result"] == "skipped")
         assert payload["stars_awarded"] >= 0
+        if payload["result"] in ("retry", "skipped"):
+            assert payload["word_scores"] == []
+            assert payload["words_correct"] == 0
+            assert payload["transcript"] == ""
+            if words_total is not None:
+                assert payload["words_total"] == words_total
+        for ws in payload["word_scores"]:
+            assert set(ws.keys()) >= {"word", "heard", "confidence", "result"}
+            assert isinstance(ws["word"], str)
+            assert isinstance(ws["heard"], str)
+            assert ws["result"] in {"correct", "close", "missed"}
+
+    return _assert
+
+
+@pytest.fixture
+def assert_error_envelope():
+    def _assert(payload: dict, *, code: str | None = None) -> None:
+        assert "error" in payload
+        assert isinstance(payload["error"], dict)
+        assert "code" in payload["error"]
+        assert "message" in payload["error"]
+        assert isinstance(payload["error"]["code"], str)
+        assert isinstance(payload["error"]["message"], str)
+        if code is not None:
+            assert payload["error"]["code"] == code
 
     return _assert

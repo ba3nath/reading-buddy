@@ -137,6 +137,79 @@ def test_three_retries_skip_decrements_planned(tmp_env):
     ).fetchone()
     assert row["planned_count"] == 9
 
+    attempt_rows = conn.execute(
+        """
+        SELECT result, counts_for_session FROM attempts
+        WHERE session_id = ? AND item_id = ?
+        ORDER BY id
+        """,
+        (sid, item["id"]),
+    ).fetchall()
+    assert [r["result"] for r in attempt_rows] == ["retry", "retry", "skipped"]
+    assert all(r["counts_for_session"] == 0 for r in attempt_rows)
+
+
+def test_retry_counts_for_session_zero(tmp_env):
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = data["items"][0]
+    apply_attempt(
+        conn,
+        data["session_id"],
+        item["id"],
+        score_attempt(item["text"], "", mode="beginner", force_retry=True),
+        is_silence_path=True,
+    )
+    row = conn.execute(
+        """
+        SELECT counts_for_session, result FROM attempts
+        WHERE session_id = ? AND item_id = ?
+        """,
+        (data["session_id"], item["id"]),
+    ).fetchone()
+    assert row["result"] == "retry"
+    assert row["counts_for_session"] == 0
+
+
+def test_reject_repost_after_lock(tmp_env):
+    from app.session import SessionError
+
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = data["items"][0]
+    first = apply_attempt(
+        conn,
+        data["session_id"],
+        item["id"],
+        score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
+    )
+    assert first["stars_total"] == 1
+    try:
+        apply_attempt(
+            conn,
+            data["session_id"],
+            item["id"],
+            score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
+        )
+        raise AssertionError("expected SessionError on re-POST")
+    except SessionError as exc:
+        assert exc.status == 409
+        assert exc.code == "bad_request"
+    session = conn.execute(
+        "SELECT stars, correct_count FROM sessions WHERE id = ?",
+        (data["session_id"],),
+    ).fetchone()
+    assert session["stars"] == 1
+    assert session["correct_count"] == 1
+    locks = conn.execute(
+        """
+        SELECT COUNT(*) AS n FROM attempts
+        WHERE session_id = ? AND item_id = ? AND counts_for_session = 1
+        """,
+        (data["session_id"], item["id"]),
+    ).fetchone()
+    assert locks["n"] == 1
+
 
 def test_abandon_does_not_change_level(tmp_env):
     conn = tmp_env["conn"]
@@ -153,6 +226,20 @@ def test_abandon_does_not_change_level(tmp_env):
     assert abandoned["completed"] == 0
     assert abandoned["ended_at"] is not None
     assert load_settings()["level"] == 2
+
+
+def test_complete_rejects_abandoned(tmp_env):
+    from app.session import SessionError, complete_session
+
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    start_session(conn, level=1)  # abandons prior
+    try:
+        complete_session(conn, data["session_id"])
+        raise AssertionError("expected SessionError")
+    except SessionError as exc:
+        assert exc.status == 409
+        assert exc.code == "session_closed"
 
 
 def test_complete_replay_empty_m1(tmp_env):

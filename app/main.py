@@ -23,9 +23,15 @@ from app.audio_files import (
     new_temp_paths,
     write_bytes,
 )
-from app.db import connect, get_item, init_schema, load_settings, upsert_items_from_json
+from app.db import connect, init_schema, load_settings, upsert_items_from_json
 from app.matching import score_attempt
-from app.session import SessionError, apply_attempt, complete_session, start_session
+from app.session import (
+    SessionError,
+    apply_attempt,
+    complete_session,
+    start_session,
+    validate_attempt_access,
+)
 from app.whisper_engine import engine
 
 logger = logging.getLogger(__name__)
@@ -94,6 +100,15 @@ async def http_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content=error_body(code, str(exc.detail)),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content=error_body("internal", "Unexpected server error"),
     )
 
 
@@ -184,6 +199,15 @@ async def post_attempt(
             content=error_body("unavailable", "Whisper or ffmpeg unavailable"),
         )
 
+    # Queue / session / resolved-item checks before ffmpeg or Whisper (C3).
+    try:
+        item = validate_attempt_access(conn, session_id, item_id)
+    except SessionError as exc:
+        return JSONResponse(
+            status_code=exc.status,
+            content=error_body(exc.code, exc.message),
+        )
+
     webm_path, wav_path = new_temp_paths(".webm")
     try:
         data = await audio.read()
@@ -191,14 +215,8 @@ async def post_attempt(
             data = b""
         write_bytes(webm_path, data)
 
-        item = get_item(conn, item_id)
-        if item is None:
-            # Still validate session membership via apply_attempt path for planned ids
-            pass
-
         if len(data) == 0:
-            target = item["text"] if item else ""
-            match = score_attempt(target, "", mode="beginner", force_retry=True)
+            match = score_attempt(item["text"], "", mode="beginner", force_retry=True)
             try:
                 return apply_attempt(
                     conn, session_id, item_id, match, phase=phase, is_silence_path=True
@@ -215,13 +233,6 @@ async def post_attempt(
             return JSONResponse(
                 status_code=503,
                 content=error_body("unavailable", exc.message),
-            )
-
-        item = get_item(conn, item_id)
-        if item is None:
-            return JSONResponse(
-                status_code=404,
-                content=error_body("not_found", "Unknown item"),
             )
 
         if is_silence(wav_path):
@@ -286,11 +297,9 @@ async def post_attempt(
                 content=error_body(exc.code, exc.message),
             )
     finally:
-        if not keep_audio:
-            delete_quiet(webm_path, wav_path)
-        else:
-            # M4 keep path not implemented; still delete temps in M1
-            delete_quiet(webm_path, wav_path)
+        # M1 always deletes temps; keep_audio move-to-kept is M4.
+        delete_quiet(webm_path, wav_path)
+        _ = keep_audio
 
 
 @app.post("/api/sessions/{session_id}/complete")

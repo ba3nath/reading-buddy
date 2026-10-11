@@ -1,0 +1,13 @@
+{
+  "result": "skipped",
+  "transcript": "",
+  "word_scores": [],
+  "words_correct": 0,
+  "words_total": 1,
+  "stars_awarded": 0,
+  "stars_total": 3,
+  "message": "We'll try that one another time.",
+  "retry": false,
+  "again": false,
+  "skipped": true
+}

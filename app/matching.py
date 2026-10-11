@@ -256,30 +256,32 @@ def score_attempt(
             WordScore(word=target, heard=heard if heard else "", confidence=confidence, result=result)
         )
 
-    # Strict: extras / missing / reorder make non-exact items not all-correct
-    if mode == "strict":
-        exact_seq = target_tokens == hyp_tokens
-        if not exact_seq:
-            # Re-score: any non-exact token is missed unless exact+low-conf → close
-            revised: list[WordScore] = []
-            for ws in word_scores:
-                if ws.heard == ws.word:
-                    conf = ws.confidence if ws.confidence is not None else 0.0
-                    if conf >= config.STRICT_CORRECT_MIN_PROB:
-                        revised.append(
-                            WordScore(ws.word, ws.heard, ws.confidence, "correct")
-                        )
-                    else:
-                        revised.append(
-                            WordScore(ws.word, ws.heard, ws.confidence, "close")
-                        )
+    # Strict: extras / missing / reorder make the item not exact.
+    exact_seq = target_tokens == hyp_tokens
+    if mode == "strict" and not exact_seq:
+        # Re-score: any non-exact token is missed unless exact+low-conf → close
+        revised: list[WordScore] = []
+        for ws in word_scores:
+            if ws.heard == ws.word:
+                conf = ws.confidence if ws.confidence is not None else 0.0
+                if conf >= config.STRICT_CORRECT_MIN_PROB:
+                    revised.append(
+                        WordScore(ws.word, ws.heard, ws.confidence, "correct")
+                    )
                 else:
-                    revised.append(WordScore(ws.word, ws.heard, ws.confidence, "missed"))
-            # Extra hypothesis words: item cannot be exact — already handled via missed tokens
-            word_scores = revised
+                    revised.append(
+                        WordScore(ws.word, ws.heard, ws.confidence, "close")
+                    )
+            else:
+                revised.append(WordScore(ws.word, ws.heard, ws.confidence, "missed"))
+        word_scores = revised
 
     words_correct = sum(1 for ws in word_scores if ws.result == "correct")
     item_result = rollup_item([ws.result for ws in word_scores])
+    # Extras-only (e.g. "cat" / "cat dog"): targets may all look correct, but
+    # Strict still requires an exact token sequence.
+    if mode == "strict" and not exact_seq and item_result == "correct":
+        item_result = "missed"
     replay_words = [ws.word for ws in word_scores if ws.result == "missed"]
 
     return MatchResult(

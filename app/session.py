@@ -141,30 +141,46 @@ def flip_prior_lock(conn: sqlite3.Connection, session_id: int, item_id: int) -> 
     )
 
 
-def first_non_retry_was_all_correct(
-    conn: sqlite3.Connection, session_id: int, item_id: int
-) -> bool:
-    row = conn.execute(
+def item_already_resolved(conn: sqlite3.Connection, session_id: int, item_id: int) -> bool:
+    """True when this planned item is locked or skipped (no further read attempts)."""
+    skipped = conn.execute(
         """
-        SELECT result FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 0
-          AND result IN ('correct', 'close', 'missed')
-        ORDER BY id ASC LIMIT 1
+        SELECT 1 FROM attempts
+        WHERE session_id = ? AND item_id = ? AND is_replay = 0 AND result = 'skipped'
+        LIMIT 1
         """,
         (session_id, item_id),
     ).fetchone()
-    return bool(row and row["result"] == "correct")
+    if skipped:
+        return True
+
+    scored = conn.execute(
+        """
+        SELECT result, counts_for_session FROM attempts
+        WHERE session_id = ? AND item_id = ? AND is_replay = 0
+          AND result IN ('correct', 'close', 'missed')
+        ORDER BY id ASC
+        """,
+        (session_id, item_id),
+    ).fetchall()
+    if not scored:
+        return False
+    # Second take already happened (close then replace).
+    if len(scored) >= 2:
+        return True
+    only = scored[0]
+    if only["result"] in ("correct", "missed"):
+        return True
+    # Single provisional close still awaiting one immediate re-record.
+    if only["result"] == "close" and only["counts_for_session"] == 1:
+        return False
+    return True
 
 
-def apply_attempt(
-    conn: sqlite3.Connection,
-    session_id: int,
-    item_id: int,
-    match: MatchResult,
-    *,
-    phase: str = "read",
-    is_silence_path: bool = False,
-) -> dict[str, Any]:
+def validate_attempt_access(
+    conn: sqlite3.Connection, session_id: int, item_id: int
+) -> sqlite3.Row:
+    """Session open, item in queue, not already resolved. Returns the items row."""
     session = get_session(conn, session_id)
     if session is None:
         raise SessionError("not_found", "Unknown session", 404)
@@ -178,6 +194,28 @@ def apply_attempt(
     item = get_item(conn, item_id)
     if item is None:
         raise SessionError("not_found", "Unknown item", 404)
+
+    if item_already_resolved(conn, session_id, item_id):
+        raise SessionError(
+            "bad_request",
+            "Item already scored or skipped in this session",
+            409,
+        )
+    return item
+
+
+def apply_attempt(
+    conn: sqlite3.Connection,
+    session_id: int,
+    item_id: int,
+    match: MatchResult,
+    *,
+    phase: str = "read",
+    is_silence_path: bool = False,
+) -> dict[str, Any]:
+    item = validate_attempt_access(conn, session_id, item_id)
+    session = get_session(conn, session_id)
+    assert session is not None
 
     words_total = match.words_total or len(tokenize(item["text"]))
     stars_total = int(session["stars"])
@@ -369,8 +407,9 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
     session = get_session(conn, session_id)
     if session is None:
         raise SessionError("not_found", "Unknown session", 404)
-    if session["completed"] == 1:
-        raise SessionError("session_closed", "Session already completed", 409)
+    # Abandoned (ended_at set, completed=0) and already-completed both reject.
+    if session["completed"] == 1 or session["ended_at"] is not None:
+        raise SessionError("session_closed", "Session already closed", 409)
 
     now = local_now_iso()
     planned_count = int(session["planned_count"])
@@ -395,19 +434,3 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "replay": [],
     }
 
-
-def award_stars_for_match(
-    match: MatchResult,
-    *,
-    hard: bool,
-    first_non_retry_all_correct: bool,
-    is_locking_take: bool,
-    is_first_close: bool,
-) -> int:
-    """Pure helper for unit tests (stars calculation without DB)."""
-    if not is_locking_take or is_first_close:
-        return 0
-    stars = match.words_correct
-    if hard and match.result == "correct" and first_non_retry_all_correct:
-        stars += 1
-    return stars

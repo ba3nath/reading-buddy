@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "bad_request",
+    "message": "human-readable for logs / debug"
+  }
+}

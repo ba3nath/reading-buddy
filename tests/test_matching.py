@@ -106,3 +106,16 @@ def test_low_confidence_exact_is_close_beginner():
     result = score_attempt("cat", "cat", [0.40], mode="beginner")
     assert result.result == "close"
     assert result.word_scores[0].result == "close"
+
+
+def test_strict_extras_not_exact():
+    """Strict: extra hypothesis tokens make the item not exact (contracts §4)."""
+    beginner = score_attempt("cat", "cat dog", [0.95, 0.95], mode="beginner")
+    assert beginner.result == "correct"
+    assert beginner.word_scores[0].result == "correct"
+
+    strict = score_attempt("cat", "cat dog", [0.95, 0.95], mode="strict")
+    assert strict.word_scores[0].result == "correct"
+    assert strict.result == "missed"
+    assert strict.words_correct == 1
+    assert strict.words_total == 1
