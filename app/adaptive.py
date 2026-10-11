@@ -336,7 +336,37 @@ def build_adaptive_queue(
                 continue
             if sessions_since_item(conn, row["id"]) >= config.MASTERED_EVERY_N_SESSIONS:
                 queue.append(row)
+                seen.add(row["id"])
                 break
+
+    # C7: never return an empty queue when any item exists at this level.
+    # If unmastered/due are gone and the refresher gate is ineligible, still
+    # offer at most one least-recently-seen mastered item as a last resort.
+    if not queue:
+        fallback = conn.execute(
+            """
+            SELECT i.*
+            FROM items i
+            JOIN mastery m ON m.item_id = i.id
+            WHERE m.mastered = 1 AND i.level = ?
+            ORDER BY CASE WHEN m.last_seen_on IS NULL THEN 0 ELSE 1 END,
+                     m.last_seen_on ASC, i.id ASC
+            LIMIT 1
+            """,
+            (level,),
+        ).fetchone()
+        if fallback is not None:
+            queue.append(fallback)
+        else:
+            any_item = conn.execute(
+                """
+                SELECT * FROM items WHERE level = ?
+                ORDER BY id ASC LIMIT 1
+                """,
+                (level,),
+            ).fetchone()
+            if any_item is not None:
+                queue.append(any_item)
 
     if not queue:
         raise ValueError(f"No content for level {level}")

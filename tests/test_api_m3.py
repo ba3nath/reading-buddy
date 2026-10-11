@@ -127,3 +127,85 @@ def test_levels_4_7_session_start(client):
         body = res.json()
         assert body["level"] == level
         assert len(body["items"]) == 10
+
+
+def test_start_omits_level_uses_settings(client):
+    """C6: POST /api/sessions with no body uses settings.level."""
+    client.put("/api/parent/settings", json={"mode": "beginner", "level": 4})
+    res = client.post("/api/sessions")
+    assert res.status_code == 200
+    assert res.json()["level"] == 4
+    assert len(res.json()["items"]) >= 1
+
+
+def test_start_all_mastered_ineligible_not_503(client, tmp_env):
+    """C7 API: all-mastered + recent sees → 200 short session, not 503."""
+    import json
+
+    from app.db import local_now_iso, local_today
+
+    conn = tmp_env["conn"]
+    level1 = conn.execute(
+        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    ).fetchall()
+    for row in level1:
+        conn.execute(
+            """
+            INSERT INTO mastery (
+              item_id, correct_count, days_json, miss_count, review_step,
+              next_review_on, mastered, mastered_on, last_seen_on
+            ) VALUES (?, 3, ?, 0, 0, NULL, 1, ?, ?)
+            ON CONFLICT(item_id) DO UPDATE SET
+              mastered=1, correct_count=3, next_review_on=NULL,
+              last_seen_on=excluded.last_seen_on
+            """,
+            (
+                row["id"],
+                json.dumps(["2020-01-01", "2020-01-02"]),
+                local_today(),
+                local_today(),
+            ),
+        )
+    cur = conn.execute(
+        """
+        INSERT INTO sessions (
+          started_at, ended_at, mode, level, planned_count, planned_item_ids,
+          play_item_ids, ratio_flags, correct_count, stars, low_session,
+          level_after, completed
+        ) VALUES (?, ?, 'beginner', 1, 1, ?, ?, '[true]', 1, 0, 0, 1, 1)
+        """,
+        (
+            local_now_iso(),
+            local_now_iso(),
+            json.dumps([level1[0]["id"]]),
+            json.dumps([level1[0]["id"]]),
+        ),
+    )
+    sid = int(cur.lastrowid)
+    for row in level1:
+        conn.execute(
+            """
+            INSERT INTO attempts (
+              session_id, item_id, heard, confidence, word_scores, result,
+              counts_for_session, is_replay, queue_index, replay_word, created_at
+            ) VALUES (?, ?, '', NULL, '[]', 'correct', 1, 0, 0, '', ?)
+            """,
+            (sid, row["id"], local_now_iso()),
+        )
+    conn.commit()
+    client.put("/api/parent/settings", json={"mode": "beginner", "level": 1})
+    res = client.post("/api/sessions")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["level"] == 1
+    assert len(body["items"]) == 1
+
+
+def test_start_button_omits_level_pick():
+    """C6 FE: primary Start has no data-level-pick (uses settings)."""
+    from pathlib import Path
+
+    html = Path("static/index.html").read_text(encoding="utf-8")
+    assert 'class="btn primary" data-start>Start</button>' in html
+    assert 'data-level-pick="1"' not in html
+    assert 'data-level-pick="2"' in html  # demo overrides remain

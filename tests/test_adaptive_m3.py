@@ -503,3 +503,89 @@ def test_all_mastered_queue_at_most_one_refresher(tmp_env):
     ).fetchone()
     assert row["planned_count"] == len(data["items"])
     assert row["planned_count"] <= 1
+
+
+def test_all_mastered_ineligible_refresher_does_not_503(tmp_env):
+    """C7: ineligible refresher must still start a short session, not 503."""
+    from app.db import local_now_iso
+    from app.session import SessionError
+
+    conn = tmp_env["conn"]
+    level1 = conn.execute(
+        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    ).fetchall()
+    for row in level1:
+        conn.execute(
+            """
+            INSERT INTO mastery (
+              item_id, correct_count, days_json, miss_count, review_step,
+              next_review_on, mastered, mastered_on, last_seen_on
+            ) VALUES (?, 3, ?, 0, 0, NULL, 1, ?, ?)
+            ON CONFLICT(item_id) DO UPDATE SET
+              mastered=1, correct_count=3, next_review_on=NULL,
+              last_seen_on=excluded.last_seen_on, days_json=excluded.days_json
+            """,
+            (
+                row["id"],
+                json.dumps(["2020-01-01", "2020-01-02"]),
+                local_today(),
+                local_today(),
+            ),
+        )
+    # Completed session + attempts → sessions_since_item == 0 (ineligible gate).
+    cur = conn.execute(
+        """
+        INSERT INTO sessions (
+          started_at, ended_at, mode, level, planned_count, planned_item_ids,
+          play_item_ids, ratio_flags, correct_count, stars, low_session,
+          level_after, completed
+        ) VALUES (?, ?, 'beginner', 1, 1, ?, ?, '[true]', 1, 0, 0, 1, 1)
+        """,
+        (
+            local_now_iso(),
+            local_now_iso(),
+            json.dumps([level1[0]["id"]]),
+            json.dumps([level1[0]["id"]]),
+        ),
+    )
+    sid = int(cur.lastrowid)
+    for row in level1:
+        conn.execute(
+            """
+            INSERT INTO attempts (
+              session_id, item_id, heard, confidence, word_scores, result,
+              counts_for_session, is_replay, queue_index, replay_word, created_at
+            ) VALUES (?, ?, '', NULL, '[]', 'correct', 1, 0, 0, '', ?)
+            """,
+            (sid, row["id"], local_now_iso()),
+        )
+    conn.commit()
+
+    from app.adaptive import sessions_since_item
+
+    assert sessions_since_item(conn, level1[0]["id"]) < 7
+
+    queue = build_adaptive_queue(conn, level=1, length=10)
+    assert len(queue) == 1
+    m = conn.execute(
+        "SELECT mastered FROM mastery WHERE item_id = ?", (queue[0]["id"],)
+    ).fetchone()
+    assert m["mastered"] == 1
+
+    try:
+        data = start_session(conn, level=1)
+    except SessionError as exc:
+        raise AssertionError(f"start must not 503: {exc.code} {exc.message}") from exc
+    assert len(data["items"]) == 1
+    assert data["level"] == 1
+
+
+def test_start_session_uses_settings_level_when_omitted(tmp_env):
+    """C6: omit level → settings.level (adaptive path after level_after)."""
+    conn = tmp_env["conn"]
+    settings = load_settings()
+    settings["level"] = 3
+    save_settings(settings)
+    data = start_session(conn, level=None)
+    assert data["level"] == 3
+    assert len(data["items"]) >= 1

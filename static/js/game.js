@@ -142,7 +142,12 @@ async function boot() {
 async function startSession(level) {
   setMessage("Starting…");
   setMicEnabled(false);
-  const body = level ? JSON.stringify({ level }) : undefined;
+  // Omit level → server uses settings.level (adaptive / level_after).
+  // Explicit Level 2–7 buttons pass an override for demo decks.
+  const body =
+    level != null && Number.isFinite(level)
+      ? JSON.stringify({ level })
+      : undefined;
   const data = await api("/api/sessions", {
     method: "POST",
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -416,7 +421,9 @@ function finishReplay() {
 function wire() {
   document.querySelectorAll("[data-start]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const level = Number(btn.dataset.levelPick || "1");
+      const raw = btn.dataset.levelPick;
+      const level =
+        raw === undefined || raw === "" ? null : Number(raw);
       startSession(level).catch((err) => {
         console.error(err);
         setMessage(err.message || "Could not start");
