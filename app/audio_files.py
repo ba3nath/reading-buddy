@@ -117,14 +117,15 @@ def resolve_audio_slug(slug: str) -> Path | None:
     return None
 
 
-# Kokoro en-gb + a terminal period (or too-slow speed) can add a vowelized
-# release that kids hear as an extra syllable — "logee", "netee", "ay-uh".
-# Speak these bare, a touch faster, so the word ends cleanly.
-_BARE_NO_TRAIL_SYLLABLE: dict[str, float] = {
-    "a": 0.88,
-    "bring": 0.88,
-    "log": 0.88,
-    "net": 0.96,
+# Per-word Kokoro en-gb overrides: (spoken_text, speed).
+# - Bare a/bring/log/net: period + slow speed adds a trailing vowel burst.
+# - sit!: "sit." @ 0.84 voices the onset (/zIt/); bang + full speed keeps /s/.
+_TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
+    "a": ("a", 0.88),
+    "bring": ("bring", 0.88),
+    "log": ("log", 0.88),
+    "net": ("net", 0.96),
+    "sit": ("sit!", 1.0),
 }
 
 
@@ -135,8 +136,7 @@ def tts_render(text: str) -> tuple[str, float]:
     lengthening, and a slightly slower speed helps kids hear each sound.
     Voiced plosive endings (dog/pig) need even more time or the burst dies.
 
-    Some short words (a/bring/log/net) must stay bare — period + slow speed
-    adds a trailing vowel burst with the British Kokoro voice.
+    Some words need explicit overrides (see _TTS_WORD_OVERRIDES).
     """
     stripped = (text or "").strip()
     if not stripped:
@@ -145,8 +145,8 @@ def tts_render(text: str) -> tuple[str, float]:
     if len(words) == 1 and len(words[0]) <= 10:
         spoken = words[0]
         core = spoken.rstrip(".!?").lower()
-        if core in _BARE_NO_TRAIL_SYLLABLE:
-            return core, _BARE_NO_TRAIL_SYLLABLE[core]
+        if core in _TTS_WORD_OVERRIDES:
+            return _TTS_WORD_OVERRIDES[core]
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
         # Final b/d/g plosives (and silent-e forms like "like"/"slide") fade

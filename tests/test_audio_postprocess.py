@@ -73,3 +73,10 @@ def test_tts_render_ng_is_not_treated_as_plosive_g():
     dog, dog_speed = tts_render("dog")
     assert dog == "dog."
     assert dog_speed <= 0.80
+
+
+def test_tts_render_sit_keeps_unvoiced_s():
+    """'sit.' @ slow speed voices the onset as /zIt/; bang + 1.0 keeps /s/."""
+    spoken, speed = tts_render("sit")
+    assert spoken == "sit!"
+    assert speed >= 0.98
