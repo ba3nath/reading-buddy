@@ -753,6 +753,7 @@ async function continueSession() {
 
 async function startSession(level) {
   clearReadAgain();
+  clearPhraseScore();
   state.paused = false;
   setMessage("Starting…");
   setMicEnabled(false);
@@ -805,6 +806,7 @@ async function showListen() {
   }
   // Always stop any prior clip before swapping the on-screen line + audio.
   stopClip();
+  clearPhraseScore();
   setState("listen");
   setWord(item.text, { kind: item.kind === "line" ? "line" : "word" });
   if (state.readAgain) {
@@ -934,6 +936,17 @@ async function onRecordComplete(blob) {
       else showListen();
     }, 1200);
   }
+}
+
+function clearPhraseScore() {
+  // Never leave "3 of 3 words" (etc.) on the next listen screen.
+  const el = $(".phrase-score");
+  if (!el) return;
+  el.hidden = true;
+  const correct = $("[data-words-correct]");
+  const total = $("[data-words-total]");
+  if (correct) correct.textContent = "0";
+  if (total) total.textContent = "0";
 }
 
 function showPhraseScore(result) {
@@ -1148,6 +1161,7 @@ async function showReplayItem() {
     finishReplay();
     return;
   }
+  clearPhraseScore();
   setState("session-replay");
   setWord(entry.text, { highlight: true, kind: "word" });
   if (state.readAgain) {
@@ -1181,14 +1195,13 @@ async function showReplayItem() {
 function finishReplay() {
   state.phase = "read";
   clearReadAgain();
+  clearPhraseScore();
   setWord("");
   setMessage("Nice reading!");
   setProgress();
   setMicEnabled(false);
   const endStars = $("[data-end-stars]");
   if (endStars) endStars.textContent = String(state.stars);
-  const phrase = $(".phrase-score");
-  if (phrase) phrase.hidden = true;
   setState("session-end");
   syncBuddyAnim();
 }

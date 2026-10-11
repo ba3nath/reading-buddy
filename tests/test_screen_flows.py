@@ -176,6 +176,12 @@ def test_flow_listen_idle_mic():
     assert "enterIdle()" in show
     assert show.index("stopClip()") < show.index("setWord(")
     assert show.count("playClip(") == 1
+    # Previous multi-word score ("3 of 3 words") must not linger on the next item.
+    assert "clearPhraseScore()" in show
+    assert "clearPhraseScore" in JS
+    clear = _fn("clearPhraseScore")
+    assert "phrase-score" in clear
+    assert "el.hidden = true" in clear
 
     idle = _fn("enterIdle")
     assert 'setState("idle")' in idle

@@ -79,6 +79,19 @@ def test_home_start_comes_before_quest_hud():
     assert buddy_at < start_at < quest_at
 
 
+def test_phrase_score_clears_before_next_listen():
+    """Multi-word 'N of M words' is result feedback only — hide it on the next screen."""
+    assert "phrase-score" in HTML
+    assert "of" in HTML and "words" in HTML
+    assert "clearPhraseScore" in JS
+    show = JS.split("async function showListen()")[1].split("async function ")[0]
+    assert "clearPhraseScore()" in show
+    assert show.index("clearPhraseScore()") < show.index("setWord(")
+    # Replay path also clears so end-of-session tries don't show old phrase tallies.
+    replay = JS.split("async function showReplayItem()")[1].split("async function ")[0]
+    assert "clearPhraseScore()" in replay
+
+
 def test_home_pause_and_continue_controls():
     """Kids can leave mid-session for Home and Continue without losing progress."""
     assert "data-go-home" in HTML
