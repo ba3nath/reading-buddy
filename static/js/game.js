@@ -1248,6 +1248,15 @@ function wire() {
     if (dots) dots.innerHTML = "";
     setState("home");
   });
+  // Keep Words/Phrases/Rhymes/Stories on screen when the picker opens.
+  const more = $("details.more-levels");
+  if (more) {
+    more.addEventListener("toggle", () => {
+      if (more.open) {
+        more.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    });
+  }
 }
 
 wire();

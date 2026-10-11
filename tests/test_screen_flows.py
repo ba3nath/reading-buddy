@@ -120,6 +120,10 @@ def test_flow_home_difficulty():
     wire = _fn("wire")
     assert "dataset.levelPick" in wire
     assert "Number(raw)" in wire
+    # Compact 2×2 so all four fit on a phone without scrolling past Start.
+    assert "grid-template-columns: 1fr 1fr" in CSS
+    assert "details.more-levels" in wire
+    assert "scrollIntoView" in wire
 
 
 def test_flow_home_pause_continue():

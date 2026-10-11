@@ -1303,11 +1303,19 @@ body[data-state="recording"] .mic-particles {
 
 .more-levels[open] .level-row {
   margin-top: 0.65rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  width: min(100%, 320px);
+  margin-inline: auto;
 }
 
 .level-row .btn {
   min-height: 44px;
+  min-width: 0;
+  width: 100%;
   font-size: 0.9rem;
+  padding-inline: 0.75rem;
 }
 
 .btn {
