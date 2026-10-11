@@ -67,6 +67,8 @@ DIFFICULTY_TIERS: dict[int, dict[str, object]] = {
     4: {"key": "stories", "label": "Stories", "content_levels": (5,)},
 }
 MAX_DIFFICULTY = 4
+# Each difficulty has this many ordered sets (stages) the child works through.
+STAGES_PER_DIFFICULTY = 5
 
 
 def content_levels_for_difficulty(difficulty: int) -> tuple[int, ...]:
@@ -79,6 +81,45 @@ def content_levels_for_difficulty(difficulty: int) -> tuple[int, ...]:
 def difficulty_label(difficulty: int) -> str:
     tier = DIFFICULTY_TIERS.get(int(difficulty))
     return str(tier["label"]) if tier else "Words"
+
+
+def normalize_stage(value: object) -> int:
+    try:
+        n = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 1
+    if n < 1:
+        return 1
+    if n > STAGES_PER_DIFFICULTY:
+        return STAGES_PER_DIFFICULTY
+    return n
+
+
+def default_stage_by_difficulty() -> dict[str, int]:
+    return {str(d): 1 for d in range(1, MAX_DIFFICULTY + 1)}
+
+
+def stage_label(difficulty: int, stage: int) -> str:
+    """Kid-facing badge, e.g. ``Words · Set 2/5``."""
+    return (
+        f"{difficulty_label(difficulty)} · Set "
+        f"{normalize_stage(stage)}/{STAGES_PER_DIFFICULTY}"
+    )
+
+
+def stage_slice_bounds(
+    pool_size: int, stage: int, stages: int = STAGES_PER_DIFFICULTY
+) -> tuple[int, int]:
+    """Return [start, end) indices for an even split of ``pool_size`` into stages."""
+    stage = normalize_stage(stage)
+    stages = max(1, int(stages))
+    n = max(0, int(pool_size))
+    if n == 0:
+        return 0, 0
+    base, rem = divmod(n, stages)
+    sizes = [base + (1 if i < rem else 0) for i in range(stages)]
+    start = sum(sizes[: stage - 1])
+    return start, start + sizes[stage - 1]
 
 
 def migrate_legacy_level_to_difficulty(level: object) -> int:
@@ -137,6 +178,13 @@ DEFAULT_SETTINGS = {
     "mode": "beginner",
     "level": 1,  # difficulty tier 1–4 (words / phrases / rhymes / stories)
     "difficulty_migrated": True,
+    "stage": 1,  # set 1–5 within the current difficulty
+    "stage_by_difficulty": {  # per-difficulty set progress
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+    },
     "session_length": DEFAULT_SESSION_LENGTH,
     "keep_audio": False,
     "buddy": "krishna",  # krishna | unicorn

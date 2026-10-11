@@ -80,10 +80,26 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     mode = str(settings.get("mode", "beginner")).lower()
     if mode not in ("beginner", "strict"):
         mode = "beginner"
+    by_diff = settings.get("stage_by_difficulty") or {}
+    stage = config.normalize_stage(
+        by_diff.get(str(target_level), settings.get("stage", 1))
+    )
+    # Persist which difficulty/set this Start is playing.
+    if (
+        config.normalize_difficulty(settings.get("level", 1)) != target_level
+        or config.normalize_stage(settings.get("stage", 1)) != stage
+    ):
+        settings = dict(settings)
+        settings["level"] = target_level
+        settings["stage"] = stage
+        if not isinstance(settings.get("stage_by_difficulty"), dict):
+            settings["stage_by_difficulty"] = config.default_stage_by_difficulty()
+        settings["stage_by_difficulty"][str(target_level)] = stage
+        save_settings(settings)
 
     abandon_open_sessions(conn)
     try:
-        queue = build_adaptive_queue(conn, target_level, length)
+        queue = build_adaptive_queue(conn, target_level, length, stage=stage)
     except ValueError as exc:
         # No due / unmastered / eligible refresher — do not pad with mastered.
         raise SessionError("unavailable", str(exc), 503) from exc
@@ -121,6 +137,9 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
         "level": target_level,
         "difficulty": target_level,
         "difficulty_label": config.difficulty_label(target_level),
+        "stage": stage,
+        "stages_total": config.STAGES_PER_DIFFICULTY,
+        "stage_label": config.stage_label(target_level, stage),
         "mode": mode,
         "buddy": settings.get("buddy", "krishna"),
         "planned_count": length,
@@ -886,15 +905,20 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
     session = get_session(conn, session_id)
     assert session is not None
     replay = missed_replay_entries(conn, session_id)
+    final = load_settings()
+    stage_after = config.normalize_stage(final.get("stage", 1))
     return {
         "stars": int(session["stars"]),
         "correct_count": int(session["correct_count"]),
         "planned_count": int(session["planned_count"]),
         "replay": replay,
         "level_after": level_after,
-        "mode": load_settings().get("mode", session["mode"]),
+        "stage_after": stage_after,
+        "stages_total": config.STAGES_PER_DIFFICULTY,
+        "stage_label": config.stage_label(level_after, stage_after),
+        "mode": final.get("mode", session["mode"]),
         "garden": garden,
-        "buddy": load_settings().get("buddy", "krishna"),
+        "buddy": final.get("buddy", "krishna"),
         "play": play,
         "home": play_summary(),
     }

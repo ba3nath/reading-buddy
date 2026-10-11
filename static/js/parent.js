@@ -87,6 +87,10 @@ function fillSettings(settings) {
   form.profile_name.value = settings.profile_name || "";
   form.mode.value = settings.mode || "beginner";
   form.level.value = settings.level ?? 1;
+  const stage = Number(settings.stage);
+  form.stage.value = String(
+    stage >= 1 && stage <= 5 ? stage : 1
+  );
   const len = Number(settings.session_length) === 5 ? 5 : 10;
   form.session_length.value = String(len);
   form.buddy.value = settings.buddy || "krishna";
@@ -165,6 +169,7 @@ function wire() {
       profile_name: form.profile_name.value.trim(),
       mode: form.mode.value,
       level: Number(form.level.value),
+      stage: Number(form.stage.value),
       session_length: Number(form.session_length.value),
       buddy: form.buddy.value,
       keep_audio: form.keep_audio.checked,

@@ -35,31 +35,69 @@ def apply_level_and_auto_strict(
 ) -> tuple[int, dict[str, Any]]:
     """Return (level_after, updated_settings) for a completed session.
 
-    ``level`` is a difficulty tier 1–4 (words / phrases / rhymes / stories).
+    ``level`` is a difficulty tier 1–4. Strong sessions advance the set
+    (stage) within that difficulty; clearing set 5 unlocks the next tier.
     """
     settings = dict(settings)
     level = config.normalize_difficulty(level)
     low_streak = int(settings.get("low_streak", 0))
     move_up_streak = int(settings.get("move_up_streak", 0))
+    by_diff = settings.get("stage_by_difficulty")
+    if not isinstance(by_diff, dict):
+        by_diff = config.default_stage_by_difficulty()
+    else:
+        by_diff = {
+            **config.default_stage_by_difficulty(),
+            **{str(k): config.normalize_stage(v) for k, v in by_diff.items()},
+        }
+    # Keep settings.stage in sync when this session is on the saved difficulty.
+    if config.normalize_difficulty(settings.get("level", level)) == level:
+        by_diff[str(level)] = config.normalize_stage(
+            settings.get("stage", by_diff.get(str(level), 1))
+        )
+    stage = config.normalize_stage(by_diff.get(str(level), 1))
     level_after = level
+    stage_after = stage
 
     if move_up_score(correct_count, planned_count):
-        level_after = min(config.MAX_DIFFICULTY, level + 1)
         low_streak = 0
         move_up_streak += 1
+        if stage < config.STAGES_PER_DIFFICULTY:
+            stage_after = stage + 1
+            level_after = level
+        else:
+            level_after = min(config.MAX_DIFFICULTY, level + 1)
+            stage_after = 1 if level_after != level else config.STAGES_PER_DIFFICULTY
     elif under_half(correct_count, planned_count):
         low_streak += 1
         move_up_streak = 0
         if low_streak >= 2:
-            level_after = max(1, level - 1)
             low_streak = 0
+            if stage > 1:
+                stage_after = stage - 1
+                level_after = level
+            else:
+                level_after = max(1, level - 1)
+                stage_after = (
+                    config.STAGES_PER_DIFFICULTY if level_after < level else 1
+                )
     else:
         low_streak = 0
         move_up_streak = 0
 
+    if level_after == level:
+        by_diff[str(level)] = stage_after
+    else:
+        if level_after > level:
+            by_diff[str(level)] = config.STAGES_PER_DIFFICULTY
+        else:
+            by_diff[str(level)] = 1
+        by_diff[str(level_after)] = stage_after
     settings["low_streak"] = low_streak
     settings["move_up_streak"] = move_up_streak
     settings["level"] = level_after
+    settings["stage"] = stage_after
+    settings["stage_by_difficulty"] = by_diff
     settings["difficulty_migrated"] = True
 
     if settings.get("auto_strict", True):
@@ -267,32 +305,80 @@ def _snap_uniform_length(queue: list[sqlite3.Row], target: int) -> list[sqlite3.
     return queue
 
 
-def build_adaptive_queue(
-    conn: sqlite3.Connection, level: int, length: int
+def _ordered_tier_items(
+    conn: sqlite3.Connection, content_levels: tuple[int, ...]
 ) -> list[sqlite3.Row]:
-    """Build a unique queue for a difficulty tier (1–4).
+    ph = _placeholders(len(content_levels))
+    return conn.execute(
+        f"""
+        SELECT i.*
+        FROM items i
+        WHERE i.level IN ({ph})
+        ORDER BY i.level ASC, i.id ASC
+        """,
+        content_levels,
+    ).fetchall()
 
-    Fills from all content levels in the tier: due → fresh unmastered →
-    practiced-today unmastered → mastered, then snaps to 5 or 10.
+
+def items_for_stage(
+    rows: list[sqlite3.Row], stage: int
+) -> list[sqlite3.Row]:
+    """Split a difficulty pool into STAGES_PER_DIFFICULTY ordered sets."""
+    if not rows:
+        return []
+    start, end = config.stage_slice_bounds(len(rows), stage)
+    chunk = rows[start:end]
+    return chunk or list(rows)
+
+
+def build_adaptive_queue(
+    conn: sqlite3.Connection,
+    level: int,
+    length: int,
+    stage: int | None = None,
+) -> list[sqlite3.Row]:
+    """Build a unique queue for one set (stage) inside a difficulty tier.
+
+    Prefers the current set's items, then earlier sets for review padding,
+    never later (locked) sets. Snaps to 5 or 10.
     """
     difficulty = config.normalize_difficulty(level)
     length = config.normalize_session_length(length)
+    stage = config.normalize_stage(
+        stage if stage is not None else 1
+    )
     content_levels = config.content_levels_for_difficulty(difficulty)
     ph = _placeholders(len(content_levels))
     today = local_today()
+    tier_rows = _ordered_tier_items(conn, content_levels)
+    stage_rows = items_for_stage(tier_rows, stage)
+    stage_ids = {int(r["id"]) for r in stage_rows}
+    # Earlier sets only — unlock later sets by advancing stage.
+    earlier_ids: set[int] = set()
+    for s in range(1, stage):
+        earlier_ids.update(int(r["id"]) for r in items_for_stage(tier_rows, s))
+    allowed_ids = stage_ids | earlier_ids
     queue: list[sqlite3.Row] = []
     seen: set[int] = set()
 
-    def _take(rows: list[sqlite3.Row], *, skip_correct_today: bool = False) -> None:
+    def _take(
+        rows: list[sqlite3.Row],
+        *,
+        skip_correct_today: bool = False,
+        id_filter: set[int] | None = None,
+    ) -> None:
         for row in rows:
             if len(queue) >= length:
                 return
-            if row["id"] in seen:
+            rid = int(row["id"])
+            if rid in seen:
                 continue
-            if skip_correct_today and had_correct_today(conn, row["id"]):
+            if id_filter is not None and rid not in id_filter:
+                continue
+            if skip_correct_today and had_correct_today(conn, rid):
                 continue
             queue.append(row)
-            seen.add(row["id"])
+            seen.add(rid)
 
     due = conn.execute(
         f"""
@@ -307,7 +393,8 @@ def build_adaptive_queue(
         """,
         (*content_levels, today),
     ).fetchall()
-    _take(due)
+    _take(due, id_filter=stage_ids)
+    _take(due, id_filter=earlier_ids)
 
     if difficulty == 3:  # rhymes
         fill = _rhyme_grouped(conn, content_levels)
@@ -323,10 +410,17 @@ def build_adaptive_queue(
             """,
             content_levels,
         ).fetchall()
-    _take(fill, skip_correct_today=True)
+    tier_ids = {int(r["id"]) for r in tier_rows}
+    _take(fill, skip_correct_today=True, id_filter=stage_ids)
+    _take(fill, skip_correct_today=True, id_filter=earlier_ids)
     # Prefer a full 5/10 set: allow same-day unmastered before mastered padding.
     if len(queue) < length:
-        _take(fill, skip_correct_today=False)
+        _take(fill, skip_correct_today=False, id_filter=stage_ids)
+    if len(queue) < length:
+        _take(fill, skip_correct_today=False, id_filter=earlier_ids)
+    # Small sets (e.g. Phrases slices of 4) may need the rest of the tier to hit 5|10.
+    if len(queue) < length:
+        _take(fill, skip_correct_today=False, id_filter=tier_ids)
 
     if len(queue) < length:
         mastered = conn.execute(
@@ -340,39 +434,30 @@ def build_adaptive_queue(
             """,
             content_levels,
         ).fetchall()
-        for row in mastered:
-            if len(queue) >= length:
-                break
-            if row["id"] in seen:
-                continue
-            # Prefer gated refreshers first; then any mastered to hit 5/10.
-            if sessions_since_item(conn, row["id"]) >= config.MASTERED_EVERY_N_SESSIONS:
+        for id_filter in (stage_ids, earlier_ids, allowed_ids, tier_ids):
+            for row in mastered:
+                if len(queue) >= length:
+                    break
+                rid = int(row["id"])
+                if rid in seen or rid not in id_filter:
+                    continue
+                if sessions_since_item(conn, rid) >= config.MASTERED_EVERY_N_SESSIONS:
+                    queue.append(row)
+                    seen.add(rid)
+            for row in mastered:
+                if len(queue) >= length:
+                    break
+                rid = int(row["id"])
+                if rid in seen or rid not in id_filter:
+                    continue
                 queue.append(row)
-                seen.add(row["id"])
-        for row in mastered:
-            if len(queue) >= length:
-                break
-            if row["id"] in seen:
-                continue
-            queue.append(row)
-            seen.add(row["id"])
+                seen.add(rid)
 
     # C7: never return an empty queue when any item exists in the tier.
     if not queue:
-        fallback = conn.execute(
-            f"""
-            SELECT i.*
-            FROM items i
-            LEFT JOIN mastery m ON m.item_id = i.id
-            WHERE i.level IN ({ph})
-            ORDER BY CASE WHEN m.last_seen_on IS NULL THEN 0 ELSE 1 END,
-                     m.last_seen_on ASC, i.id ASC
-            LIMIT 1
-            """,
-            content_levels,
-        ).fetchone()
-        if fallback is not None:
-            queue.append(fallback)
+        for candidate in stage_rows or tier_rows:
+            queue.append(candidate)
+            break
 
     if not queue:
         raise ValueError(f"No content for difficulty {difficulty}")

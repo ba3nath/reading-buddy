@@ -116,8 +116,10 @@ def test_complete_returns_level_after(client, whisper_double, tone_wav, tmp_env)
         post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=qi)
     done = client.post(f"/api/sessions/{sid}/complete").json()
     assert "level_after" in done
-    assert done["level_after"] == 2
-    assert load_settings()["level"] == 2
+    assert done["level_after"] == 1
+    assert done["stage_after"] == 2
+    assert load_settings()["level"] == 1
+    assert load_settings()["stage"] == 2
 
 
 def test_difficulty_tiers_session_start(client):

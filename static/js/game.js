@@ -89,6 +89,7 @@ const state = {
   plannedCount: 0,
   stars: 0,
   level: 1,
+  stage: 1,
   difficultyLabel: "",
   buddy: "krishna",
   closeAgainPending: false,
@@ -791,8 +792,12 @@ async function startSession(level) {
   }
   state.stars = 0;
   state.level = data.level;
+  state.stage = Number(data.stage) || 1;
   state.difficultyLabel =
-    data.difficulty_label || data.difficultyLabel || `Level ${data.level}`;
+    data.stage_label ||
+    data.difficulty_label ||
+    data.difficultyLabel ||
+    `Level ${data.level}`;
   if (data.buddy) await loadBuddySvg(data.buddy);
   state.closeAgainPending = false;
   state.replay = [];

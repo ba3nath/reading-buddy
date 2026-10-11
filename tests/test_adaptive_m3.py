@@ -39,16 +39,20 @@ def test_move_up_score_item_level_ratio():
 
 
 def test_level_up_on_8_of_10(tmp_env):
+    """Strong session advances the set within the difficulty (not the next tier yet)."""
     settings = load_settings()
     settings["level"] = 2
+    settings["stage"] = 1
+    settings["stage_by_difficulty"] = {"1": 1, "2": 1, "3": 1, "4": 1}
     settings["low_streak"] = 0
     settings["move_up_streak"] = 0
     save_settings(settings)
     level_after, new_s = apply_level_and_auto_strict(
         level=2, correct_count=8, planned_count=10, settings=settings
     )
-    assert level_after == 3
-    assert new_s["level"] == 3
+    assert level_after == 2
+    assert new_s["level"] == 2
+    assert new_s["stage"] == 2
     assert new_s["low_streak"] == 0
     assert new_s["move_up_streak"] == 1
 
@@ -56,6 +60,8 @@ def test_level_up_on_8_of_10(tmp_env):
 def test_two_under_half_steps_down(tmp_env):
     settings = load_settings()
     settings["level"] = 3
+    settings["stage"] = 1
+    settings["stage_by_difficulty"] = {"1": 1, "2": 1, "3": 1, "4": 1}
     settings["low_streak"] = 1
     settings["move_up_streak"] = 2
     save_settings(settings)
@@ -63,6 +69,7 @@ def test_two_under_half_steps_down(tmp_env):
         level=3, correct_count=4, planned_count=10, settings=settings
     )
     assert level_after == 2
+    assert new_s["stage"] == 5  # drop into prior difficulty's last set
     assert new_s["low_streak"] == 0
     assert new_s["move_up_streak"] == 0
 
@@ -70,12 +77,15 @@ def test_two_under_half_steps_down(tmp_env):
 def test_five_of_ten_no_step_down(tmp_env):
     settings = load_settings()
     settings["level"] = 2
+    settings["stage"] = 3
+    settings["stage_by_difficulty"] = {"1": 1, "2": 3, "3": 1, "4": 1}
     settings["low_streak"] = 1
     save_settings(settings)
     level_after, new_s = apply_level_and_auto_strict(
         level=2, correct_count=5, planned_count=10, settings=settings
     )
     assert level_after == 2
+    assert new_s["stage"] == 3
     assert new_s["low_streak"] == 0
     assert new_s["move_up_streak"] == 0
 
@@ -85,6 +95,8 @@ def test_auto_strict_after_three_move_ups(tmp_env):
     settings.update(
         {
             "level": 1,
+            "stage": 5,
+            "stage_by_difficulty": {"1": 5, "2": 1, "3": 1, "4": 1},
             "mode": "beginner",
             "auto_strict": True,
             "auto_strict_sessions": 3,
@@ -95,6 +107,7 @@ def test_auto_strict_after_three_move_ups(tmp_env):
         level=1, correct_count=9, planned_count=10, settings=settings
     )
     assert level_after == 2
+    assert new_s["stage"] == 1
     assert new_s["move_up_streak"] == 3
     assert new_s["mode"] == "strict"
 
@@ -104,6 +117,7 @@ def test_auto_strict_off_skips(tmp_env):
     settings.update(
         {
             "level": 1,
+            "stage": 5,
             "mode": "beginner",
             "auto_strict": False,
             "move_up_streak": 2,
@@ -119,12 +133,14 @@ def test_complete_applies_level_and_abandon_does_not(tmp_env):
     conn = tmp_env["conn"]
     settings = load_settings()
     settings["level"] = 1
+    settings["stage"] = 1
     settings["session_length"] = 5
     settings["low_streak"] = 0
     save_settings(settings)
     data = start_session(conn, level=1)
     sid = data["session_id"]
-    # Score all planned items correct → move up
+    assert data["stage"] == 1
+    # Score all planned items correct → advance to Words set 2
     for qi, item in enumerate(data["items"]):
         _apply(
             conn,
@@ -134,16 +150,21 @@ def test_complete_applies_level_and_abandon_does_not(tmp_env):
             qi=qi,
         )
     done = complete_session(conn, sid)
-    assert done["level_after"] == 2
-    assert load_settings()["level"] == 2
+    assert done["level_after"] == 1
+    assert done["stage_after"] == 2
+    assert load_settings()["level"] == 1
+    assert load_settings()["stage"] == 2
 
-    # Abandon does not change level
+    # Abandon does not change level/stage
     settings = load_settings()
     settings["level"] = 4
+    settings["stage"] = 3
+    settings["stage_by_difficulty"] = {"1": 2, "2": 1, "3": 1, "4": 3}
     save_settings(settings)
     abandoned = start_session(conn, level=4)
     start_session(conn, level=4)
     assert load_settings()["level"] == 4
+    assert load_settings()["stage"] == 3
     row = conn.execute(
         "SELECT completed, ended_at FROM sessions WHERE id = ?",
         (abandoned["session_id"],),
@@ -398,11 +419,15 @@ def test_day_ladder_and_mastery(tmp_env):
 
 
 def test_queue_due_before_unmastered(tmp_env):
+    from app.adaptive import items_for_stage, _ordered_tier_items
+    from app.config import content_levels_for_difficulty
+
     conn = tmp_env["conn"]
-    # Make a level-2 item due
-    due = conn.execute(
-        "SELECT id FROM items WHERE level=2 ORDER BY id LIMIT 1"
-    ).fetchone()
+    # Due item must be inside the active set (stage 1 of Words).
+    stage1 = items_for_stage(
+        _ordered_tier_items(conn, content_levels_for_difficulty(1)), 1
+    )
+    due_id = int(stage1[0]["id"])
     conn.execute(
         """
         INSERT INTO mastery (item_id, correct_count, days_json, miss_count, review_step, next_review_on, mastered)
@@ -410,11 +435,11 @@ def test_queue_due_before_unmastered(tmp_env):
         ON CONFLICT(item_id) DO UPDATE SET
           next_review_on=excluded.next_review_on, review_step=1, mastered=0
         """,
-        (due["id"], local_today()),
+        (due_id, local_today()),
     )
     conn.commit()
-    queue = build_adaptive_queue(conn, level=1, length=10)
-    assert queue[0]["id"] == due["id"]
+    queue = build_adaptive_queue(conn, level=1, length=10, stage=1)
+    assert queue[0]["id"] == due_id
 
 
 def test_start_session_four_difficulty_tiers(tmp_env):

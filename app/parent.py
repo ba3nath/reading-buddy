@@ -243,6 +243,7 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     allowed = {
         "mode",
         "level",
+        "stage",
         "auto_strict",
         "auto_strict_sessions",
         "session_length",
@@ -260,6 +261,21 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     level = config.normalize_difficulty(settings.get("level", 1))
     settings["level"] = level
     settings["difficulty_migrated"] = True
+    by_diff = settings.get("stage_by_difficulty")
+    if not isinstance(by_diff, dict):
+        by_diff = config.default_stage_by_difficulty()
+    else:
+        by_diff = {
+            **config.default_stage_by_difficulty(),
+            **{str(k): config.normalize_stage(v) for k, v in by_diff.items()},
+        }
+    if "stage" in payload:
+        stage = config.normalize_stage(payload.get("stage"))
+    else:
+        stage = config.normalize_stage(by_diff.get(str(level), 1))
+    by_diff[str(level)] = stage
+    settings["stage"] = stage
+    settings["stage_by_difficulty"] = by_diff
     settings["session_length"] = config.normalize_session_length(
         settings.get("session_length", config.DEFAULT_SESSION_LENGTH)
     )

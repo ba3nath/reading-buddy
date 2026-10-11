@@ -184,6 +184,27 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         if int(merged.get("level", 0) or 0) != difficulty:
             merged["level"] = difficulty
             dirty = True
+    # Per-difficulty sets (stages) 1–5.
+    by_diff = merged.get("stage_by_difficulty")
+    if not isinstance(by_diff, dict):
+        by_diff = config.default_stage_by_difficulty()
+        dirty = True
+    else:
+        fixed = config.default_stage_by_difficulty()
+        for key, val in by_diff.items():
+            if str(key) in fixed:
+                fixed[str(key)] = config.normalize_stage(val)
+        by_diff = fixed
+        if by_diff != merged.get("stage_by_difficulty"):
+            dirty = True
+    merged["stage_by_difficulty"] = by_diff
+    difficulty = config.normalize_difficulty(merged.get("level", 1))
+    stage = config.normalize_stage(
+        by_diff.get(str(difficulty), merged.get("stage", 1))
+    )
+    if int(merged.get("stage", 0) or 0) != stage:
+        merged["stage"] = stage
+        dirty = True
     if dirty:
         save_settings(merged, settings_path)
     return merged
