@@ -44,6 +44,7 @@ python scripts/tag_sounds.py --download   # optional: CMU dict → sound_tags
 python scripts/generate_audio.py     # wavs into audio/generated/
 # After TTS/postprocess changes (or if clips sound clipped): 
 #   python scripts/generate_audio.py --force
+python scripts/generate_illustrations.py   # word/line pictograms → static/illustrations/
 ```
 
 Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.
@@ -93,7 +94,7 @@ No visible timers, no lost stars or garden growth, no red fail screens, no buzze
 ## Layout
 
 - `app/` — FastAPI, matcher, session, adaptive queue, parent aggregations, Whisper, audio helpers
-- `static/` — child game + parent page (plain HTML/JS), mascot SVGs
+- `static/` — child game + parent page (plain HTML/JS), mascot SVGs, word pictograms
 - `content/items.json` — levels 1–7
 - `scripts/setup_mac.sh`, `scripts/setup_windows.ps1` — one-time online setup
 - `audio/generated/`, `audio/human/`, `models/`, `data/` — gitignored runtime assets

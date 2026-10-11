@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <rect width="120" height="120" rx="28" fill="#fffaf2"/>
+  
+      <path d="M20 96 Q30 40 40 96" fill="#3f9a5f"/>
+      <path d="M40 96 Q52 28 64 96" fill="#7bc47f"/>
+      <path d="M58 96 Q72 36 84 96" fill="#3f9a5f"/>
+      <path d="M78 96 Q92 44 104 96" fill="#7bc47f"/>
+      <ellipse cx="60" cy="100" rx="50" ry="8" fill="#a8d5c5"/>
+    
+</svg>

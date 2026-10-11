@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <rect width="120" height="120" rx="28" fill="#fffaf2"/>
+  
+      <rect x="52" y="18" width="16" height="70" rx="4" fill="#3aa0d0" transform="rotate(20 60 60)"/>
+      <polygon points="78,92 88,102 70,98" fill="#2c241c"/>
+      <rect x="48" y="14" width="16" height="14" rx="3" fill="#ff8f6b" transform="rotate(20 60 60)"/>
+    
+</svg>

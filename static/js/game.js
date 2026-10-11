@@ -3,6 +3,83 @@ import { RecordingSession } from "./record.js";
 const $ = (sel) => document.querySelector(sel);
 const BUDDIES = ["cat", "krishna", "mouse"];
 
+/** Function words we skip when picking a picture for a sentence. */
+const ILLUSTRATION_STOPWORDS = new Set([
+  "a",
+  "an",
+  "the",
+  "and",
+  "or",
+  "to",
+  "of",
+  "on",
+  "in",
+  "is",
+  "it",
+  "at",
+  "for",
+  "as",
+  "by",
+  "be",
+  "we",
+  "he",
+  "she",
+  "they",
+  "was",
+  "were",
+  "had",
+  "has",
+  "have",
+  "you",
+  "your",
+  "my",
+  "me",
+  "i",
+  "am",
+  "are",
+  "do",
+  "did",
+  "not",
+  "no",
+  "yes",
+  "sir",
+  "up",
+  "any",
+  "what",
+  "how",
+  "with",
+  "from",
+  "that",
+  "this",
+  "but",
+  "so",
+  "if",
+  "then",
+  "when",
+  "all",
+  "can",
+  "will",
+  "would",
+  "could",
+  "into",
+  "out",
+  "over",
+  "under",
+  "his",
+  "her",
+  "him",
+  "them",
+  "our",
+  "us",
+  "their",
+  "went",
+  "sat",
+  "great",
+  "full",
+  "black",
+  "wonder",
+]);
+
 const state = {
   id: "boot",
   sessionId: null,
@@ -23,6 +100,7 @@ const state = {
   svgCache: {},
   combo: 0,
   play: null, // home quest / streak / badges snapshot
+  illustrationKeys: null, // Set<string> from /static/illustrations/keys.json
 };
 
 function setState(id) {
@@ -152,10 +230,62 @@ function clearReadAgain() {
   setMicLabel("Tap to read");
 }
 
-function setWord(text, { highlight = false } = {}) {
+function tokenizeForIllustration(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z\s']/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** Pick an SVG stem for a word or line (kid pictogram, not a meme). */
+function resolveIllustrationKey(text, { kind = "word" } = {}) {
+  const keys = state.illustrationKeys;
+  const tokens = tokenizeForIllustration(text);
+  if (!tokens.length) return null;
+  if (tokens.length === 1) {
+    if (keys && keys.has(tokens[0])) return tokens[0];
+    return "_default";
+  }
+  let best = null;
+  for (const t of tokens) {
+    if (ILLUSTRATION_STOPWORDS.has(t)) continue;
+    if (keys && !keys.has(t)) continue;
+    if (!best || t.length > best.length) best = t;
+  }
+  if (best) return best;
+  return kind === "line" ? "_line" : "_default";
+}
+
+function setWordArt(text, { kind = "word" } = {}) {
+  const wrap = $("[data-word-art]");
+  const img = $("[data-word-art-img]");
+  if (!wrap || !img) return;
+  if (!text) {
+    wrap.hidden = true;
+    img.removeAttribute("src");
+    return;
+  }
+  const key = resolveIllustrationKey(text, { kind });
+  if (!key) {
+    wrap.hidden = true;
+    return;
+  }
+  const next = `/static/illustrations/${encodeURIComponent(key)}.svg`;
+  if (img.getAttribute("src") !== next) {
+    img.src = next;
+    wrap.classList.remove("pop");
+    void wrap.offsetWidth;
+    wrap.classList.add("pop");
+  }
+  wrap.hidden = false;
+}
+
+function setWord(text, { highlight = false, kind = "word" } = {}) {
   const el = $("[data-word]");
   el.textContent = text || "";
   el.classList.toggle("highlight", Boolean(highlight));
+  setWordArt(text, { kind });
 }
 
 function popStarBurst() {
@@ -426,6 +556,17 @@ function showEndPlayRewards(play) {
   }
 }
 
+async function loadIllustrationKeys() {
+  try {
+    const res = await fetch("/static/illustrations/keys.json");
+    if (!res.ok) throw new Error("keys missing");
+    const data = await res.json();
+    state.illustrationKeys = new Set(data.keys || []);
+  } catch {
+    state.illustrationKeys = new Set();
+  }
+}
+
 async function boot() {
   setState("boot");
   setMessage("Getting ready…");
@@ -444,6 +585,7 @@ async function boot() {
         "Voice clips are not ready yet. Ask an adult to run: python scripts/generate_audio.py";
       return;
     }
+    await loadIllustrationKeys();
     const settings = await api("/api/parent/settings");
     await loadBuddySvg(settings.buddy || "cat");
     showGardenHome(Number(settings.garden_growth) || 0);
@@ -524,7 +666,7 @@ async function showListen() {
     return;
   }
   setState("listen");
-  setWord(item.text);
+  setWord(item.text, { kind: item.kind === "line" ? "line" : "word" });
   if (state.readAgain) {
     setMessage(
       item.kind === "line" ? "Listen again, then read the line" : "Listen again, then read it"
@@ -870,7 +1012,7 @@ async function showReplayItem() {
     return;
   }
   setState("session-replay");
-  setWord(entry.text, { highlight: true });
+  setWord(entry.text, { highlight: true, kind: "word" });
   if (state.readAgain) {
     setMessage("Listen again, then read it");
     setMicLabel("Tap to read again");
