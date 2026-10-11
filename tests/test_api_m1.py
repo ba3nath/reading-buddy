@@ -129,10 +129,10 @@ def test_attempt_retry_empty_audio(client, tmp_env, assert_attempt_shape):
     assert body["retry"] is True
     assert body["again"] is True
     assert body["read_again"] is True
-    assert body["try_number"] == 1
+    assert body["try_number"] == 2
     assert body["tries_max"] == 3
     assert body["skipped"] is False
-    assert body["message"] == msg_retry(1, 3)
+    assert body["message"] == msg_retry(2, 3)
     assert "read it again" in body["message"].lower()
     assert body["transcript"] == ""
     assert body["word_scores"] == []

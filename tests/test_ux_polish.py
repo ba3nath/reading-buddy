@@ -48,6 +48,9 @@ def test_start_primary_and_more_levels():
 def test_read_again_indicator_when_retry_needed():
     assert 'data-read-again' in HTML
     assert "setReadAgain" in JS
+    assert "hideReadAgainBanner" in JS
+    assert "needsAnotherRead" in JS
     assert "Tap to read again" in JS
     assert "read it again" in JS.lower() or "read again" in JS.lower()
     assert ".read-again" in CSS
+    assert 'body[data-state="recording"] .read-again' in CSS

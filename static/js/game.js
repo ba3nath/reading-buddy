@@ -449,19 +449,27 @@ function enterIdle() {
   setMicEnabled(true);
 }
 
+function hideReadAgainBanner() {
+  const el = $("[data-read-again]");
+  if (el) el.hidden = true;
+}
+
 async function onMicTap() {
   // Second tap while recording = "I'm done" (keeps one clear take).
   if (state.id === "recording" && state.recorder.isRecording) {
     setMessage("Got it…");
     setMicEnabled(false);
+    hideReadAgainBanner();
     state.recorder.stop();
     return;
   }
   if (state.id !== "idle") return;
   setState("recording");
+  // They pressed for the follow-up take — don't keep saying "one more".
+  hideReadAgainBanner();
   setMessage(
     state.readAgain
-      ? "I hear you — read it again, then tap when done"
+      ? "I hear you — read it clearly, then tap when done"
       : "I hear you — read the word, then tap again when done"
   );
   setMicEnabled(false);
@@ -477,7 +485,12 @@ async function onMicTap() {
       setMessage("We need the microphone to hear you. Ask an adult to allow it.");
       setState("idle");
       setMicEnabled(true);
-      setMicLabel(state.readAgain ? "Tap to read again" : "Tap to read");
+      if (state.readAgain) {
+        setReadAgain(state.readAgain);
+        setMicLabel("Tap to read again");
+      } else {
+        setMicLabel("Tap to read");
+      }
     },
   });
 }
@@ -486,7 +499,8 @@ async function onRecordComplete(blob) {
   setState("scoring");
   setMessage("Listening…");
   setMicEnabled(false);
-  setMicLabel(state.readAgain ? "Tap to read again" : "Tap to read");
+  hideReadAgainBanner();
+  setMicLabel("Tap to read");
   const form = new FormData();
   form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");
@@ -572,6 +586,11 @@ async function maybeSingAlongThen(next) {
   next();
 }
 
+function needsAnotherRead(result) {
+  // Strict: only when the API says another take is required.
+  return Boolean(result.read_again) || Boolean(result.retry) || Boolean(result.again);
+}
+
 function handleAttempt(result) {
   state.stars = result.stars_total;
   showPhraseScore(result);
@@ -588,7 +607,7 @@ function handleAttempt(result) {
   }
   if (result.retry || result.result === "retry") {
     setStars(result.stars_total);
-    const tryNumber = Number(result.try_number) || 1;
+    const tryNumber = Number(result.try_number) || 2;
     const triesMax = Number(result.tries_max) || 3;
     setReadAgain({ tryNumber, triesMax, reason: "retry" });
     setMessage(result.message || "Please read it again");
@@ -600,10 +619,11 @@ function handleAttempt(result) {
     }, 1600);
     return;
   }
-  if (result.result === "close" && result.again) {
+  // Close second-chance only when again/read_again is true — never on locked close.
+  if (result.result === "close" && needsAnotherRead(result)) {
     setStars(result.stars_total);
     setReadAgain({
-      tryNumber: Number(result.try_number) || 1,
+      tryNumber: Number(result.try_number) || 2,
       triesMax: Number(result.tries_max) || 2,
       reason: "close",
     });
@@ -626,6 +646,7 @@ function handleAttempt(result) {
     setTimeout(() => maybeSingAlongThen(advance), 1200);
     return;
   }
+  // Locked close / miss — move on; never keep "one more" copy.
   setStars(result.stars_total);
   setMessage(result.message || "");
   setState(result.result === "missed" ? "result-miss" : "result-close");

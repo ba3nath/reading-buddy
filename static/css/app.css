@@ -338,6 +338,12 @@ body[data-state="result-close"] .buddy {
   display: none !important;
 }
 
+/* Once they press the mic for the follow-up take, stop saying "one more". */
+body[data-state="recording"] .read-again,
+body[data-state="scoring"] .read-again {
+  display: none !important;
+}
+
 @keyframes read-again-pulse {
   0%,
   100% {

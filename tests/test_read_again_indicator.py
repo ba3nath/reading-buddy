@@ -7,10 +7,11 @@ from app.whisper_engine import AttemptTranscript, TranscriptWord
 from tests.helpers import post_attempt
 
 
-def test_msg_retry_includes_try_count():
+def test_msg_retry_includes_next_try_count():
     assert "read it again" in msg_retry(2, 3).lower()
-    assert "(2 of 3)" in msg_retry(2, 3)
-    assert MSG_CLOSE_OK == "Almost!"
+    assert "try 2 of 3" in msg_retry(2, 3)
+    assert "one more" not in MSG_CLOSE_OK.lower()
+    assert "on to the next" in MSG_CLOSE_OK.lower()
 
 
 def test_retry_payload_flags_read_again(client, assert_attempt_shape):
@@ -21,9 +22,9 @@ def test_retry_payload_flags_read_again(client, assert_attempt_shape):
     body = res.json()
     assert_attempt_shape(body, words_total=1)
     assert body["read_again"] is True
-    assert body["try_number"] == 1
+    assert body["try_number"] == 2
     assert body["tries_max"] == 3
-    assert body["message"] == msg_retry(1, 3)
+    assert body["message"] == msg_retry(2, 3)
 
 
 def test_close_again_message_asks_for_another_read(
@@ -32,7 +33,6 @@ def test_close_again_message_asks_for_another_read(
     start = client.post("/api/sessions", json={"level": 1}).json()
     item = next((i for i in start["items"] if i["text"] == "cat"), None)
     if item is None:
-        # Level queue without cat — still assert close-again copy is wired.
         assert "one more time" in MSG_CLOSE.lower()
         return
     qi = start["items"].index(item)
@@ -56,5 +56,7 @@ def test_close_again_message_asks_for_another_read(
     assert body["result"] == "close"
     assert body["again"] is True
     assert body["read_again"] is True
+    assert body["try_number"] == 2
+    assert body["tries_max"] == 2
     assert body["message"] == MSG_CLOSE
     assert "one more time" in body["message"].lower()

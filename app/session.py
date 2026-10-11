@@ -529,10 +529,14 @@ def apply_attempt(
                     "message": config.MSG_SKIP,
                     "retry": False,
                     "again": False,
+                    "read_again": False,
+                    "try_number": None,
+                    "tries_max": None,
                     "skipped": True,
                     "attempt_id": attempt_id,
                 }
-            try_number = prior + 1
+            # prior = retries already stored; this insert is +1; next read is +2.
+            next_try = prior + 2
             attempt_id = _insert_attempt(
                 conn,
                 session_id,
@@ -556,11 +560,11 @@ def apply_attempt(
                 "words_total": words_total,
                 "stars_awarded": 0,
                 "stars_total": stars_total,
-                "message": config.msg_retry(try_number, config.MAX_RETRIES_PER_ITEM),
+                "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
                 "retry": True,
                 "again": True,
                 "read_again": True,
-                "try_number": try_number,
+                "try_number": next_try,
                 "tries_max": config.MAX_RETRIES_PER_ITEM,
                 "skipped": False,
                 "attempt_id": attempt_id,
@@ -604,11 +608,15 @@ def apply_attempt(
                 "message": config.MSG_SKIP,
                 "retry": False,
                 "again": False,
+                "read_again": False,
+                "try_number": None,
+                "tries_max": None,
                 "skipped": True,
                 "attempt_id": attempt_id,
             }
 
-        try_number = prior_retries + 1
+        # prior_retries = retries already stored; this insert is +1; next read is +2.
+        next_try = prior_retries + 2
         attempt_id = _insert_attempt(
             conn,
             session_id,
@@ -632,11 +640,11 @@ def apply_attempt(
             "words_total": words_total,
             "stars_awarded": 0,
             "stars_total": stars_total,
-            "message": config.msg_retry(try_number, config.MAX_RETRIES_PER_ITEM),
+            "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
             "retry": True,
             "again": True,
             "read_again": True,
-            "try_number": try_number,
+            "try_number": next_try,
             "tries_max": config.MAX_RETRIES_PER_ITEM,
             "skipped": False,
             "attempt_id": attempt_id,
@@ -766,12 +774,20 @@ def apply_attempt(
         "retry": False,
         "again": again,
         "read_again": bool(again),
-        "try_number": 1 if again else None,
+        # Close second-chance: the upcoming read is try 2 of 2.
+        "try_number": 2 if again else None,
         "tries_max": 2 if again else None,
         "skipped": False,
         "reinsert": reinsert_info,
         "attempt_id": attempt_id,
     }
+    # Hard guarantee: locked results never ask for another read.
+    if not again:
+        payload["read_again"] = False
+        payload["try_number"] = None
+        payload["tries_max"] = None
+        if result == "close" and message == config.MSG_CLOSE:
+            payload["message"] = config.MSG_CLOSE_OK
     return payload
 
 

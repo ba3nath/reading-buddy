@@ -346,7 +346,7 @@ def test_replay_close_locks_without_again(tmp_env):
     assert close["again"] is False
     assert close["retry"] is False
     assert close["skipped"] is False
-    assert close["message"] == "Almost!"
+    assert close["message"] == "Nice try — on to the next!"
     assert close.get("read_again") is False
 
     session = conn.execute(

@@ -50,17 +50,22 @@ AUTO_STRICT_SESSIONS = 3  # consecutive move-up sessions → mode=strict when au
 
 MSG_RETRY = "I didn't catch that — please read it again."
 MSG_CLOSE = "Almost — read it one more time!"
-MSG_CLOSE_OK = "Almost!"
+# Locked close (second take done) — must NOT ask for another read.
+MSG_CLOSE_OK = "Nice try — on to the next!"
 MSG_MISS = "That one's tricky, we'll visit it again."
 MSG_SKIP = "We'll try that one another time."
 MSG_CORRECT = "You got it!"
 
 
-def msg_retry(try_number: int, tries_max: int) -> str:
-    """Kind prompt that another read is required (with try count)."""
-    n = max(1, int(try_number))
+def msg_retry(next_try: int, tries_max: int) -> str:
+    """Kind prompt that another read is required.
+
+    ``next_try`` is the upcoming attempt number (2..tries_max), not the
+    failed take that just finished.
+    """
+    n = max(2, int(next_try))
     m = max(n, int(tries_max))
-    return f"I didn't catch that — please read it again ({n} of {m})."
+    return f"I didn't catch that — please read it again (try {n} of {m})."
 
 DEFAULT_SETTINGS = {
     "profile_name": "",
