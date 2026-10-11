@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Friendly unicorn buddy">
   <style>
-    /* Original unicorn: cream coat, soft lavender mane, gold horn  kid-friendly. */
+    /* Original unicorn: cream coat, soft lavender mane, gold horn — kid-friendly. */
     .horn, .mane, .eye, .ear, .tail { transform-box: fill-box; transform-origin: center; }
     .idle .mane { animation: sway 2.8s ease-in-out infinite; }
     .idle .tail { animation: sway 2.4s ease-in-out infinite reverse; }

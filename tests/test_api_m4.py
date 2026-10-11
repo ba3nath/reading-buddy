@@ -229,9 +229,15 @@ def test_accuracy_and_mastered_shapes(client, whisper_double, tone_wav, tmp_env)
 
 
 def test_mascot_svgs_served(client):
+    import xml.etree.ElementTree as ET
+
     for name in ("cat", "krishna", "unicorn", "garden"):
         res = client.get(f"/static/mascots/{name}.svg")
         assert res.status_code == 200, name
+        # <img src="…svg"> uses a strict XML parser — control chars break the tile.
+        raw = res.content
+        assert not any(b < 32 and b not in (9, 10, 13) for b in raw), name
+        ET.fromstring(raw)
     unicorn = client.get("/static/mascots/unicorn.svg").text.lower()
     assert "mickey" not in unicorn
     assert "buddy-root" in unicorn
