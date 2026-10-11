@@ -125,3 +125,5 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_render("pen") == ("pen!", 1.0)
     assert tts_voice("pen") == ("bf_alice", "en-gb")
     assert tts_voice("sit") == ("bf_alice", "en-gb")
+    assert tts_render("when") == ("when!", 1.0)
+    assert tts_voice("when") == ("bf_alice", "en-gb")

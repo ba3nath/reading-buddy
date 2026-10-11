@@ -107,13 +107,49 @@
     </div>
 
     <details class="more-levels">
-      <summary>Pick a difficulty</summary>
-      <p class="difficulty-hint">Each has 5 sets — finish a set well to unlock the next</p>
-      <div class="start-row level-row">
-        <button type="button" class="btn ghost" data-start data-level-pick="1">Words</button>
-        <button type="button" class="btn ghost" data-start data-level-pick="2">Phrases</button>
-        <button type="button" class="btn ghost" data-start data-level-pick="3">Rhymes</button>
-        <button type="button" class="btn ghost" data-start data-level-pick="4">Stories</button>
+      <summary>Pick a difficulty &amp; set</summary>
+      <p class="difficulty-hint">Tap a set (1–5) under Words, Phrases, Rhymes, or Stories</p>
+      <div class="difficulty-sets" data-difficulty-sets>
+        <div class="difficulty-group" data-difficulty="1">
+          <p class="difficulty-name">Words</p>
+          <div class="set-row" role="group" aria-label="Words sets">
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="1" data-stage-pick="1">Set 1</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="1" data-stage-pick="2">Set 2</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="1" data-stage-pick="3">Set 3</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="1" data-stage-pick="4">Set 4</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="1" data-stage-pick="5">Set 5</button>
+          </div>
+        </div>
+        <div class="difficulty-group" data-difficulty="2">
+          <p class="difficulty-name">Phrases</p>
+          <div class="set-row" role="group" aria-label="Phrases sets">
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="2" data-stage-pick="1">Set 1</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="2" data-stage-pick="2">Set 2</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="2" data-stage-pick="3">Set 3</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="2" data-stage-pick="4">Set 4</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="2" data-stage-pick="5">Set 5</button>
+          </div>
+        </div>
+        <div class="difficulty-group" data-difficulty="3">
+          <p class="difficulty-name">Rhymes</p>
+          <div class="set-row" role="group" aria-label="Rhymes sets">
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="3" data-stage-pick="1">Set 1</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="3" data-stage-pick="2">Set 2</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="3" data-stage-pick="3">Set 3</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="3" data-stage-pick="4">Set 4</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="3" data-stage-pick="5">Set 5</button>
+          </div>
+        </div>
+        <div class="difficulty-group" data-difficulty="4">
+          <p class="difficulty-name">Stories</p>
+          <div class="set-row" role="group" aria-label="Stories sets">
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="4" data-stage-pick="1">Set 1</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="4" data-stage-pick="2">Set 2</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="4" data-stage-pick="3">Set 3</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="4" data-stage-pick="4">Set 4</button>
+            <button type="button" class="btn ghost set-btn" data-start data-level-pick="4" data-stage-pick="5">Set 5</button>
+          </div>
+        </div>
       </div>
     </details>
     <p class="parent-link"><a href="/parent">Parent page</a></p>

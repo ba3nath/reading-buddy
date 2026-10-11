@@ -147,6 +147,7 @@ def health() -> dict[str, bool]:
 @app.post("/api/sessions")
 async def create_session(request: Request):
     level = None
+    stage = None
     raw = await request.body()
     if raw and raw.strip() not in (b"", b"null"):
         try:
@@ -168,7 +169,7 @@ async def create_session(request: Request):
                 status_code=400,
                 content=error_body(
                     "bad_request",
-                    "Only optional field 'level' is accepted on session create",
+                    "Only optional fields 'level' and 'stage' are accepted on session create",
                 ),
             )
         if "level" in payload and payload["level"] is not None:
@@ -179,6 +180,14 @@ async def create_session(request: Request):
                     status_code=400,
                     content=error_body("bad_request", "level must be an integer"),
                 )
+        if "stage" in payload and payload["stage"] is not None:
+            try:
+                stage = int(payload["stage"])
+            except (TypeError, ValueError):
+                return JSONResponse(
+                    status_code=400,
+                    content=error_body("bad_request", "stage must be an integer"),
+                )
 
     if not ffmpeg_available() or not engine.ready:
         return JSONResponse(
@@ -188,7 +197,7 @@ async def create_session(request: Request):
 
     conn = get_conn()
     try:
-        return start_session(conn, level=level)
+        return start_session(conn, level=level, stage=stage)
     except SessionError as exc:
         return JSONResponse(
             status_code=exc.status,

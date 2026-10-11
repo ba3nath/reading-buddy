@@ -60,7 +60,11 @@ def build_fixed_queue(conn: sqlite3.Connection, level: int, length: int) -> list
     return queue
 
 
-def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[str, Any]:
+def start_session(
+    conn: sqlite3.Connection,
+    level: int | None = None,
+    stage: int | None = None,
+) -> dict[str, Any]:
     settings = load_settings()
     raw_level = level if level is not None else settings.get("level", 1)
     target_level = config.normalize_difficulty(raw_level)
@@ -81,21 +85,26 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     if mode not in ("beginner", "strict"):
         mode = "beginner"
     by_diff = settings.get("stage_by_difficulty") or {}
-    stage = config.normalize_stage(
-        by_diff.get(str(target_level), settings.get("stage", 1))
-    )
+    if stage is not None:
+        chosen_stage = config.normalize_stage(stage)
+    else:
+        chosen_stage = config.normalize_stage(
+            by_diff.get(str(target_level), settings.get("stage", 1))
+        )
     # Persist which difficulty/set this Start is playing.
     if (
         config.normalize_difficulty(settings.get("level", 1)) != target_level
-        or config.normalize_stage(settings.get("stage", 1)) != stage
+        or config.normalize_stage(settings.get("stage", 1)) != chosen_stage
+        or config.normalize_stage(by_diff.get(str(target_level), 1)) != chosen_stage
     ):
         settings = dict(settings)
         settings["level"] = target_level
-        settings["stage"] = stage
+        settings["stage"] = chosen_stage
         if not isinstance(settings.get("stage_by_difficulty"), dict):
             settings["stage_by_difficulty"] = config.default_stage_by_difficulty()
-        settings["stage_by_difficulty"][str(target_level)] = stage
+        settings["stage_by_difficulty"][str(target_level)] = chosen_stage
         save_settings(settings)
+    stage = chosen_stage
 
     abandon_open_sessions(conn)
     try:

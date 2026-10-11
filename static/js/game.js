@@ -90,6 +90,7 @@ const state = {
   stars: 0,
   level: 1,
   stage: 1,
+  stageByDifficulty: { 1: 1, 2: 1, 3: 1, 4: 1 },
   difficultyLabel: "",
   buddy: "krishna",
   closeAgainPending: false,
@@ -696,11 +697,35 @@ async function boot() {
       quest_label: "Finish today's reading",
       badges: [],
     });
+    markCurrentSets(settings);
     setState("home");
     setMessage("");
   } catch {
     setState("boot-error");
   }
+}
+
+function markCurrentSets(settings) {
+  const incoming = settings?.stage_by_difficulty;
+  if (incoming && typeof incoming === "object") {
+    const next = { ...state.stageByDifficulty };
+    for (const [key, val] of Object.entries(incoming)) {
+      const n = Number(val);
+      if (n >= 1 && n <= 5) next[Number(key)] = n;
+    }
+    state.stageByDifficulty = next;
+  } else if (settings?.stage != null && settings?.level != null) {
+    state.stageByDifficulty = {
+      ...state.stageByDifficulty,
+      [Number(settings.level)]: Number(settings.stage) || 1,
+    };
+  }
+  document.querySelectorAll("[data-stage-pick]").forEach((btn) => {
+    const diff = Number(btn.dataset.levelPick);
+    const stage = Number(btn.dataset.stagePick);
+    const current = Number(state.stageByDifficulty[diff]) || 1;
+    btn.classList.toggle("is-current", stage === current);
+  });
 }
 
 async function chooseBuddy(name) {
@@ -761,16 +786,17 @@ async function continueSession() {
   await showListen();
 }
 
-async function startSession(level) {
+async function startSession(level, stage) {
   clearReadAgain();
   clearPhraseScore();
   state.paused = false;
   setMessage("Starting…");
   setMicEnabled(false);
+  const payload = {};
+  if (level != null && Number.isFinite(level)) payload.level = level;
+  if (stage != null && Number.isFinite(stage)) payload.stage = stage;
   const body =
-    level != null && Number.isFinite(level)
-      ? JSON.stringify({ level })
-      : undefined;
+    Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined;
   const data = await api("/api/sessions", {
     method: "POST",
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -793,6 +819,11 @@ async function startSession(level) {
   state.stars = 0;
   state.level = data.level;
   state.stage = Number(data.stage) || 1;
+  markCurrentSets({
+    level: data.level,
+    stage: state.stage,
+    stage_by_difficulty: { [String(data.level)]: state.stage },
+  });
   state.difficultyLabel =
     data.stage_label ||
     data.difficulty_label ||
@@ -1159,6 +1190,15 @@ async function finishSession() {
         highlightNew: data.play.new_badges || [],
       });
     }
+    if (data.level_after != null && data.stage_after != null) {
+      markCurrentSets({
+        level: data.level_after,
+        stage: data.stage_after,
+        stage_by_difficulty: {
+          [String(data.level_after)]: data.stage_after,
+        },
+      });
+    }
     syncBuddyAnim();
     if (state.replay.length) {
       setTimeout(() => startReplay(), 1100);
@@ -1231,10 +1271,13 @@ function finishReplay() {
 function wire() {
   document.querySelectorAll("[data-start]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const raw = btn.dataset.levelPick;
+      const rawLevel = btn.dataset.levelPick;
+      const rawStage = btn.dataset.stagePick;
       const level =
-        raw === undefined || raw === "" ? null : Number(raw);
-      startSession(level).catch((err) => {
+        rawLevel === undefined || rawLevel === "" ? null : Number(rawLevel);
+      const stage =
+        rawStage === undefined || rawStage === "" ? null : Number(rawStage);
+      startSession(level, stage).catch((err) => {
         console.error(err);
         setMessage(err.message || "Could not start");
         setState("home");

@@ -161,10 +161,10 @@ def test_start_primary_and_more_levels():
     assert 'class="btn primary" data-start>Start</button>' in HTML
     assert "more-levels" in HTML
     assert "Pick a difficulty" in HTML
-    assert 'data-level-pick="1">Words</button>' in HTML
-    assert 'data-level-pick="2">Phrases</button>' in HTML
-    assert 'data-level-pick="3">Rhymes</button>' in HTML
-    assert 'data-level-pick="4">Stories</button>' in HTML
+    assert "Words" in HTML and 'data-level-pick="1" data-stage-pick="1"' in HTML
+    assert "Phrases" in HTML and 'data-level-pick="2" data-stage-pick="1"' in HTML
+    assert "Rhymes" in HTML and 'data-level-pick="3" data-stage-pick="1"' in HTML
+    assert "Stories" in HTML and 'data-level-pick="4" data-stage-pick="1"' in HTML
     # Primary Start has no level pick — uses saved difficulty.
     assert 'class="btn primary" data-start data-level-pick' not in HTML
 

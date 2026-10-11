@@ -109,8 +109,11 @@ def test_ui_exposes_five_sets_copy():
     html = Path("static/index.html").read_text(encoding="utf-8")
     js = Path("static/js/game.js").read_text(encoding="utf-8")
     parent = Path("static/parent.html").read_text(encoding="utf-8")
-    assert "Each has 5 sets" in html
+    assert "Tap a set (1–5)" in html or "Tap a set (1-5)" in html
+    assert "data-stage-pick" in html
+    assert html.count('data-stage-pick="') == 20  # 4 difficulties × 5 sets
     assert "stage_label" in js
+    assert "markCurrentSets" in js
     assert 'name="stage"' in parent
     assert "Set 1 of 5" in parent
 
@@ -123,3 +126,18 @@ def test_parent_can_set_stage(client, tmp_env):
     assert body["level"] == 2
     assert body["stage"] == 4
     assert body["stage_by_difficulty"]["2"] == 4
+
+
+def test_session_create_accepts_stage(client, tmp_env):
+    res = client.post("/api/sessions", json={"level": 1, "stage": 3})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["level"] == 1
+    assert body["stage"] == 3
+    assert body["stage_label"] == "Words · Set 3/5"
+    from app.db import load_settings
+
+    settings = load_settings()
+    assert settings["level"] == 1
+    assert settings["stage"] == 3
+    assert settings["stage_by_difficulty"]["1"] == 3

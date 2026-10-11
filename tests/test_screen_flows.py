@@ -103,11 +103,11 @@ def test_flow_home_start():
     assert "syncHomeControls()" in start
     wire = _fn("wire")
     assert "data-start" in wire
-    assert "startSession(level)" in wire
+    assert "startSession(level, stage)" in wire
 
 
 def test_flow_home_difficulty():
-    """Pick a difficulty exposes Words / Phrases / Rhymes / Stories."""
+    """Pick a difficulty exposes Words / Phrases / Rhymes / Stories with Set 1–5."""
     assert "Pick a difficulty" in HTML
     for n, label in (
         (1, "Words"),
@@ -115,13 +115,22 @@ def test_flow_home_difficulty():
         (3, "Rhymes"),
         (4, "Stories"),
     ):
-        assert f'data-level-pick="{n}">{label}</button>' in HTML
-    # Wire passes numeric pick into startSession.
+        assert f'data-difficulty="{n}"' in HTML
+        assert f">{label}</p>" in HTML or f">{label}</" in HTML
+        for stage in range(1, 6):
+            assert (
+                f'data-level-pick="{n}" data-stage-pick="{stage}"' in HTML
+            ), f"missing {label} Set {stage}"
+    # Wire passes difficulty + set into startSession.
     wire = _fn("wire")
     assert "dataset.levelPick" in wire
-    assert "Number(raw)" in wire
-    # Compact 2×2 so all four fit on a phone without scrolling past Start.
-    assert "grid-template-columns: 1fr 1fr" in CSS
+    assert "dataset.stagePick" in wire
+    assert "startSession(level, stage)" in wire
+    start = _fn("startSession")
+    assert "payload.stage" in start
+    assert "markCurrentSets" in JS
+    # Five set buttons per difficulty in a single row.
+    assert "grid-template-columns: repeat(5, minmax(0, 1fr))" in CSS
     assert "details.more-levels" in wire
     assert "scrollIntoView" in wire
 
