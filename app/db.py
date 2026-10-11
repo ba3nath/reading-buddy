@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   level INTEGER NOT NULL,
   planned_count INTEGER NOT NULL,
   planned_item_ids TEXT NOT NULL,
+  play_item_ids TEXT NOT NULL DEFAULT '[]',
   correct_count INTEGER NOT NULL DEFAULT 0,
   stars INTEGER NOT NULL DEFAULT 0,
   low_session INTEGER NOT NULL DEFAULT 0 CHECK (low_session IN (0, 1)),
@@ -76,10 +77,13 @@ CREATE TABLE IF NOT EXISTS attempts (
   result TEXT NOT NULL CHECK (result IN ('correct', 'close', 'missed', 'retry', 'skipped')),
   counts_for_session INTEGER NOT NULL CHECK (counts_for_session IN (0, 1)),
   is_replay INTEGER NOT NULL DEFAULT 0 CHECK (is_replay IN (0, 1)),
+  queue_index INTEGER,
+  replay_word TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_attempts_session ON attempts (session_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_item_created ON attempts (item_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_attempts_queue ON attempts (session_id, queue_index);
 
 CREATE TABLE IF NOT EXISTS mastery (
   item_id INTEGER PRIMARY KEY REFERENCES items(id),
@@ -97,8 +101,26 @@ CREATE INDEX IF NOT EXISTS idx_mastery_next_review ON mastery (next_review_on);
 """
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, decl: str) -> None:
+    cols = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
+    # Additive migrations for DBs created before pre-M3 / M3 columns.
+    _ensure_column(conn, "sessions", "play_item_ids", "TEXT NOT NULL DEFAULT '[]'")
+    _ensure_column(conn, "attempts", "queue_index", "INTEGER")
+    _ensure_column(conn, "attempts", "replay_word", "TEXT NOT NULL DEFAULT ''")
+    # Backfill play_item_ids from planned when empty.
+    conn.execute(
+        """
+        UPDATE sessions
+        SET play_item_ids = planned_item_ids
+        WHERE play_item_ids IS NULL OR play_item_ids = '' OR play_item_ids = '[]'
+        """
+    )
     conn.commit()
 
 

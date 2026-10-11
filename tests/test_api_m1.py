@@ -6,14 +6,11 @@ from pathlib import Path
 
 from app.config import MSG_CLOSE, MSG_MISS, MSG_RETRY, MSG_SKIP
 from app.whisper_engine import AttemptTranscript, TranscriptWord
+from tests.helpers import post_attempt
 
 
-def _post_attempt(client, session_id: int, item_id: int, audio_bytes: bytes, filename="take.wav"):
-    return client.post(
-        f"/api/sessions/{session_id}/attempts",
-        data={"item_id": str(item_id), "phase": "read"},
-        files={"audio": (filename, audio_bytes, "audio/wav")},
-    )
+def _post_attempt(client, session_id: int, item_id: int, audio_bytes: bytes, *, qi: int = 0):
+    return post_attempt(client, session_id, item_id, audio_bytes, queue_index=qi)
 
 
 def test_health(client):
@@ -23,6 +20,7 @@ def test_health(client):
     assert body["whisper"] is True
     assert body["ffmpeg"] is True
     assert body["offline"] is True
+    assert "audio" in body
 
 
 def test_index(client):
@@ -76,8 +74,8 @@ def test_attempt_correct(client, whisper_double, tone_wav, assert_attempt_shape)
 
 def test_attempt_close(client, whisper_double, tone_wav, assert_attempt_shape):
     start = client.post("/api/sessions", json={"level": 1}).json()
-    # Find cat if present, else first item
     item = next((i for i in start["items"] if i["text"] == "cat"), start["items"][0])
+    qi = start["items"].index(item)
     heard = "cot" if item["text"] == "cat" else item["text"]
     conf = 0.4 if heard == item["text"] else 0.9
     whisper_double.set_transcript(
@@ -87,7 +85,9 @@ def test_attempt_close(client, whisper_double, tone_wav, assert_attempt_shape):
             no_speech_prob=0.05,
         )
     )
-    res = _post_attempt(client, start["session_id"], item["id"], tone_wav.read_bytes())
+    res = _post_attempt(
+        client, start["session_id"], item["id"], tone_wav.read_bytes(), qi=qi
+    )
     assert res.status_code == 200
     body = res.json()
     assert_attempt_shape(body)
@@ -134,13 +134,14 @@ def test_attempt_retry_empty_audio(client, tmp_env, assert_attempt_shape):
     assert body["words_total"] == 1
     row = tmp_env["conn"].execute(
         """
-        SELECT counts_for_session, result FROM attempts
+        SELECT counts_for_session, result, queue_index FROM attempts
         WHERE session_id = ? AND item_id = ?
         """,
         (start["session_id"], item["id"]),
     ).fetchone()
     assert row["result"] == "retry"
     assert row["counts_for_session"] == 0
+    assert row["queue_index"] == 0
 
 
 def test_three_retries_skip(client, tmp_env, assert_attempt_shape):
@@ -202,10 +203,13 @@ def test_phase_replay_before_complete_rejected(client, tone_wav, assert_error_en
     """Replay is M2-only after complete; open sessions still reject phase=replay."""
     start = client.post("/api/sessions", json={"level": 1}).json()
     item = start["items"][0]
-    res = client.post(
-        f"/api/sessions/{start['session_id']}/attempts",
-        data={"item_id": str(item["id"]), "phase": "replay"},
-        files={"audio": ("take.wav", tone_wav.read_bytes(), "audio/wav")},
+    res = post_attempt(
+        client,
+        start["session_id"],
+        item["id"],
+        tone_wav.read_bytes(),
+        phase="replay",
+        word=item["text"],
     )
     assert res.status_code == 400
     assert_error_envelope(res.json(), code="bad_request")
@@ -233,7 +237,7 @@ def test_repost_after_correct_rejected(client, whisper_double, tone_wav, assert_
     assert first.json()["stars_total"] == 1
     second = _post_attempt(client, start["session_id"], item["id"], tone_wav.read_bytes())
     assert second.status_code == 409
-    assert_error_envelope(second.json(), code="bad_request")
+    assert_error_envelope(second.json(), code="already_resolved")
 
 
 def test_complete_abandoned_rejected(client, assert_error_envelope):

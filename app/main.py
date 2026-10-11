@@ -1,4 +1,4 @@
-"""Reading Buddy FastAPI app — Milestones 1–2."""
+"""Reading Buddy FastAPI app — Milestones 1–2 (+ pre-M3 locks)."""
 
 from __future__ import annotations
 
@@ -93,6 +93,8 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_handler(request: Request, exc: StarletteHTTPException):
+    # Bare Starlette 409s are treated as session_closed; SessionError paths
+    # set their own codes (session_closed vs already_resolved).
     code = {
         400: "bad_request",
         404: "not_found",
@@ -184,12 +186,22 @@ async def create_session(request: Request):
         )
 
 
+def _score_target_text(
+    item_text: str, *, phase: str, replay_word: str
+) -> str:
+    if phase == "replay":
+        return (replay_word or "").strip() or item_text
+    return item_text
+
+
 @app.post("/api/sessions/{session_id}/attempts")
 async def post_attempt(
     session_id: int,
     item_id: int = Form(...),
     phase: str = Form(...),
     audio: UploadFile = File(...),
+    queue_index: int | None = Form(None),
+    word: str = Form(""),
 ):
     if phase not in ("read", "replay"):
         return JSONResponse(
@@ -203,6 +215,8 @@ async def post_attempt(
     conn = get_conn()
     settings = load_settings()
     keep_audio = bool(settings.get("keep_audio", False))
+    mode = "beginner"  # M1/M2; M3 uses settings.mode
+    replay_word = (word or "").strip()
 
     if not ffmpeg_available() or not engine.ready:
         return JSONResponse(
@@ -210,14 +224,25 @@ async def post_attempt(
             content=error_body("unavailable", "Whisper or ffmpeg unavailable"),
         )
 
-    # Queue / session / resolved-item checks before ffmpeg or Whisper.
+    # Queue / session / resolved-slot checks before ffmpeg or Whisper.
     try:
-        item = validate_attempt_access(conn, session_id, item_id, phase=phase)
+        item = validate_attempt_access(
+            conn,
+            session_id,
+            item_id,
+            phase=phase,
+            queue_index=queue_index,
+            replay_word=replay_word,
+        )
     except SessionError as exc:
         return JSONResponse(
             status_code=exc.status,
             content=error_body(exc.code, exc.message),
         )
+
+    target_text = _score_target_text(
+        item["text"], phase=phase, replay_word=replay_word
+    )
 
     webm_path, wav_path = new_temp_paths(".webm")
     try:
@@ -227,10 +252,17 @@ async def post_attempt(
         write_bytes(webm_path, data)
 
         if len(data) == 0:
-            match = score_attempt(item["text"], "", mode="beginner", force_retry=True)
+            match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
                 return apply_attempt(
-                    conn, session_id, item_id, match, phase=phase, is_silence_path=True
+                    conn,
+                    session_id,
+                    item_id,
+                    match,
+                    phase=phase,
+                    is_silence_path=True,
+                    queue_index=queue_index,
+                    replay_word=replay_word,
                 )
             except SessionError as exc:
                 return JSONResponse(
@@ -247,10 +279,17 @@ async def post_attempt(
             )
 
         if is_silence(wav_path):
-            match = score_attempt(item["text"], "", mode="beginner", force_retry=True)
+            match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
                 return apply_attempt(
-                    conn, session_id, item_id, match, phase=phase, is_silence_path=True
+                    conn,
+                    session_id,
+                    item_id,
+                    match,
+                    phase=phase,
+                    is_silence_path=True,
+                    queue_index=queue_index,
+                    replay_word=replay_word,
                 )
             except SessionError as exc:
                 return JSONResponse(
@@ -259,7 +298,7 @@ async def post_attempt(
                 )
 
         try:
-            transcript = engine.transcribe(wav_path, initial_prompt=item["text"])
+            transcript = engine.transcribe(wav_path, initial_prompt=target_text)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Whisper failed")
             return JSONResponse(
@@ -271,10 +310,17 @@ async def post_attempt(
             transcript.no_speech_prob >= config.NO_SPEECH_PROB_MAX
             or not (transcript.transcript or "").strip()
         ):
-            match = score_attempt(item["text"], "", mode="beginner", force_retry=True)
+            match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
                 return apply_attempt(
-                    conn, session_id, item_id, match, phase=phase, is_silence_path=True
+                    conn,
+                    session_id,
+                    item_id,
+                    match,
+                    phase=phase,
+                    is_silence_path=True,
+                    queue_index=queue_index,
+                    replay_word=replay_word,
                 )
             except SessionError as exc:
                 return JSONResponse(
@@ -284,15 +330,22 @@ async def post_attempt(
 
         confidences = [w.probability for w in transcript.words]
         match = score_attempt(
-            item["text"],
+            target_text,
             transcript.transcript,
             confidences if confidences else None,
-            mode="beginner",
+            mode=mode,
         )
         if match.result == "retry":
             try:
                 return apply_attempt(
-                    conn, session_id, item_id, match, phase=phase, is_silence_path=True
+                    conn,
+                    session_id,
+                    item_id,
+                    match,
+                    phase=phase,
+                    is_silence_path=True,
+                    queue_index=queue_index,
+                    replay_word=replay_word,
                 )
             except SessionError as exc:
                 return JSONResponse(
@@ -301,7 +354,15 @@ async def post_attempt(
                 )
 
         try:
-            return apply_attempt(conn, session_id, item_id, match, phase=phase)
+            return apply_attempt(
+                conn,
+                session_id,
+                item_id,
+                match,
+                phase=phase,
+                queue_index=queue_index,
+                replay_word=replay_word,
+            )
         except SessionError as exc:
             return JSONResponse(
                 status_code=exc.status,

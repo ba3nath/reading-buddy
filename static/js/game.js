@@ -218,14 +218,18 @@ async function onMicTap() {
 async function onRecordComplete(blob) {
   setState("scoring");
   setMessage("Listening…");
-  const item =
-    state.phase === "replay"
-      ? { id: currentReplay().item_id, text: currentReplay().text }
-      : currentItem();
   const form = new FormData();
-  form.append("item_id", String(item.id));
   form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");
+  if (state.phase === "replay") {
+    const entry = currentReplay();
+    form.append("item_id", String(entry.item_id));
+    form.append("word", entry.word || entry.text);
+  } else {
+    const item = currentItem();
+    form.append("item_id", String(item.id));
+    form.append("queue_index", String(state.index));
+  }
   try {
     const result = await api(`/api/sessions/${state.sessionId}/attempts`, {
       method: "POST",
@@ -234,6 +238,17 @@ async function onRecordComplete(blob) {
     handleAttempt(result);
   } catch (err) {
     console.error(err);
+    const code = err.body?.error?.code;
+    if (code === "session_closed") {
+      setMessage("That round already ended. Tap Play again when you are ready.");
+      setState("session-end");
+      return;
+    }
+    if (code === "already_resolved") {
+      setMessage("We already scored that one — moving on.");
+      setTimeout(() => advance(), 900);
+      return;
+    }
     setMessage("Something went quiet on our side. Try that word again.");
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();

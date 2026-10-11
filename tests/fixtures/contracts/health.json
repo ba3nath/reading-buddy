@@ -1,5 +1,6 @@
 {
   "whisper": true,
   "ffmpeg": true,
-  "offline": true
+  "offline": true,
+  "audio": true
 }

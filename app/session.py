@@ -1,4 +1,4 @@
-"""Session queue, stars, close second-take, three-retry skip (M1)."""
+"""Session queue, stars, close second-take, three-retry skip, slot locks."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from app.db import (
     local_now_iso,
     touch_mastery,
 )
-from app.matching import MatchResult, tokenize
+from app.matching import MatchResult, normalize_text, tokenize
 
 
 class SessionError(Exception):
@@ -58,13 +58,13 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     target_level = int(level if level is not None else settings.get("level", 1))
     if target_level < 1 or target_level > 7:
         raise SessionError("bad_request", "level must be between 1 and 7", 400)
-    # M1 content is levels 1–3
+    # M1/M2 content is levels 1–3; M3 lifts this.
     if target_level > 3:
         raise SessionError("bad_request", "Milestone 1 supports levels 1–3 only", 400)
 
     length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
     length = max(5, min(20, length))
-    mode = "beginner"  # M1 product path
+    mode = "beginner"  # M1/M2 product path; M3 reads settings.mode
 
     abandon_open_sessions(conn)
     queue = build_fixed_queue(conn, target_level, length)
@@ -76,14 +76,15 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
         """
         INSERT INTO sessions (
           started_at, ended_at, mode, level, planned_count, planned_item_ids,
-          correct_count, stars, low_session, level_after, completed
-        ) VALUES (?, NULL, ?, ?, ?, ?, 0, 0, 0, NULL, 0)
+          play_item_ids, correct_count, stars, low_session, level_after, completed
+        ) VALUES (?, NULL, ?, ?, ?, ?, ?, 0, 0, 0, NULL, 0)
         """,
         (
             local_now_iso(),
             mode,
             target_level,
             length,
+            json.dumps(planned_ids),
             json.dumps(planned_ids),
         ),
     )
@@ -101,14 +102,50 @@ def planned_ids(session: sqlite3.Row) -> list[int]:
     return list(json.loads(session["planned_item_ids"]))
 
 
-def consecutive_retries(conn: sqlite3.Connection, session_id: int, item_id: int) -> int:
+def play_ids(session: sqlite3.Row) -> list[int]:
+    raw = session["play_item_ids"] if "play_item_ids" in session.keys() else None
+    if not raw or raw == "[]":
+        return planned_ids(session)
+    return list(json.loads(raw))
+
+
+def set_play_ids(conn: sqlite3.Connection, session_id: int, ids: list[int]) -> None:
+    conn.execute(
+        "UPDATE sessions SET play_item_ids = ? WHERE id = ?",
+        (json.dumps(ids), session_id),
+    )
+
+
+def word_audio_slug(conn: sqlite3.Connection, word: str, fallback_slug: str) -> str:
+    """Prefer a matching kind=word item slug; else a safe slug from the word."""
+    norm = normalize_text(word)
+    if not norm:
+        return fallback_slug
+    row = conn.execute(
+        """
+        SELECT slug FROM items
+        WHERE normalized = ? AND kind = 'word'
+        ORDER BY id ASC LIMIT 1
+        """,
+        (norm,),
+    ).fetchone()
+    if row:
+        return row["slug"]
+    # Safe slug: letters/digits/hyphen only
+    slug = "".join(ch if ch.isalnum() else "-" for ch in norm).strip("-")
+    return slug or fallback_slug
+
+
+def consecutive_retries(
+    conn: sqlite3.Connection, session_id: int, queue_index: int
+) -> int:
     rows = conn.execute(
         """
         SELECT result FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 0
+        WHERE session_id = ? AND queue_index = ? AND is_replay = 0
         ORDER BY id DESC
         """,
-        (session_id, item_id),
+        (session_id, queue_index),
     ).fetchall()
     count = 0
     for row in rows:
@@ -119,38 +156,47 @@ def consecutive_retries(conn: sqlite3.Connection, session_id: int, item_id: int)
     return count
 
 
-def has_provisional_close(conn: sqlite3.Connection, session_id: int, item_id: int) -> bool:
+def has_provisional_close(
+    conn: sqlite3.Connection, session_id: int, queue_index: int
+) -> bool:
     row = conn.execute(
         """
         SELECT id, result, counts_for_session FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 0 AND counts_for_session = 1
+        WHERE session_id = ? AND queue_index = ? AND is_replay = 0
+          AND counts_for_session = 1
         ORDER BY id DESC LIMIT 1
         """,
-        (session_id, item_id),
+        (session_id, queue_index),
     ).fetchone()
     return bool(row and row["result"] == "close")
 
 
-def flip_prior_lock(conn: sqlite3.Connection, session_id: int, item_id: int) -> None:
+def flip_prior_lock(
+    conn: sqlite3.Connection, session_id: int, queue_index: int
+) -> None:
     conn.execute(
         """
         UPDATE attempts
         SET counts_for_session = 0
-        WHERE session_id = ? AND item_id = ? AND counts_for_session = 1 AND is_replay = 0
+        WHERE session_id = ? AND queue_index = ? AND counts_for_session = 1
+          AND is_replay = 0
         """,
-        (session_id, item_id),
+        (session_id, queue_index),
     )
 
 
-def item_already_resolved(conn: sqlite3.Connection, session_id: int, item_id: int) -> bool:
-    """True when this planned item is locked or skipped (no further read attempts)."""
+def slot_already_resolved(
+    conn: sqlite3.Connection, session_id: int, queue_index: int
+) -> bool:
+    """True when this play-queue slot is locked or skipped (no further read attempts)."""
     skipped = conn.execute(
         """
         SELECT 1 FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 0 AND result = 'skipped'
+        WHERE session_id = ? AND queue_index = ? AND is_replay = 0
+          AND result = 'skipped'
         LIMIT 1
         """,
-        (session_id, item_id),
+        (session_id, queue_index),
     ).fetchone()
     if skipped:
         return True
@@ -158,21 +204,19 @@ def item_already_resolved(conn: sqlite3.Connection, session_id: int, item_id: in
     scored = conn.execute(
         """
         SELECT result, counts_for_session FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 0
+        WHERE session_id = ? AND queue_index = ? AND is_replay = 0
           AND result IN ('correct', 'close', 'missed')
         ORDER BY id ASC
         """,
-        (session_id, item_id),
+        (session_id, queue_index),
     ).fetchall()
     if not scored:
         return False
-    # Second take already happened (close then replace).
     if len(scored) >= 2:
         return True
     only = scored[0]
     if only["result"] in ("correct", "missed"):
         return True
-    # Single provisional close still awaiting one immediate re-record.
     if only["result"] == "close" and only["counts_for_session"] == 1:
         return False
     return True
@@ -199,55 +243,66 @@ def missed_replay_entries(conn: sqlite3.Connection, session_id: int) -> list[dic
             for ws in scores:
                 if ws.get("result") != "missed":
                     continue
-                word = ws.get("word") or ""
-                key = (int(row["item_id"]), word)
+                word = (ws.get("word") or "").strip()
+                if not word:
+                    continue
+                key = (int(row["item_id"]), normalize_text(word))
                 if key in seen:
                     continue
                 seen.add(key)
-                # Single-word items: slug matches; multi-word later may differ.
-                slug = row["slug"] if len(scores) == 1 else row["slug"]
+                slug = word_audio_slug(conn, word, row["slug"])
                 entries.append(
                     {
                         "item_id": int(row["item_id"]),
-                        "text": word or row["text"],
+                        "text": word,
                         "audio_url": f"/api/audio/{slug}",
+                        "word": word,
                     }
                 )
         else:
-            key = (int(row["item_id"]), row["text"])
+            word = row["text"]
+            key = (int(row["item_id"]), normalize_text(word))
             if key in seen:
                 continue
             seen.add(key)
+            slug = word_audio_slug(conn, word, row["slug"])
             entries.append(
                 {
                     "item_id": int(row["item_id"]),
-                    "text": row["text"],
-                    "audio_url": f"/api/audio/{row['slug']}",
+                    "text": word,
+                    "audio_url": f"/api/audio/{slug}",
+                    "word": word,
                 }
             )
     return entries
 
 
-def replay_already_done(conn: sqlite3.Connection, session_id: int, item_id: int) -> bool:
-    """True when a non-retry replay take already locked this item."""
+def replay_already_done(
+    conn: sqlite3.Connection, session_id: int, item_id: int, word: str
+) -> bool:
+    """True when a non-retry replay take already locked this item+word."""
+    norm = normalize_text(word)
     row = conn.execute(
         """
-        SELECT 1 FROM attempts
+        SELECT replay_word FROM attempts
         WHERE session_id = ? AND item_id = ? AND is_replay = 1
           AND result IN ('correct', 'close', 'missed')
-        LIMIT 1
         """,
         (session_id, item_id),
-    ).fetchone()
-    return bool(row)
+    ).fetchall()
+    for r in row:
+        if normalize_text(r["replay_word"] or "") == norm:
+            return True
+    return False
 
 
 def consecutive_replay_retries(
-    conn: sqlite3.Connection, session_id: int, item_id: int
+    conn: sqlite3.Connection, session_id: int, item_id: int, word: str
 ) -> int:
+    norm = normalize_text(word)
     rows = conn.execute(
         """
-        SELECT result FROM attempts
+        SELECT result, replay_word FROM attempts
         WHERE session_id = ? AND item_id = ? AND is_replay = 1
         ORDER BY id DESC
         """,
@@ -255,6 +310,8 @@ def consecutive_replay_retries(
     ).fetchall()
     count = 0
     for row in rows:
+        if normalize_text(row["replay_word"] or "") != norm:
+            continue
         if row["result"] == "retry":
             count += 1
         else:
@@ -268,6 +325,8 @@ def validate_attempt_access(
     item_id: int,
     *,
     phase: str = "read",
+    queue_index: int | None = None,
+    replay_word: str = "",
 ) -> sqlite3.Row:
     """Validate session/item for read or replay. Returns the items row."""
     session = get_session(conn, session_id)
@@ -285,17 +344,33 @@ def validate_attempt_access(
                 "Replay attempts are only allowed after session complete",
                 400,
             )
-        replay_ids = {e["item_id"] for e in missed_replay_entries(conn, session_id)}
-        if item_id not in replay_ids:
-            raise SessionError(
-                "not_found",
-                "Item is not on this session's replay list",
-                404,
-            )
-        if replay_already_done(conn, session_id, item_id):
+        word = (replay_word or "").strip()
+        if not word:
             raise SessionError(
                 "bad_request",
-                "Replay already completed for this item",
+                "Replay attempts require form field 'word'",
+                400,
+            )
+        replay_entries = missed_replay_entries(conn, session_id)
+        match_entry = next(
+            (
+                e
+                for e in replay_entries
+                if e["item_id"] == item_id
+                and normalize_text(e["text"]) == normalize_text(word)
+            ),
+            None,
+        )
+        if match_entry is None:
+            raise SessionError(
+                "not_found",
+                "Word is not on this session's replay list",
+                404,
+            )
+        if replay_already_done(conn, session_id, item_id, word):
+            raise SessionError(
+                "already_resolved",
+                "Replay already completed for this word",
                 409,
             )
         return item
@@ -304,14 +379,26 @@ def validate_attempt_access(
     if session["completed"] == 1 or session["ended_at"] is not None:
         raise SessionError("session_closed", "Session already closed", 409)
 
-    ids = planned_ids(session)
-    if item_id not in ids:
-        raise SessionError("not_found", "Item not in this session queue", 404)
-
-    if item_already_resolved(conn, session_id, item_id):
+    ids = play_ids(session)
+    if queue_index is None:
         raise SessionError(
             "bad_request",
-            "Item already scored or skipped in this session",
+            "Read attempts require form field 'queue_index'",
+            400,
+        )
+    if queue_index < 0 or queue_index >= len(ids):
+        raise SessionError("not_found", "queue_index out of play queue range", 404)
+    if ids[queue_index] != item_id:
+        raise SessionError(
+            "not_found",
+            "item_id does not match play queue at queue_index",
+            404,
+        )
+
+    if slot_already_resolved(conn, session_id, queue_index):
+        raise SessionError(
+            "already_resolved",
+            "Queue slot already scored or skipped in this session",
             409,
         )
     return item
@@ -325,14 +412,24 @@ def apply_attempt(
     *,
     phase: str = "read",
     is_silence_path: bool = False,
+    queue_index: int | None = None,
+    replay_word: str = "",
 ) -> dict[str, Any]:
     if phase not in ("read", "replay"):
         raise SessionError("bad_request", "phase must be read or replay", 400)
 
-    item = validate_attempt_access(conn, session_id, item_id, phase=phase)
+    item = validate_attempt_access(
+        conn,
+        session_id,
+        item_id,
+        phase=phase,
+        queue_index=queue_index,
+        replay_word=replay_word,
+    )
     session = get_session(conn, session_id)
     assert session is not None
     is_replay = 1 if phase == "replay" else 0
+    stored_replay_word = normalize_text(replay_word) if is_replay else ""
 
     words_total = match.words_total or len(tokenize(item["text"]))
     stars_total = int(session["stars"])
@@ -342,8 +439,9 @@ def apply_attempt(
     # Silence / retry / skip path
     if is_silence_path or match.result == "retry":
         if is_replay:
-            # Replay silence: retry kindly; do not skip or touch planned_count.
-            prior = consecutive_replay_retries(conn, session_id, item_id)
+            prior = consecutive_replay_retries(
+                conn, session_id, item_id, replay_word
+            )
             if prior + 1 >= config.MAX_RETRIES_PER_ITEM:
                 _insert_attempt(
                     conn,
@@ -355,6 +453,8 @@ def apply_attempt(
                     result="skipped",
                     counts_for_session=0,
                     is_replay=1,
+                    queue_index=None,
+                    replay_word=stored_replay_word,
                 )
                 touch_mastery(conn, item_id, "skipped")
                 conn.commit()
@@ -381,6 +481,8 @@ def apply_attempt(
                 result="retry",
                 counts_for_session=0,
                 is_replay=1,
+                queue_index=None,
+                replay_word=stored_replay_word,
             )
             touch_mastery(conn, item_id, "retry")
             conn.commit()
@@ -398,10 +500,11 @@ def apply_attempt(
                 "skipped": False,
             }
 
-        prior_retries = consecutive_retries(conn, session_id, item_id)
+        assert queue_index is not None
+        prior_retries = consecutive_retries(conn, session_id, queue_index)
         if prior_retries + 1 >= config.MAX_RETRIES_PER_ITEM:
-            if has_provisional_close(conn, session_id, item_id):
-                flip_prior_lock(conn, session_id, item_id)
+            if has_provisional_close(conn, session_id, queue_index):
+                flip_prior_lock(conn, session_id, queue_index)
             planned_count = max(0, planned_count - 1)
             conn.execute(
                 "UPDATE sessions SET planned_count = ? WHERE id = ?",
@@ -417,6 +520,8 @@ def apply_attempt(
                 result="skipped",
                 counts_for_session=0,
                 is_replay=0,
+                queue_index=queue_index,
+                replay_word="",
             )
             touch_mastery(conn, item_id, "skipped")
             conn.commit()
@@ -444,6 +549,8 @@ def apply_attempt(
             result="retry",
             counts_for_session=0,
             is_replay=0,
+            queue_index=queue_index,
+            replay_word="",
         )
         touch_mastery(conn, item_id, "retry")
         conn.commit()
@@ -474,9 +581,7 @@ def apply_attempt(
     message = config.MSG_CORRECT
 
     if is_replay:
-        # Replay: one non-retry take locks and advances. No close re-ask
-        # (again=false) — plan is "one more recording"; offering again=true
-        # then blocking the second POST via replay_already_done trapped the child.
+        # Replay: one non-retry take locks and advances. No close re-ask.
         stars_awarded = words_correct
         if result == "correct":
             message = config.MSG_CORRECT
@@ -492,8 +597,8 @@ def apply_attempt(
             (stars_total, session_id),
         )
     else:
-        # Close second-take detection (read phase)
-        replacing_close = has_provisional_close(conn, session_id, item_id)
+        assert queue_index is not None
+        replacing_close = has_provisional_close(conn, session_id, queue_index)
         if result == "close" and not replacing_close:
             again = True
             stars_awarded = 0
@@ -501,7 +606,7 @@ def apply_attempt(
             counts_for_session = 1
         else:
             if replacing_close:
-                flip_prior_lock(conn, session_id, item_id)
+                flip_prior_lock(conn, session_id, queue_index)
 
             stars_awarded = words_correct
             if item["hard"] == 1 and result == "correct" and not replacing_close:
@@ -539,6 +644,8 @@ def apply_attempt(
         result=result,
         counts_for_session=counts_for_session,
         is_replay=is_replay,
+        queue_index=queue_index if not is_replay else None,
+        replay_word=stored_replay_word,
     )
     touch_mastery(conn, item_id, result)
     conn.commit()
@@ -569,13 +676,15 @@ def _insert_attempt(
     result: str,
     counts_for_session: int,
     is_replay: int,
+    queue_index: int | None,
+    replay_word: str,
 ) -> int:
     cur = conn.execute(
         """
         INSERT INTO attempts (
           session_id, item_id, heard, confidence, word_scores, result,
-          counts_for_session, is_replay, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          counts_for_session, is_replay, queue_index, replay_word, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             session_id,
@@ -586,6 +695,8 @@ def _insert_attempt(
             result,
             counts_for_session,
             is_replay,
+            queue_index,
+            replay_word or "",
             local_now_iso(),
         ),
     )
@@ -596,7 +707,6 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
     session = get_session(conn, session_id)
     if session is None:
         raise SessionError("not_found", "Unknown session", 404)
-    # Abandoned (ended_at set, completed=0) and already-completed both reject.
     if session["completed"] == 1 or session["ended_at"] is not None:
         raise SessionError("session_closed", "Session already closed", 409)
 
@@ -623,4 +733,3 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "planned_count": int(session["planned_count"]),
         "replay": replay,
     }
-
