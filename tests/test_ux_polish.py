@@ -94,6 +94,26 @@ def test_mic_hear_you_feedback_no_timer():
     assert "buzzer" not in JS.lower()
 
 
+def test_mic_ready_and_done_are_visually_distinct():
+    """Tap to read (go) vs Tap when done (stop) must not share the same color language."""
+    assert 'data-mic-mode="ready"' in HTML
+    assert 'dataset.micMode = done ? "done" : "ready"' in JS
+    assert "Tap when done" in JS
+    assert "Tap to read" in JS
+    # Ready = meadow green; done/recording = coral.
+    assert "--meadow" in CSS
+    assert "body[data-state=\"recording\"] .mic" in CSS or "body[data-state='recording'] .mic" in CSS
+    assert '.mic[data-mic-mode="done"]' in CSS
+    assert "var(--meadow" in CSS
+    assert "var(--coral" in CSS
+    # Recording pulse must use coral, not the ready green.
+    assert "mic-pulse-done" in CSS
+    assert "rgba(240, 106, 69" in CSS
+    ready_block = CSS.split(".mic {")[1].split("body[data-state=")[0]
+    assert "var(--meadow)" in ready_block or "var(--meadow-deep)" in ready_block
+    assert "var(--coral)" not in ready_block.split(".mic:disabled")[0]
+
+
 def test_celebration_and_encourage_motion():
     assert "star-burst" in HTML or "data-star-burst" in HTML
     assert "popStarBurst" in JS

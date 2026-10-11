@@ -207,6 +207,11 @@ function setMessage(text) {
 function setMicLabel(text) {
   const label = $(".mic-label");
   if (label) label.textContent = text;
+  const btn = $("[data-mic]");
+  if (!btn) return;
+  const done = /when done/i.test(text || "");
+  btn.dataset.micMode = done ? "done" : "ready";
+  btn.setAttribute("aria-label", done ? "Stop recording" : "Start reading");
 }
 
 function setReadAgain(info) {

@@ -497,18 +497,24 @@ body[data-state="session-replay"] .word-art {
   min-width: 200px;
   min-height: 72px;
   padding: 0.95rem 1.8rem;
-  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
-  color: white;
+  /* Ready: cool meadow green = "start / go" */
+  background: linear-gradient(180deg, var(--meadow), var(--meadow-deep));
+  color: #fffdf7;
   font: inherit;
   font-weight: 800;
   font-size: 1.15rem;
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 28px rgba(63, 154, 95, 0.28);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.25s ease,
+    color 0.2s ease;
 }
 
 .mic:disabled {
@@ -521,17 +527,30 @@ body[data-state="session-replay"] .word-art {
   transform: translateY(-2px);
 }
 
-body[data-state="recording"] .mic {
-  animation: mic-pulse 1s ease-in-out infinite;
+/* Recording: warm coral = "finish / stop" — clearly not the same as ready. */
+body[data-state="recording"] .mic,
+.mic[data-mic-mode="done"] {
+  background: linear-gradient(180deg, var(--coral), var(--coral-deep));
+  color: #fff8f4;
+  box-shadow: 0 12px 28px rgba(240, 106, 69, 0.35);
+  animation: mic-pulse-done 1s ease-in-out infinite;
 }
 
-@keyframes mic-pulse {
+body[data-state="recording"] .mic .mic-icon,
+.mic[data-mic-mode="done"] .mic-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+  background: #fff8f4;
+}
+
+@keyframes mic-pulse-done {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(47, 111, 94, 0.4);
+    box-shadow: 0 0 0 0 rgba(240, 106, 69, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 18px rgba(47, 111, 94, 0);
+    box-shadow: 0 0 0 18px rgba(240, 106, 69, 0);
   }
 }
 
@@ -539,8 +558,9 @@ body[data-state="recording"] .mic {
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  background: #fff;
+  background: #fffdf7;
   display: inline-block;
+  transition: border-radius 0.2s ease, width 0.2s ease, height 0.2s ease;
 }
 
 .mic-particles {
@@ -559,7 +579,7 @@ body[data-state="recording"] .mic-particles {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(168, 213, 197, 0.85);
+  background: rgba(255, 143, 107, 0.9);
   animation: particle-float 1.4s ease-in-out infinite;
 }
 
@@ -598,7 +618,7 @@ body[data-state="recording"] .mic-particles {
   animation-delay: 0.55s;
   width: 6px;
   height: 6px;
-  background: rgba(244, 194, 122, 0.9);
+  background: rgba(255, 210, 106, 0.95);
 }
 
 @keyframes particle-float {
