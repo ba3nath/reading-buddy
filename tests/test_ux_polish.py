@@ -12,7 +12,7 @@ JS = (ROOT / "static" / "js" / "game.js").read_text(encoding="utf-8")
 
 def test_home_has_large_buddy_and_illustrated_tiles():
     assert 'data-home-buddy-slot' in HTML
-    assert 'class="buddy-tile"' in HTML
+    assert "buddy-tile" in HTML
     assert 'data-buddy-choice="cat"' in HTML
     assert 'data-buddy-choice="krishna"' in HTML
     assert 'data-buddy-choice="mouse"' in HTML
@@ -29,6 +29,18 @@ def test_home_greeting_does_not_sit_in_fixed_square():
     assert "height: auto" in CSS
     assert ".home-buddy-slot" in CSS or ".home-buddy .buddy-slot" in CSS
     assert "text-wrap: balance" in CSS or "line-height" in CSS
+
+
+def test_home_landing_is_colorful():
+    assert 'class="home-sky"' in HTML or "home-sky" in HTML
+    assert "home-blob-sun" in HTML
+    assert "buddy-tile-cat" in HTML
+    assert "buddy-tile-krishna" in HTML
+    assert "buddy-tile-mouse" in HTML
+    assert "--sky:" in CSS
+    assert "--coral:" in CSS
+    assert "blob-drift" in CSS
+    assert "brand-glow" in CSS or "background-clip: text" in CSS
 
 
 def test_mic_hear_you_feedback_no_timer():

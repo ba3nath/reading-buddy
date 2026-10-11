@@ -41,6 +41,12 @@
   </footer>
 
   <section class="view-home" data-view="home" hidden>
+    <div class="home-sky" aria-hidden="true">
+      <span class="home-blob home-blob-sun"></span>
+      <span class="home-blob home-blob-sky"></span>
+      <span class="home-blob home-blob-meadow"></span>
+      <span class="home-blob home-blob-coral"></span>
+    </div>
     <h1 class="home-brand">Reading Buddy</h1>
     <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
 
@@ -52,15 +58,15 @@
     <div class="buddy-pick" data-buddy-pick>
       <p class="pick-label">Your buddy</p>
       <div class="pick-row">
-        <button type="button" class="buddy-tile" data-buddy-choice="cat" aria-pressed="true">
+        <button type="button" class="buddy-tile buddy-tile-cat" data-buddy-choice="cat" aria-pressed="true">
           <img class="buddy-tile-art" src="/static/mascots/cat.svg" alt="" width="72" height="72" />
           <span class="buddy-tile-name">Cat</span>
         </button>
-        <button type="button" class="buddy-tile" data-buddy-choice="krishna" aria-pressed="false">
+        <button type="button" class="buddy-tile buddy-tile-krishna" data-buddy-choice="krishna" aria-pressed="false">
           <img class="buddy-tile-art" src="/static/mascots/krishna.svg" alt="" width="72" height="72" />
           <span class="buddy-tile-name">Krishna</span>
         </button>
-        <button type="button" class="buddy-tile" data-buddy-choice="mouse" aria-pressed="false">
+        <button type="button" class="buddy-tile buddy-tile-mouse" data-buddy-choice="mouse" aria-pressed="false">
           <img class="buddy-tile-art" src="/static/mascots/mouse.svg" alt="" width="72" height="72" />
           <span class="buddy-tile-name">Mouse</span>
         </button>
