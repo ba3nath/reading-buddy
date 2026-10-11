@@ -32,7 +32,7 @@ WHISPER_MODEL = "small.en"
 WHISPER_DEVICE = "cpu"
 WHISPER_COMPUTE_TYPE = "int8"
 WHISPER_COMPUTE_TYPE_FALLBACK = "int8_float32"
-WHISPER_BEAM_SIZE = 1
+WHISPER_BEAM_SIZE = 3  # short kid words; 1 was too lossy on CPU small.en
 
 # Kokoro ONNX (M2) — voice id must exist in the installed voices bin.
 # Chosen by synthesizing the/thin/a big red ship across bf_emma, bf_alice,

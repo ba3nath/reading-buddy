@@ -1,13 +1,14 @@
-/** MediaRecorder + silence-stop. No UI strings. */
+/** MediaRecorder + silence-stop (+ optional tap-to-finish). No UI strings. */
 
-// Tuned for short kids words: do not cut final plosives (T in "cat").
-const SILENCE_GAP_MS = 1600;
-const NO_SPEECH_MS = 5000;
+// Tuned for short kids words: keep final plosives; prefer one clear take.
+const SILENCE_GAP_MS = 1800;
+const NO_SPEECH_MS = 6000;
 const MAX_MS = 20000;
-const MIN_SPEECH_MS = 450;
-const SPEECH_START_THRESHOLD = 0.028;
-const SPEECH_HOLD_THRESHOLD = 0.012;
-const START_GRACE_MS = 180;
+const MIN_SPEECH_MS = 350;
+const SPEECH_START_THRESHOLD = 0.02;
+const SPEECH_HOLD_THRESHOLD = 0.01;
+const START_GRACE_MS = 250;
+const TRAIL_PAD_MS = 350;
 
 export class RecordingSession {
   constructor() {
@@ -21,6 +22,12 @@ export class RecordingSession {
     this._speechStartedAt = 0;
     this._lastLoudAt = 0;
     this._stopped = false;
+    this._stopTimer = null;
+    this._armed = false;
+  }
+
+  get isRecording() {
+    return Boolean(this.recorder && this.recorder.state === "recording" && !this._stopped);
   }
 
   async ensureStream() {
@@ -28,22 +35,23 @@ export class RecordingSession {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
-        noiseSuppression: true,
+        noiseSuppression: false, // keep soft consonants for kids
         autoGainControl: true,
       },
     });
     return this.stream;
   }
 
-  async start({ oncomplete, onerror }) {
+  async start({ oncomplete, onerror, onarmed }) {
     this._stopped = false;
+    this._armed = false;
     this.chunks = [];
+    if (this._stopTimer) {
+      clearTimeout(this._stopTimer);
+      this._stopTimer = null;
+    }
     try {
       const stream = await this.ensureStream();
-      // Resume AudioContext after a user gesture when needed.
-      if (this._audioCtx && this._audioCtx.state === "suspended") {
-        await this._audioCtx.resume().catch(() => {});
-      }
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : undefined;
@@ -73,8 +81,9 @@ export class RecordingSession {
       this._startedAt = performance.now();
       this._speechStartedAt = 0;
       this._lastLoudAt = 0;
-      // Smaller timeslice → less trailing audio lost when stop() fires.
-      this.recorder.start(50);
+      this.recorder.start(100);
+      this._armed = true;
+      onarmed?.();
       this._tick();
     } catch (err) {
       onerror?.(err);
@@ -93,23 +102,36 @@ export class RecordingSession {
     return Math.sqrt(sum / data.length);
   }
 
+  _scheduleStop() {
+    if (this._stopTimer || this._stopped) return;
+    this._stopTimer = setTimeout(() => {
+      this._stopTimer = null;
+      this.stop();
+    }, TRAIL_PAD_MS);
+  }
+
+  _cancelScheduledStop() {
+    if (this._stopTimer) {
+      clearTimeout(this._stopTimer);
+      this._stopTimer = null;
+    }
+  }
+
   _tick = () => {
     if (this._stopped) return;
     const now = performance.now();
     const elapsed = now - this._startedAt;
     const level = this._level();
 
-    // Ignore mic settle noise for a short grace after tap.
     if (elapsed >= START_GRACE_MS) {
-      const startThresh = SPEECH_START_THRESHOLD;
-      const holdThresh = SPEECH_HOLD_THRESHOLD;
       const loudEnough = this._speechStartedAt
-        ? level >= holdThresh
-        : level >= startThresh;
+        ? level >= SPEECH_HOLD_THRESHOLD
+        : level >= SPEECH_START_THRESHOLD;
 
       if (loudEnough) {
         if (!this._speechStartedAt) this._speechStartedAt = now;
         this._lastLoudAt = now;
+        this._cancelScheduledStop();
       }
     }
 
@@ -124,11 +146,12 @@ export class RecordingSession {
     if (
       this._speechStartedAt &&
       this._lastLoudAt &&
+      !this._stopTimer &&
       now - this._speechStartedAt >= MIN_SPEECH_MS &&
       now - this._lastLoudAt >= SILENCE_GAP_MS
     ) {
-      this.stop();
-      return;
+      // Keep recording briefly so the final consonant lands in a chunk.
+      this._scheduleStop();
     }
     this._raf = requestAnimationFrame(this._tick);
   };
@@ -136,10 +159,11 @@ export class RecordingSession {
   stop() {
     if (this._stopped) return;
     this._stopped = true;
+    this._armed = false;
+    this._cancelScheduledStop();
     if (this._raf) cancelAnimationFrame(this._raf);
     if (this.recorder && this.recorder.state !== "inactive") {
       try {
-        // Flush the current timeslice before stop so the tail isn't dropped.
         if (typeof this.recorder.requestData === "function") {
           this.recorder.requestData();
         }

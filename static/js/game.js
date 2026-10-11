@@ -399,17 +399,31 @@ function enterIdle() {
 }
 
 async function onMicTap() {
+  // Second tap while recording = "I'm done" (keeps one clear take).
+  if (state.id === "recording" && state.recorder.isRecording) {
+    setMessage("Got it…");
+    setMicEnabled(false);
+    state.recorder.stop();
+    return;
+  }
   if (state.id !== "idle") return;
   setState("recording");
-  setMessage("I hear you…");
+  setMessage("I hear you — read the word, then tap again when done");
   setMicEnabled(false);
+  const label = $(".mic-label");
+  if (label) label.textContent = "Tap when done";
   await state.recorder.start({
     oncomplete: (blob) => onRecordComplete(blob),
+    onarmed: () => {
+      // Allow tap-to-finish once the recorder is live.
+      setMicEnabled(true);
+    },
     onerror: (err) => {
       console.error(err);
       setMessage("We need the microphone to hear you. Ask an adult to allow it.");
       setState("idle");
       setMicEnabled(true);
+      if (label) label.textContent = "Tap to read";
     },
   });
 }
@@ -417,6 +431,9 @@ async function onMicTap() {
 async function onRecordComplete(blob) {
   setState("scoring");
   setMessage("Listening…");
+  setMicEnabled(false);
+  const label = $(".mic-label");
+  if (label) label.textContent = "Tap to read";
   const form = new FormData();
   form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");

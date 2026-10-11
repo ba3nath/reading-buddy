@@ -87,6 +87,8 @@ class WhisperEngine:
         if self._model is None:
             raise RuntimeError(self._load_error or "Whisper model not loaded")
 
+        # vad_filter=False: short kid words ("cat", "dog") are often eaten by
+        # Silero VAD, forcing retries. Keep the full clip; RMS gate is elsewhere.
         segments, info = self._model.transcribe(
             str(wav_path),
             language="en",
@@ -94,8 +96,8 @@ class WhisperEngine:
             temperature=0.0,
             condition_on_previous_text=False,
             word_timestamps=True,
-            vad_filter=True,
-            initial_prompt=initial_prompt,
+            vad_filter=False,
+            initial_prompt=(initial_prompt or "")[:224] or None,
         )
         seg_list = list(segments)
         if not seg_list:
