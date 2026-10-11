@@ -43,6 +43,13 @@ def test_home_landing_is_colorful():
     assert "brand-glow" in CSS or "background-clip: text" in CSS
 
 
+def test_home_lede_is_playful_without_timer_copy():
+    assert "Listen close, say it loud, stack those stars!" in HTML
+    assert "No timers" not in HTML
+    assert "lost points" not in HTML
+    assert "Read words aloud" not in HTML
+
+
 def test_home_brand_is_not_clipped():
     """Tall home content + justify center was shearing the Reading Buddy title."""
     assert "home-brand" in HTML
