@@ -15,9 +15,9 @@ def test_home_has_large_buddy_and_illustrated_tiles():
     assert "buddy-tile" in HTML
     assert 'data-buddy-choice="cat"' in HTML
     assert 'data-buddy-choice="krishna"' in HTML
-    assert 'data-buddy-choice="mouse"' in HTML
+    assert 'data-buddy-choice="unicorn"' in HTML
     assert 'src="/static/mascots/cat.svg"' in HTML
-    assert 'src="/static/mascots/mouse.svg"' in HTML
+    assert 'src="/static/mascots/unicorn.svg"' in HTML
     assert "mickey" not in HTML.lower()
 
 
@@ -36,7 +36,7 @@ def test_home_landing_is_colorful():
     assert "home-blob-sun" in HTML
     assert "buddy-tile-cat" in HTML
     assert "buddy-tile-krishna" in HTML
-    assert "buddy-tile-mouse" in HTML
+    assert "buddy-tile-unicorn" in HTML
     assert "--sky:" in CSS
     assert "--coral:" in CSS
     assert "blob-drift" in CSS

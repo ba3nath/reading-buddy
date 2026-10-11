@@ -1,7 +1,7 @@
 import { RecordingSession } from "./record.js";
 
 const $ = (sel) => document.querySelector(sel);
-const BUDDIES = ["cat", "krishna", "mouse"];
+const BUDDIES = ["cat", "krishna", "unicorn"];
 
 /** Function words we skip when picking a picture for a sentence. */
 const ILLUSTRATION_STOPWORDS = new Set([
@@ -166,7 +166,8 @@ async function fetchBuddySvg(name) {
 }
 
 async function loadBuddySvg(name) {
-  const buddy = BUDDIES.includes(name) ? name : "cat";
+  const raw = name === "mouse" ? "unicorn" : name; // migrate retired mouse
+  const buddy = BUDDIES.includes(raw) ? raw : "cat";
   state.buddy = buddy;
   const host = $("[data-buddy]");
   if (host) host.dataset.buddy = buddy;
@@ -182,7 +183,7 @@ async function loadBuddySvg(name) {
     }
     const greet = $("[data-home-greeting]");
     if (greet) {
-      const labels = { cat: "Cat", krishna: "Krishna", mouse: "Mouse" };
+      const labels = { cat: "Cat", krishna: "Krishna", unicorn: "Unicorn" };
       greet.textContent = `Hi — I'm ${labels[buddy]}! Ready when you are.`;
     }
     syncBuddyAnim();

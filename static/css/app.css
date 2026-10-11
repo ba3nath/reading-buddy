@@ -223,9 +223,9 @@ body.app {
   border-color: rgba(58, 160, 208, 0.35);
 }
 
-.buddy-tile-mouse {
-  background: linear-gradient(165deg, #d8f0d4 0%, #f3faf1 70%);
-  border-color: rgba(63, 154, 95, 0.35);
+.buddy-tile-unicorn {
+  background: linear-gradient(165deg, #f0e6f5 0%, #faf6f2 70%);
+  border-color: rgba(168, 140, 190, 0.4);
 }
 
 .buddy-tile:hover {
@@ -250,10 +250,10 @@ body.app {
   box-shadow: 0 0 0 3px rgba(58, 160, 208, 0.3);
 }
 
-.buddy-tile-mouse.selected,
-.buddy-tile-mouse[aria-pressed="true"] {
-  border-color: var(--meadow-deep);
-  box-shadow: 0 0 0 3px rgba(63, 154, 95, 0.3);
+.buddy-tile-unicorn.selected,
+.buddy-tile-unicorn[aria-pressed="true"] {
+  border-color: #a88cbe;
+  box-shadow: 0 0 0 3px rgba(168, 140, 190, 0.35);
 }
 
 .buddy-tile-art {
@@ -695,15 +695,31 @@ body[data-state="recording"] .mic-particles {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* flex-start by default so tall content never clips the top brand;
+     taller viewports re-center with safe center below. */
+  justify-content: flex-start;
   gap: 0.85rem;
-  padding: 1.5rem 1.25rem 2rem;
-  overflow: auto;
+  padding: max(1.25rem, env(safe-area-inset-top, 0px))
+    max(1.25rem, env(safe-area-inset-right, 0px))
+    max(1.75rem, env(safe-area-inset-bottom, 0px))
+    max(1.25rem, env(safe-area-inset-left, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background:
     radial-gradient(900px 500px at 20% 0%, #ffe7c2 0%, transparent 55%),
     linear-gradient(165deg, var(--bg-top), var(--bg-bottom));
   z-index: 5;
   text-align: center;
+}
+
+@media (min-height: 780px) {
+  .view-home,
+  .view-end,
+  .view-boot-error {
+    justify-content: center;
+    justify-content: safe center;
+  }
 }
 
 .view-home {
@@ -792,10 +808,15 @@ body[data-state="recording"] .mic-particles {
 .view-boot-error h2 {
   font-family: var(--font-display);
   font-size: clamp(2.4rem, 8vw, 3.8rem);
+  line-height: 1.2;
   margin: 0;
+  /* Room for serif ascenders; background-clip:text otherwise shears the top. */
+  padding: 0.12em 0.08em 0.18em;
+  overflow: visible;
 }
 
 .view-home .home-brand {
+  flex-shrink: 0;
   background: linear-gradient(
     115deg,
     var(--sun-deep) 0%,
@@ -803,19 +824,21 @@ body[data-state="recording"] .mic-particles {
     var(--meadow-deep) 62%,
     var(--sky-deep) 100%
   );
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Avoid filter: — it expands paint bounds and gets clipped by overflow. */
   animation: brand-glow 5s ease-in-out infinite;
 }
 
 @keyframes brand-glow {
   0%,
   100% {
-    filter: saturate(1);
+    background-position: 0% 50%;
   }
   50% {
-    filter: saturate(1.25);
+    background-position: 100% 50%;
   }
 }
 

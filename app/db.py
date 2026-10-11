@@ -156,6 +156,10 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         data = json.load(f)
     merged = dict(config.DEFAULT_SETTINGS)
     merged.update(data)
+    # Migrate retired mouse buddy → unicorn (persist so old settings stay valid).
+    if str(merged.get("buddy", "")).lower() == "mouse":
+        merged["buddy"] = "unicorn"
+        save_settings(merged, settings_path)
     return merged
 
 

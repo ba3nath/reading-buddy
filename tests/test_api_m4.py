@@ -73,6 +73,15 @@ def test_buddy_validation(client, assert_error_envelope):
     assert_error_envelope(bad.json(), code="bad_request")
 
 
+def test_mouse_buddy_migrates_to_unicorn(client, tmp_env):
+    """Saved buddy=mouse is rewritten to unicorn on load and via settings PUT."""
+    save_settings({**load_settings(), "buddy": "mouse"})
+    assert load_settings()["buddy"] == "unicorn"
+    migrated = client.put("/api/parent/settings", json={"buddy": "mouse"})
+    assert migrated.status_code == 200
+    assert migrated.json()["buddy"] == "unicorn"
+
+
 def test_keep_audio_false_leaves_no_kept(client, whisper_double, tone_wav, tmp_env):
     client.put("/api/parent/settings", json={"keep_audio": False})
     start = client.post("/api/sessions", json={"level": 1}).json()
@@ -188,9 +197,9 @@ def test_garden_grows_on_complete(client, whisper_double, tone_wav):
 
 
 def test_session_includes_buddy(client):
-    client.put("/api/parent/settings", json={"buddy": "mouse"})
+    client.put("/api/parent/settings", json={"buddy": "unicorn"})
     start = client.post("/api/sessions", json={"level": 1}).json()
-    assert start["buddy"] == "mouse"
+    assert start["buddy"] == "unicorn"
 
 
 def test_accuracy_and_mastered_shapes(client, whisper_double, tone_wav, tmp_env):
@@ -220,13 +229,15 @@ def test_accuracy_and_mastered_shapes(client, whisper_double, tone_wav, tmp_env)
 
 
 def test_mascot_svgs_served(client):
-    for name in ("cat", "krishna", "mouse", "garden"):
+    for name in ("cat", "krishna", "unicorn", "garden"):
         res = client.get(f"/static/mascots/{name}.svg")
         assert res.status_code == 200, name
-    mouse = client.get("/static/mascots/mouse.svg").text.lower()
-    assert "mickey" not in mouse
-    assert "#ff0000" not in mouse  # no classic red shorts fill
-    assert "fill=\"red\"" not in mouse
+    unicorn = client.get("/static/mascots/unicorn.svg").text.lower()
+    assert "mickey" not in unicorn
+    assert "buddy-root" in unicorn
+    assert "horn" in unicorn
+    assert "#ff0000" not in unicorn
+    assert "fill=\"red\"" not in unicorn
     krishna = client.get("/static/mascots/krishna.svg").text.lower()
     assert "flute" in krishna
     assert "feather" in krishna

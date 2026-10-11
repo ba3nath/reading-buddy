@@ -67,7 +67,7 @@ $env:HF_HUB_OFFLINE = "1"
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (cat / Krishna / mouse), garden growth on each completed session, rhyme-time sing-along on levels 6–7. Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (cat / Krishna / unicorn), garden growth on each completed session, rhyme-time sing-along on levels 6–7. Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
 
 `GET /api/health` reports `{ "whisper", "ffmpeg", "offline", "audio" }`.
 
@@ -89,7 +89,7 @@ Matcher, session, adaptive, and API tests (M1–M4) use fixture transcripts and 
 
 ## Kindness
 
-No visible timers, no lost stars or garden growth, no red fail screens, no buzzers. Silence is a retry. The mouse buddy is an original character (not Mickey Mouse).
+No visible timers, no lost stars or garden growth, no red fail screens, no buzzers. Silence is a retry. Buddies are original characters (cat, Krishna, unicorn).
 
 ## Layout
 

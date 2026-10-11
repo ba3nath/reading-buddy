@@ -74,7 +74,8 @@ function renderSounds(payload) {
 function syncBuddyThumb(buddy) {
   const thumb = $("[data-buddy-thumb]");
   if (!thumb) return;
-  const name = ["cat", "krishna", "mouse"].includes(buddy) ? buddy : "cat";
+  const raw = buddy === "mouse" ? "unicorn" : buddy; // migrate retired mouse
+  const name = ["cat", "krishna", "unicorn"].includes(raw) ? raw : "cat";
   thumb.src = `/static/mascots/${name}.svg`;
 }
 

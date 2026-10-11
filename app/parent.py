@@ -16,7 +16,7 @@ from app.db import load_settings, local_today, save_settings
 
 
 SOUND_NOTE = "Version 1 reflects reading accuracy, not pronunciation."
-BUDDIES = ("cat", "krishna", "mouse")
+BUDDIES = ("cat", "krishna", "unicorn")
 
 
 def clear_kept_audio() -> int:
@@ -258,6 +258,8 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     settings["auto_strict"] = bool(settings.get("auto_strict", True))
     settings["keep_audio"] = bool(settings.get("keep_audio", False))
     buddy = str(settings.get("buddy", "cat")).lower()
+    if buddy == "mouse":
+        buddy = "unicorn"  # migrate retired mouse buddy
     if buddy not in BUDDIES:
         raise ValueError(f"buddy must be one of {', '.join(BUDDIES)}")
     settings["buddy"] = buddy

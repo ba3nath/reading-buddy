@@ -73,7 +73,7 @@ DEFAULT_SETTINGS = {
     "level": 1,
     "session_length": DEFAULT_SESSION_LENGTH,
     "keep_audio": False,
-    "buddy": "cat",  # cat | krishna | mouse
+    "buddy": "cat",  # cat | krishna | unicorn
     "auto_strict": True,
     "auto_strict_sessions": AUTO_STRICT_SESSIONS,
     "low_streak": 0,
@@ -86,7 +86,7 @@ DEFAULT_SETTINGS = {
     "badges_earned": [],  # list of badge ids
 }
 
-BUDDIES = ("cat", "krishna", "mouse")
+BUDDIES = ("cat", "krishna", "unicorn")
 
 
 def ensure_dirs() -> None:
