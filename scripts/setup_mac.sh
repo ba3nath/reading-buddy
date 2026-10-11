@@ -30,7 +30,18 @@ fi
 
 if ! command -v espeak >/dev/null 2>&1 && ! command -v espeak-ng >/dev/null 2>&1; then
   echo "espeak not found; installing espeak for Kokoro phonemizer…"
-  brew install espeak || true
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "ERROR: Homebrew not found. Install espeak (brew install espeak) then re-run." >&2
+    exit 1
+  fi
+  brew install espeak
+fi
+
+if ! command -v espeak >/dev/null 2>&1 && ! command -v espeak-ng >/dev/null 2>&1; then
+  echo "ERROR: espeak or espeak-ng is still not on PATH after install." >&2
+  echo "  Install with: brew install espeak" >&2
+  echo "  Then re-run: ./scripts/setup_mac.sh" >&2
+  exit 1
 fi
 
 echo "==> Creating virtualenv"

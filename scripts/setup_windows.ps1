@@ -10,6 +10,21 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
   Write-Error "python not found. Install Python 3.11+ from python.org and re-run."
 }
 
+function Refresh-Path {
+  $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+    [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+
+function Test-CommandAvailable {
+  param([Parameter(Mandatory = $true)][string[]]$Names)
+  foreach ($name in $Names) {
+    if (Get-Command $name -ErrorAction SilentlyContinue) {
+      return $true
+    }
+  }
+  return $false
+}
+
 function Test-Ffmpeg {
   try {
     & ffmpeg -version | Out-Null
@@ -19,6 +34,11 @@ function Test-Ffmpeg {
   }
 }
 
+function Test-Espeak {
+  # Kokoro phonemizer accepts either classic espeak or espeak-ng on PATH.
+  return (Test-CommandAvailable -Names @("espeak-ng", "espeak"))
+}
+
 if (-not (Test-Ffmpeg)) {
   Write-Host "ffmpeg is missing. Trying winget install Gyan.FFmpeg…"
   if (Get-Command winget -ErrorAction SilentlyContinue) {
@@ -26,9 +46,46 @@ if (-not (Test-Ffmpeg)) {
   } else {
     Write-Error "ffmpeg not on PATH. Install with: winget install Gyan.FFmpeg (or Chocolatey), then re-open the terminal."
   }
-  $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+  Refresh-Path
   if (-not (Test-Ffmpeg)) {
     Write-Error "ffmpeg -version still failing. Install ffmpeg and ensure it is on PATH, then re-run."
+  }
+}
+
+if (-not (Test-Espeak)) {
+  Write-Host "espeak/espeak-ng is missing (required for Kokoro phonemizer). Installing…"
+  $installed = $false
+  if (Get-Command winget -ErrorAction SilentlyContinue) {
+    try {
+      winget install --id eSpeak-NG.eSpeak-NG -e --accept-package-agreements --accept-source-agreements
+      $installed = $true
+    } catch {
+      Write-Host "winget eSpeak-NG install failed: $($_.Exception.Message)"
+    }
+  }
+  if (-not (Test-Espeak) -and (Get-Command choco -ErrorAction SilentlyContinue)) {
+    Write-Host "Trying Chocolatey: choco install espeak…"
+    try {
+      choco install espeak -y
+      $installed = $true
+    } catch {
+      Write-Host "Chocolatey espeak install failed: $($_.Exception.Message)"
+    }
+  }
+  Refresh-Path
+  if (-not (Test-Espeak)) {
+    $hint = @"
+ERROR: espeak or espeak-ng is not on PATH (needed before generate_audio.py).
+Install one of:
+  winget install --id eSpeak-NG.eSpeak-NG -e
+  choco install espeak -y
+Then close and re-open this terminal so PATH updates, and re-run:
+  .\scripts\setup_windows.ps1
+"@
+    Write-Error $hint
+  }
+  if ($installed) {
+    Write-Host "espeak/espeak-ng is available."
   }
 }
 

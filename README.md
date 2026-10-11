@@ -11,7 +11,10 @@ Bind: [http://127.0.0.1:8765](http://127.0.0.1:8765) (localhost only). Parent: [
   - macOS: `brew install ffmpeg` (or `scripts/setup_mac.sh`)
   - Windows: `winget install Gyan.FFmpeg` (or `scripts/setup_windows.ps1`)
   - Linux: `sudo apt install ffmpeg`
-- **espeak-ng** (Kokoro phonemizer): `sudo apt install espeak-ng` / `brew install espeak`
+- **espeak / espeak-ng** on `PATH` (Kokoro phonemizer; required before `generate_audio.py`)
+  - macOS: `brew install espeak` (or `scripts/setup_mac.sh`)
+  - Windows: `winget install --id eSpeak-NG.eSpeak-NG -e` (or Chocolatey `choco install espeak`; `scripts/setup_windows.ps1` tries both)
+  - Linux: `sudo apt install espeak-ng`
 - Chrome or Edge for the microphone (localhost is a secure context)
 
 ## Setup (once, while online)
