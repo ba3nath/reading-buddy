@@ -11,6 +11,8 @@ from app.session import (
     apply_attempt,
     complete_session,
     play_ids,
+    ratio_flags,
+    set_play_and_ratio_flags,
     set_play_ids,
     start_session,
 )
@@ -244,12 +246,18 @@ def test_same_item_reinsert_slot_not_blocked(tmp_env):
         score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
         qi=0,
     )
-    # Simulate same-session reinsert at end of play queue
-    ids = play_ids(conn.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone())
+    # Simulate same-session reinsert at end of play queue (ratio flag false)
+    session = conn.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone()
+    ids = play_ids(session)
+    flags = ratio_flags(session)
     ids.append(item["id"])
-    set_play_ids(conn, sid, ids)
+    flags.append(False)
+    set_play_and_ratio_flags(conn, sid, ids, flags)
     conn.commit()
     re_qi = len(ids) - 1
+    before = conn.execute(
+        "SELECT correct_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()["correct_count"]
     second = _apply(
         conn,
         sid,
@@ -259,6 +267,10 @@ def test_same_item_reinsert_slot_not_blocked(tmp_env):
     )
     assert second["result"] == "correct"
     assert second["stars_awarded"] == 1
+    after = conn.execute(
+        "SELECT correct_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()["correct_count"]
+    assert after == before  # reinsert does not count for ratio
 
 
 def test_abandon_does_not_change_level(tmp_env):

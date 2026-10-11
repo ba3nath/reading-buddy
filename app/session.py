@@ -86,12 +86,14 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     for row in queue:
         ensure_mastery_row(conn, row["id"])
 
+    ratio_flags = [True] * length  # every planned slot counts (incl. adaptive repeats)
     cur = conn.execute(
         """
         INSERT INTO sessions (
           started_at, ended_at, mode, level, planned_count, planned_item_ids,
-          play_item_ids, correct_count, stars, low_session, level_after, completed
-        ) VALUES (?, NULL, ?, ?, ?, ?, ?, 0, 0, 0, NULL, 0)
+          play_item_ids, ratio_flags, correct_count, stars, low_session,
+          level_after, completed
+        ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, 0, 0, NULL, 0)
         """,
         (
             local_now_iso(),
@@ -100,6 +102,7 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
             length,
             json.dumps(planned_ids),
             json.dumps(planned_ids),
+            json.dumps(ratio_flags),
         ),
     )
     session_id = int(cur.lastrowid)
@@ -130,16 +133,46 @@ def set_play_ids(conn: sqlite3.Connection, session_id: int, ids: list[int]) -> N
     )
 
 
-def is_ratio_slot(play: list[int], queue_index: int, item_id: int) -> bool:
-    """True when this slot is the planned (first) occurrence — not a same-session reinsert.
+def ratio_flags(session: sqlite3.Row) -> list[bool]:
+    """Per-play-slot flags: True = planned (counts for ratio), False = miss reinsert."""
+    raw = session["ratio_flags"] if "ratio_flags" in session.keys() else None
+    if not raw or raw == "[]":
+        # Legacy: treat original planned length as ratio-eligible.
+        planned = planned_ids(session)
+        play = play_ids(session)
+        flags = [True] * len(planned)
+        if len(play) > len(planned):
+            flags.extend([False] * (len(play) - len(planned)))
+        return flags
+    return [bool(x) for x in json.loads(raw)]
 
-    Session ratio (correct_count / planned_count) only counts the first locking
-    non-retry result on each planned queue item. Reinserts and replays do not.
+
+def set_play_and_ratio_flags(
+    conn: sqlite3.Connection,
+    session_id: int,
+    ids: list[int],
+    flags: list[bool],
+) -> None:
+    conn.execute(
+        """
+        UPDATE sessions
+        SET play_item_ids = ?, ratio_flags = ?
+        WHERE id = ?
+        """,
+        (json.dumps(ids), json.dumps(flags), session_id),
+    )
+
+
+def is_ratio_slot(session: sqlite3.Row, queue_index: int) -> bool:
+    """True for planned queue slots (including adaptive repeats); false for reinserts.
+
+    Session ratio uses locking non-retry results on ratio slots only.
+    Replay never uses this path for ratio (is_replay / counts_for_session=0).
     """
-    try:
-        return play.index(item_id) == queue_index
-    except ValueError:
+    flags = ratio_flags(session)
+    if queue_index < 0 or queue_index >= len(flags):
         return False
+    return bool(flags[queue_index])
 
 
 def word_audio_slug(conn: sqlite3.Connection, word: str, fallback_slug: str) -> str:
@@ -531,8 +564,8 @@ def apply_attempt(
         if prior_retries + 1 >= config.MAX_RETRIES_PER_ITEM:
             if has_provisional_close(conn, session_id, queue_index):
                 flip_prior_lock(conn, session_id, queue_index)
-            # Skip shrinks planned_count only for planned (first) slots — not reinserts.
-            if is_ratio_slot(play_ids(session), queue_index, item_id):
+            # Skip shrinks planned_count only for planned slots — not reinserts.
+            if is_ratio_slot(session, queue_index):
                 planned_count = max(0, planned_count - 1)
                 conn.execute(
                     "UPDATE sessions SET planned_count = ? WHERE id = ?",
@@ -643,10 +676,11 @@ def apply_attempt(
                 stars_awarded += 1
 
             play = play_ids(session)
-            counts_for_ratio = is_ratio_slot(play, queue_index, item_id)
+            flags = ratio_flags(session)
+            counts_for_ratio = is_ratio_slot(session, queue_index)
 
             if result == "correct":
-                # Ratio: only the planned slot's locking correct counts.
+                # Ratio: every planned slot (incl. adaptive repeats); not reinserts.
                 if counts_for_ratio:
                     correct_count += 1
                 message = config.MSG_CORRECT
@@ -672,11 +706,13 @@ def apply_attempt(
                 again = False
                 if counts_for_session == 1:
                     apply_day_ladder(conn, item_id, "missed")
-                    new_play, reinsert_info = maybe_reinsert_miss(
-                        conn, item_id, queue_index, play
+                    new_play, new_flags, reinsert_info = maybe_reinsert_miss(
+                        conn, item_id, queue_index, play, flags
                     )
                     if reinsert_info is not None:
-                        set_play_ids(conn, session_id, new_play)
+                        set_play_and_ratio_flags(
+                            conn, session_id, new_play, new_flags
+                        )
 
             stars_total += stars_awarded
             conn.execute(

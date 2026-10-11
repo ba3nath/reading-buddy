@@ -349,23 +349,33 @@ def maybe_reinsert_miss(
     item_id: int,
     queue_index: int,
     play: list[int],
-) -> tuple[list[int], dict[str, Any] | None]:
-    """Insert miss once, two items ahead. Second miss on insert does not reinsert."""
-    try:
-        first_idx = play.index(item_id)
-    except ValueError:
-        return play, None
-    if queue_index != first_idx:
-        return play, None
-    if item_id in play[queue_index + 1 :]:
-        return play, None
+    flags: list[bool],
+) -> tuple[list[int], list[bool], dict[str, Any] | None]:
+    """Insert miss once, two items ahead. Reinsert slots do not count for ratio.
+
+    Only planned (ratio) slots trigger a reinsert. A miss on an already-inserted
+    reinsert does not insert again. At most one reinsert per item_id per session.
+    """
+    if queue_index < 0 or queue_index >= len(play) or queue_index >= len(flags):
+        return play, flags, None
+    if play[queue_index] != item_id:
+        return play, flags, None
+    # Miss on a reinsert slot — do not insert again.
+    if not flags[queue_index]:
+        return play, flags, None
+    # Already reinserted this item once this session.
+    for i, is_ratio in enumerate(flags):
+        if not is_ratio and play[i] == item_id:
+            return play, flags, None
     insert_at = min(queue_index + 3, len(play))
     new_play = list(play)
+    new_flags = list(flags)
     new_play.insert(insert_at, item_id)
+    new_flags.insert(insert_at, False)  # reinsert: does not count for ratio
     row = get_item(conn, item_id)
     if row is None:
-        return play, None
-    return new_play, {
+        return play, flags, None
+    return new_play, new_flags, {
         "item": item_public(row),
         "queue_index": insert_at,
     }

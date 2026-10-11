@@ -198,6 +198,70 @@ def test_same_session_miss_reinsert(tmp_env):
     assert len(play2) == len(play)
 
 
+def test_planned_repeats_all_count_for_ratio(tmp_env):
+    """B2: adaptive repeat-fill slots count; all-correct → full correct_count."""
+    conn = tmp_env["conn"]
+    # Master all but two level-1 items so the queue repeats those two.
+    level1 = conn.execute(
+        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    ).fetchall()
+    keep = {level1[0]["id"], level1[1]["id"]}
+    for row in level1:
+        if row["id"] in keep:
+            conn.execute(
+                """
+                INSERT INTO mastery (item_id, correct_count, days_json, miss_count,
+                  review_step, next_review_on, mastered)
+                VALUES (?, 0, '[]', 0, 0, NULL, 0)
+                ON CONFLICT(item_id) DO UPDATE SET mastered=0, correct_count=0,
+                  next_review_on=NULL
+                """,
+                (row["id"],),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO mastery (item_id, correct_count, days_json, miss_count,
+                  review_step, next_review_on, mastered, last_seen_on)
+                VALUES (?, 3, ?, 0, 0, NULL, 1, '2020-01-01')
+                ON CONFLICT(item_id) DO UPDATE SET mastered=1, correct_count=3,
+                  next_review_on=NULL, last_seen_on='2020-01-01'
+                """,
+                (row["id"], json.dumps(["2020-01-01", "2020-01-02"])),
+            )
+    conn.commit()
+
+    data = start_session(conn, level=1)
+    sid = data["session_id"]
+    assert len(data["items"]) == 10
+    ids = [i["id"] for i in data["items"]]
+    assert set(ids) <= keep
+    assert len(set(ids)) == 2  # only the two unmastered, repeated
+
+    for qi, item in enumerate(data["items"]):
+        resp = _apply(
+            conn,
+            sid,
+            item["id"],
+            score_attempt(
+                item["text"],
+                item["text"],
+                [0.95] * max(1, len(item["text"].split())),
+                mode="beginner",
+            ),
+            qi=qi,
+        )
+        assert resp["result"] == "correct"
+
+    row = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert row["planned_count"] == 10
+    assert row["correct_count"] == 10  # every planned slot, not unique item_id
+    done = complete_session(conn, sid)
+    assert done["level_after"] >= data["level"]  # 10/10 moves up (unless already 7)
+
+
 def test_reinsert_correct_does_not_increase_correct_count(tmp_env):
     """B1: same-session reinsert correct must not change the session ratio."""
     conn = tmp_env["conn"]

@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   planned_count INTEGER NOT NULL,
   planned_item_ids TEXT NOT NULL,
   play_item_ids TEXT NOT NULL DEFAULT '[]',
+  ratio_flags TEXT NOT NULL DEFAULT '[]',
   correct_count INTEGER NOT NULL DEFAULT 0,
   stars INTEGER NOT NULL DEFAULT 0,
   low_session INTEGER NOT NULL DEFAULT 0 CHECK (low_session IN (0, 1)),
@@ -110,6 +111,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_SQL)
     # Additive migrations for DBs created before pre-M3 / M3 columns.
     _ensure_column(conn, "sessions", "play_item_ids", "TEXT NOT NULL DEFAULT '[]'")
+    _ensure_column(conn, "sessions", "ratio_flags", "TEXT NOT NULL DEFAULT '[]'")
     _ensure_column(conn, "attempts", "queue_index", "INTEGER")
     _ensure_column(conn, "attempts", "replay_word", "TEXT NOT NULL DEFAULT ''")
     # Indexes that depend on migrated columns (must run after _ensure_column).
@@ -124,6 +126,24 @@ def init_schema(conn: sqlite3.Connection) -> None:
         WHERE play_item_ids IS NULL OR play_item_ids = '' OR play_item_ids = '[]'
         """
     )
+    # Backfill ratio_flags: one true per planned slot (parallel to play when equal).
+    rows = conn.execute(
+        "SELECT id, planned_item_ids, play_item_ids, ratio_flags FROM sessions"
+    ).fetchall()
+    for row in rows:
+        flags_raw = row["ratio_flags"]
+        if flags_raw and flags_raw not in ("", "[]"):
+            continue
+        planned = json.loads(row["planned_item_ids"] or "[]")
+        play = json.loads(row["play_item_ids"] or "[]") or planned
+        # Mark first len(planned) play slots as ratio-eligible when play started as planned.
+        flags = [True] * len(planned)
+        if len(play) > len(planned):
+            flags.extend([False] * (len(play) - len(planned)))
+        conn.execute(
+            "UPDATE sessions SET ratio_flags = ? WHERE id = ?",
+            (json.dumps(flags), row["id"]),
+        )
     conn.commit()
 
 
