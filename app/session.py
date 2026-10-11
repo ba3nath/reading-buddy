@@ -66,8 +66,9 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     if target_level < 1 or target_level > 7:
         raise SessionError("bad_request", "level must be between 1 and 7", 400)
 
-    length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
-    length = max(5, min(20, length))
+    length = config.normalize_session_length(
+        settings.get("session_length", config.DEFAULT_SESSION_LENGTH)
+    )
     mode = str(settings.get("mode", "beginner")).lower()
     if mode not in ("beginner", "strict"):
         mode = "beginner"

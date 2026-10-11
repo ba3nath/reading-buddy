@@ -72,6 +72,12 @@ body.parent-page {
   color: var(--ink-soft);
 }
 
+.settings-form .optional {
+  font-weight: 500;
+  opacity: 0.75;
+  font-size: 0.85em;
+}
+
 .settings-form input[type="text"],
 .settings-form input[type="number"],
 .settings-form select {

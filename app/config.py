@@ -45,6 +45,18 @@ AUDIO_SAMPLE_RATE = 24000  # Kokoro native; served files normalized to 16 kHz mo
 
 MAX_RETRIES_PER_ITEM = 3
 DEFAULT_SESSION_LENGTH = 10
+ALLOWED_SESSION_LENGTHS = (5, 10)
+
+
+def normalize_session_length(value: object) -> int:
+    """Sessions are uniform: only 5 or 10 words/phrases."""
+    try:
+        n = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return DEFAULT_SESSION_LENGTH
+    if n in ALLOWED_SESSION_LENGTHS:
+        return n
+    return 5 if abs(n - 5) <= abs(n - 10) else 10
 MASTERED_EVERY_N_SESSIONS = 7
 AUTO_STRICT_SESSIONS = 3  # consecutive move-up sessions → mode=strict when auto_strict
 

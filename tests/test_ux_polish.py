@@ -132,9 +132,15 @@ def test_level7_does_not_stack_previous_and_current_audio():
     assert "Listen and sing along…" in JS
     assert "isRhymeSingAlongItem" in JS
     # Locking results advance directly — only the new screen's showListen plays.
-    assert "setTimeout(() => advance(), 1200)" in JS
     assert "setTimeout(() => advance(), 1400)" in JS
     assert "maybeSingAlongThen(advance)" not in JS
+    assert "celebrateCorrectRead" in JS
+    assert "popSuccessFx" in JS
+    assert "SUCCESS_FX_KINDS" in JS
+    for kind in ("glitter", "rainbow", "chocolate", "applause", "stars"):
+        assert kind in JS
+    assert 'data-success-fx' in HTML
+    assert "success-fx" in CSS
     # showListen stops any prior clip before swapping text + playing the new slug.
     show = JS.split("async function showListen()")[1].split("async function ")[0]
     assert "stopClip()" in show

@@ -316,6 +316,61 @@ function popStarBurst() {
   }, 750);
 }
 
+/** Full-screen success flourishes — pick one at random each correct read. */
+const SUCCESS_FX_KINDS = ["glitter", "rainbow", "chocolate", "applause", "stars"];
+
+function popSuccessFx() {
+  const host = $("[data-success-fx]");
+  if (!host) return;
+  const kind = SUCCESS_FX_KINDS[Math.floor(Math.random() * SUCCESS_FX_KINDS.length)];
+  host.innerHTML = "";
+  host.className = `success-fx success-fx-${kind} pop`;
+  host.setAttribute("data-fx", kind);
+
+  if (kind === "rainbow") {
+    const arc = document.createElement("div");
+    arc.className = "fx-rainbow-arc";
+    host.appendChild(arc);
+  } else if (kind === "applause") {
+    for (let i = 0; i < 8; i += 1) {
+      const clap = document.createElement("span");
+      clap.className = "fx-clap";
+      clap.textContent = "clap!";
+      clap.style.setProperty("--i", String(i));
+      clap.style.left = `${8 + (i % 4) * 22}%`;
+      clap.style.top = `${18 + Math.floor(i / 4) * 40}%`;
+      host.appendChild(clap);
+    }
+  } else {
+    const count = kind === "chocolate" ? 28 : 36;
+    const glyph =
+      kind === "chocolate" ? "●" : kind === "stars" ? "★" : "✧";
+    for (let i = 0; i < count; i += 1) {
+      const bit = document.createElement("i");
+      bit.className = `fx-bit fx-bit-${kind}`;
+      bit.textContent = glyph;
+      bit.style.setProperty("--i", String(i));
+      bit.style.setProperty("--x", `${Math.random() * 100}%`);
+      bit.style.setProperty("--delay", `${Math.random() * 0.35}s`);
+      bit.style.setProperty("--dur", `${0.9 + Math.random() * 0.7}s`);
+      bit.style.setProperty("--spin", `${Math.random() * 360}deg`);
+      host.appendChild(bit);
+    }
+  }
+
+  clearTimeout(popSuccessFx._timer);
+  popSuccessFx._timer = setTimeout(() => {
+    host.classList.remove("pop");
+    host.innerHTML = "";
+    host.removeAttribute("data-fx");
+  }, 1400);
+}
+
+function celebrateCorrectRead() {
+  popStarBurst();
+  popSuccessFx();
+}
+
 function setStars(n, { celebrate = false } = {}) {
   const el = $("[data-stars]");
   const prev = Number(el.textContent) || 0;
@@ -324,7 +379,7 @@ function setStars(n, { celebrate = false } = {}) {
     el.parentElement.classList.remove("bump");
     void el.parentElement.offsetWidth;
     el.parentElement.classList.add("bump");
-    if (celebrate || n > prev) popStarBurst();
+    if (celebrate || n > prev) celebrateCorrectRead();
   }
 }
 
@@ -922,7 +977,7 @@ function handleAttempt(result) {
     setState("result-correct");
     state.closeAgainPending = false;
     clearReadAgain();
-    setTimeout(() => advance(), 1200);
+    setTimeout(() => advance(), 1400);
     return;
   }
   // Locked close / miss — move on; never keep "one more" copy.

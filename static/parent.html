@@ -22,8 +22,8 @@
       <h2 id="settings-title">Settings</h2>
       <form class="settings-form" data-settings>
         <label>
-          Profile name
-          <input name="profile_name" type="text" autocomplete="nickname" />
+          Profile name <span class="optional">(optional)</span>
+          <input name="profile_name" type="text" autocomplete="nickname" placeholder="Leave blank — progress still saves" />
         </label>
         <label>
           Mode
@@ -38,7 +38,10 @@
         </label>
         <label>
           Session length
-          <input name="session_length" type="number" min="5" max="20" />
+          <select name="session_length">
+            <option value="5">5 words / phrases</option>
+            <option value="10">10 words / phrases</option>
+          </select>
         </label>
         <label class="buddy-setting">
           Buddy

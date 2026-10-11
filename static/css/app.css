@@ -646,6 +646,125 @@ body[data-state="recording"] .mic-particles {
   }
 }
 
+.success-fx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.success-fx.pop {
+  opacity: 1;
+}
+
+.success-fx .fx-bit {
+  position: absolute;
+  top: -8%;
+  left: var(--x);
+  font-style: normal;
+  font-size: 1.1rem;
+  animation: fx-fall var(--dur) ease-in forwards;
+  animation-delay: var(--delay);
+  transform: rotate(var(--spin));
+}
+
+.success-fx-glitter .fx-bit {
+  color: #ffd24a;
+  text-shadow: 0 0 8px rgba(255, 220, 100, 0.9);
+  font-size: 1.25rem;
+}
+
+.success-fx-stars .fx-bit {
+  color: #ffb020;
+  font-size: 1.35rem;
+}
+
+.success-fx-chocolate .fx-bit {
+  color: #6b3a1f;
+  font-size: 0.85rem;
+  opacity: 0.95;
+}
+
+@keyframes fx-fall {
+  0% {
+    transform: translateY(0) rotate(var(--spin)) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(calc(var(--spin) + 180deg)) scale(1);
+    opacity: 0;
+  }
+}
+
+.fx-rainbow-arc {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  width: min(92vw, 420px);
+  height: min(46vw, 210px);
+  transform: translateX(-50%);
+  border-radius: 50% 50% 0 0;
+  background: conic-gradient(
+    from 200deg,
+    #ff6b6b,
+    #ffb020,
+    #ffe66d,
+    #7dcea0,
+    #5dade2,
+    #af7ac5,
+    #ff6b6b
+  );
+  mask: radial-gradient(ellipse 70% 90% at 50% 100%, transparent 54%, #000 56%);
+  -webkit-mask: radial-gradient(ellipse 70% 90% at 50% 100%, transparent 54%, #000 56%);
+  animation: fx-rainbow-pop 1.2s ease forwards;
+}
+
+@keyframes fx-rainbow-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.7);
+  }
+  35% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+.fx-clap {
+  position: absolute;
+  font-weight: 800;
+  font-size: clamp(1rem, 4vw, 1.4rem);
+  color: var(--coral-deep, #e86a4a);
+  letter-spacing: 0.02em;
+  animation: fx-clap-pop 1.1s ease forwards;
+  animation-delay: calc(var(--i) * 0.05s);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.65);
+}
+
+@keyframes fx-clap-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) translateY(12px);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.15) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) translateY(-18px);
+  }
+}
+
 .chrome {
   padding: 0.75rem 1.25rem 1.25rem;
   text-align: center;

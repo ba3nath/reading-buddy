@@ -87,7 +87,8 @@ function fillSettings(settings) {
   form.profile_name.value = settings.profile_name || "";
   form.mode.value = settings.mode || "beginner";
   form.level.value = settings.level ?? 1;
-  form.session_length.value = settings.session_length ?? 10;
+  const len = Number(settings.session_length) === 5 ? 5 : 10;
+  form.session_length.value = String(len);
   form.buddy.value = settings.buddy || "krishna";
   form.keep_audio.checked = Boolean(settings.keep_audio);
   form.auto_strict.checked = settings.auto_strict !== false;

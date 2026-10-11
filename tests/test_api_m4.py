@@ -45,7 +45,7 @@ def test_settings_round_trip(client):
     payload = {
         "mode": "strict",
         "level": 4,
-        "session_length": 12,
+        "session_length": 10,
         "keep_audio": False,
         "profile_name": "Asha",
         "buddy": "krishna",
@@ -56,7 +56,7 @@ def test_settings_round_trip(client):
     body = res.json()
     assert body["mode"] == "strict"
     assert body["level"] == 4
-    assert body["session_length"] == 12
+    assert body["session_length"] == 10
     assert body["keep_audio"] is False
     assert body["profile_name"] == "Asha"
     assert body["buddy"] == "krishna"
@@ -65,6 +65,80 @@ def test_settings_round_trip(client):
     got = client.get("/api/parent/settings").json()
     assert got["buddy"] == "krishna"
     assert got["profile_name"] == "Asha"
+
+
+def test_session_length_only_5_or_10(client, tmp_env):
+    """Uniform session sizes: only 5 or 10; other values snap to the nearer."""
+    from app.config import normalize_session_length
+
+    assert normalize_session_length(5) == 5
+    assert normalize_session_length(10) == 10
+    assert normalize_session_length(12) == 10
+    assert normalize_session_length(6) == 5
+    assert normalize_session_length(7) == 5
+    assert normalize_session_length(8) == 10
+
+    assert client.put("/api/parent/settings", json={"session_length": 5}).json()[
+        "session_length"
+    ] == 5
+    assert client.put("/api/parent/settings", json={"session_length": 12}).json()[
+        "session_length"
+    ] == 10
+    save_settings({**load_settings(), "session_length": 15})
+    assert load_settings()["session_length"] == 10
+
+    parent = client.get("/parent").text
+    assert 'value="5"' in parent
+    assert 'value="10"' in parent
+    assert 'max="20"' not in parent
+
+
+def test_empty_profile_still_saves_session_and_export(client, whisper_double, tone_wav, tmp_env):
+    """Progress persists with no profile name — sessions, attempts, mastery, export."""
+    save_settings({**load_settings(), "profile_name": "", "session_length": 5})
+    assert load_settings()["profile_name"] == ""
+
+    start = client.post("/api/sessions", json={"level": 1}).json()
+    sid = start["session_id"]
+    assert len(start["items"]) == 5
+    item = start["items"][0]
+    whisper_double.set_transcript(
+        AttemptTranscript(
+            transcript=item["text"],
+            words=[TranscriptWord(word=item["text"], probability=0.95)],
+            no_speech_prob=0.05,
+        )
+    )
+    post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=0)
+    # Finish remaining slots quickly so complete works.
+    for qi, it in enumerate(start["items"][1:], start=1):
+        whisper_double.set_transcript(
+            AttemptTranscript(
+                transcript=it["text"],
+                words=[TranscriptWord(word=it["text"], probability=0.95)],
+                no_speech_prob=0.05,
+            )
+        )
+        post_attempt(client, sid, it["id"], tone_wav.read_bytes(), queue_index=qi)
+
+    done = client.post(f"/api/sessions/{sid}/complete", json={}).json()
+    assert done["planned_count"] == 5
+    assert done["stars"] >= 1
+    assert load_settings()["lifetime_stars"] >= 1
+    assert load_settings()["profile_name"] == ""
+
+    export = client.get("/api/parent/export")
+    assert export.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(export.content))
+    names = set(zf.namelist())
+    assert "sessions.csv" in names
+    assert "attempts.csv" in names
+    assert "mastery.csv" in names
+    assert "settings.csv" in names
+    settings_csv = zf.read("settings.csv").decode("utf-8")
+    assert "profile_name" in settings_csv
+    sessions_csv = zf.read("sessions.csv").decode("utf-8")
+    assert str(sid) in sessions_csv
 
 
 def test_buddy_validation(client, assert_error_envelope):
@@ -175,7 +249,13 @@ def test_export_zip_four_csvs(client):
     )
     zf = zipfile.ZipFile(io.BytesIO(res.content))
     names = set(zf.namelist())
-    assert names == {"items.csv", "sessions.csv", "attempts.csv", "mastery.csv"}
+    assert names == {
+        "items.csv",
+        "sessions.csv",
+        "attempts.csv",
+        "mastery.csv",
+        "settings.csv",
+    }
     for name in names:
         text = zf.read(name).decode("utf-8")
         assert "," in text or text.strip()  # header row at least

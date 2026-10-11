@@ -156,13 +156,23 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         data = json.load(f)
     merged = dict(config.DEFAULT_SETTINGS)
     merged.update(data)
+    dirty = False
     # Migrate retired buddies (persist so old settings stay valid).
     buddy = str(merged.get("buddy", "")).lower()
     if buddy == "mouse":
         merged["buddy"] = "unicorn"
-        save_settings(merged, settings_path)
+        dirty = True
     elif buddy == "cat":
         merged["buddy"] = "krishna"
+        dirty = True
+    # Session length is only 5 or 10.
+    length = config.normalize_session_length(
+        merged.get("session_length", config.DEFAULT_SESSION_LENGTH)
+    )
+    if int(merged.get("session_length", 0) or 0) != length:
+        merged["session_length"] = length
+        dirty = True
+    if dirty:
         save_settings(merged, settings_path)
     return merged
 

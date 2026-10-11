@@ -214,6 +214,14 @@ def export_zip_bytes(conn) -> bytes:
             conn,
             "SELECT item_id, correct_count, days_json, miss_count, review_step, next_review_on, mastered, mastered_on, last_result, last_seen_on FROM mastery ORDER BY item_id",
         )
+        # Settings snapshot (profile optional — still export so progress is backed up).
+        settings = load_settings()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["key", "value"])
+        for key in sorted(settings.keys()):
+            writer.writerow([key, json.dumps(settings[key])])
+        zf.writestr("settings.csv", out.getvalue())
     return buf.getvalue()
 
 
@@ -253,8 +261,9 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     if level < 1 or level > 7:
         raise ValueError("level must be between 1 and 7")
     settings["level"] = level
-    length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
-    settings["session_length"] = max(5, min(20, length))
+    settings["session_length"] = config.normalize_session_length(
+        settings.get("session_length", config.DEFAULT_SESSION_LENGTH)
+    )
     settings["auto_strict"] = bool(settings.get("auto_strict", True))
     settings["keep_audio"] = bool(settings.get("keep_audio", False))
     buddy = str(settings.get("buddy", "krishna")).lower()
