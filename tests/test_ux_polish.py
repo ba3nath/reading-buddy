@@ -79,6 +79,27 @@ def test_home_start_comes_before_quest_hud():
     assert buddy_at < start_at < quest_at
 
 
+def test_home_pause_and_continue_controls():
+    """Kids can leave mid-session for Home and Continue without losing progress."""
+    assert "data-go-home" in HTML
+    assert "Home · pause" in HTML
+    assert "data-continue" in HTML
+    assert "data-pause-row" in HTML
+    assert "pauseToHome" in JS
+    assert "continueSession" in JS
+    assert "syncHomeControls" in JS
+    assert "state.paused" in JS or "paused: false" in JS
+    assert "discard()" in (ROOT / "static" / "js" / "record.js").read_text(
+        encoding="utf-8"
+    )
+    assert ".btn-home" in CSS
+    assert "[data-continue]" in CSS or "data-continue" in CSS
+    # Continue sits above Start fresh so paused kids see resume first.
+    cont_at = HTML.index("data-continue")
+    start_at = HTML.index('class="btn primary" data-start>Start</button>')
+    assert cont_at < start_at
+
+
 def test_home_has_gamify_quest_hud():
     assert "data-play-hud" in HTML
     assert "Today's quest" in HTML

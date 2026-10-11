@@ -182,6 +182,17 @@ export class RecordingSession {
     this.stop();
   }
 
+  /** Stop without scoring — used when pausing mid-take. */
+  discard() {
+    if (this.recorder) {
+      this.recorder.ondataavailable = null;
+      this.recorder.onstop = null;
+      this.recorder.onerror = null;
+    }
+    this.stop();
+    this.chunks = [];
+  }
+
   release() {
     this.cancel();
     if (this.stream) {

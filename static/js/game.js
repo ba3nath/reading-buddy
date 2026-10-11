@@ -102,7 +102,27 @@ const state = {
   combo: 0,
   play: null, // home quest / streak / badges snapshot
   illustrationKeys: null, // Set<string> from /static/illustrations/keys.json
+  paused: false, // mid-session home — Continue resumes without a new session
 };
+
+function sessionInPlay() {
+  return Boolean(state.sessionId && state.items?.length && state.phase === "read");
+}
+
+function syncHomeControls() {
+  const goHome = $("[data-go-home]");
+  const pauseRow = $("[data-pause-row]");
+  const startBtn = document.querySelector(
+    '.btn.primary[data-start]:not([data-level-pick])'
+  );
+  const playing = sessionInPlay() && state.id !== "home" && state.id !== "session-end";
+  if (goHome) goHome.hidden = !playing;
+  if (pauseRow) pauseRow.hidden = !(state.paused && sessionInPlay());
+  if (startBtn) {
+    startBtn.textContent =
+      state.paused && sessionInPlay() ? "Start fresh" : "Start";
+  }
+}
 
 function setState(id) {
   state.id = id;
@@ -114,6 +134,7 @@ function setState(id) {
   end.hidden = id !== "session-end";
   bootErr.hidden = id !== "boot-error";
   syncBuddyAnim();
+  syncHomeControls();
 }
 
 function buddyAnimForState(id) {
@@ -689,8 +710,49 @@ async function chooseBuddy(name) {
   }
 }
 
+function pauseToHome() {
+  // Discard an in-flight take so pause never scores a half-said word.
+  if (state.recorder?.isRecording) {
+    state.recorder.discard();
+  }
+  stopClip();
+  setMicEnabled(false);
+  if (!sessionInPlay()) {
+    setState("home");
+    return;
+  }
+  state.paused = true;
+  setMessage("Paused — tap Continue when you are ready");
+  setState("home");
+  const hint = $("[data-pause-hint]");
+  if (hint) {
+    const cur = Math.min(state.index + 1, state.items.length);
+    hint.textContent = `Paused on ${cur} of ${state.items.length} — Continue anytime`;
+  }
+}
+
+async function continueSession() {
+  if (!sessionInPlay()) {
+    setState("home");
+    return;
+  }
+  state.paused = false;
+  $('[data-view="home"]').hidden = true;
+  $('[data-view="end"]').hidden = true;
+  const badge = $("[data-level]");
+  if (badge && state.level) {
+    badge.hidden = false;
+    badge.textContent = `Level ${state.level}`;
+  }
+  setStars(state.stars);
+  setProgress();
+  syncHomeControls();
+  await showListen();
+}
+
 async function startSession(level) {
   clearReadAgain();
+  state.paused = false;
   setMessage("Starting…");
   setMicEnabled(false);
   const body =
@@ -720,6 +782,7 @@ async function startSession(level) {
   badge.textContent = `Level ${data.level}`;
   $('[data-view="home"]').hidden = true;
   $('[data-view="end"]').hidden = true;
+  syncHomeControls();
   showListen();
 }
 
@@ -1144,6 +1207,20 @@ function wire() {
       });
     });
   });
+  const goHome = $("[data-go-home]");
+  if (goHome) {
+    goHome.addEventListener("click", () => pauseToHome());
+  }
+  const continueBtn = $("[data-continue]");
+  if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+      continueSession().catch((err) => {
+        console.error(err);
+        setMessage(err.message || "Could not continue");
+        setState("home");
+      });
+    });
+  }
   document.querySelectorAll("[data-buddy-choice]").forEach((btn) => {
     btn.addEventListener("click", () => {
       chooseBuddy(btn.dataset.buddyChoice).catch(console.error);
@@ -1157,6 +1234,7 @@ function wire() {
     state.sessionId = null;
     state.items = [];
     state.index = 0;
+    state.paused = false;
     state.closeAgainPending = false;
     state.replay = [];
     state.replayIndex = 0;

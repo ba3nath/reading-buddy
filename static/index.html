@@ -9,6 +9,9 @@
 <body class="app" data-state="boot">
   <header class="top">
     <div class="brand">Reading Buddy</div>
+    <button type="button" class="btn-home" data-go-home hidden>
+      Home · pause
+    </button>
     <div class="stars" aria-live="polite">★ <span data-stars>0</span></div>
     <div class="level-badge" data-level hidden></div>
   </header>
@@ -75,6 +78,10 @@
       </div>
     </div>
 
+    <div class="start-row pause-row" data-pause-row hidden>
+      <button type="button" class="btn primary" data-continue>Continue</button>
+      <p class="pause-hint" data-pause-hint>Paused — pick up where you left off</p>
+    </div>
     <div class="start-row">
       <button type="button" class="btn primary" data-start>Start</button>
     </div>

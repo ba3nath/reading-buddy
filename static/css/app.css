@@ -57,6 +57,29 @@ body.app {
   letter-spacing: 0.01em;
 }
 
+.btn-home {
+  border: 1px solid rgba(60, 40, 20, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-home:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--ink);
+  border-color: rgba(47, 111, 94, 0.35);
+}
+
+.btn-home[hidden] {
+  display: none;
+}
+
 .stars {
   margin-left: auto;
   font-weight: 800;
@@ -992,6 +1015,32 @@ body[data-state="recording"] .mic-particles {
   box-shadow: 0 10px 24px rgba(240, 106, 69, 0.28);
 }
 
+.view-home .pause-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(100%, 22rem);
+}
+
+.view-home .pause-row[hidden] {
+  display: none;
+}
+
+.view-home .btn.primary[data-continue] {
+  background: linear-gradient(180deg, var(--meadow) 0%, var(--meadow-deep) 100%);
+  color: #fffdf7;
+  box-shadow: 0 10px 24px rgba(63, 154, 95, 0.28);
+  min-width: 12rem;
+}
+
+.view-home .pause-hint {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
 .view-home .btn.ghost {
   background: rgba(255, 255, 255, 0.78);
   border-color: rgba(58, 160, 208, 0.28);
@@ -1289,6 +1338,17 @@ body[data-state="session-end"] .stage,
 body[data-state="boot-error"] .stage {
   opacity: 0.2;
   pointer-events: none;
+}
+
+body[data-state="boot"] .chrome,
+body[data-state="home"] .chrome,
+body[data-state="session-end"] .chrome,
+body[data-state="boot-error"] .chrome,
+body[data-state="boot"] .btn-home,
+body[data-state="home"] .btn-home,
+body[data-state="session-end"] .btn-home,
+body[data-state="boot-error"] .btn-home {
+  visibility: hidden;
 }
 
 body[data-state="result-miss"] .stage,
