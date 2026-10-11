@@ -86,7 +86,7 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     for row in queue:
         ensure_mastery_row(conn, row["id"])
 
-    ratio_flags = [True] * length  # every planned slot counts (incl. adaptive repeats)
+    ratio_flags = [True] * length  # every planned slot counts for the session ratio
     cur = conn.execute(
         """
         INSERT INTO sessions (
@@ -165,7 +165,7 @@ def set_play_and_ratio_flags(
 
 
 def is_ratio_slot(session: sqlite3.Row, queue_index: int) -> bool:
-    """True for planned queue slots (including adaptive repeats); false for reinserts.
+    """True for planned queue slots; false for same-session miss reinserts.
 
     Session ratio uses locking non-retry results on ratio slots only.
     Replay never uses this path for ratio (is_replay / counts_for_session=0).
@@ -709,7 +709,7 @@ def apply_attempt(
             counts_for_ratio = is_ratio_slot(session, queue_index)
 
             if result == "correct":
-                # Ratio: every planned slot (incl. adaptive repeats); not reinserts.
+                # Ratio: every planned slot; not same-session miss reinserts.
                 if counts_for_ratio:
                     correct_count += 1
                 message = config.MSG_CORRECT

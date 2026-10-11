@@ -250,7 +250,11 @@ def _level7_grouped(conn: sqlite3.Connection, level: int) -> list[sqlite3.Row]:
 def build_adaptive_queue(
     conn: sqlite3.Connection, level: int, length: int
 ) -> list[sqlite3.Row]:
-    """Due reviews → unmastered at level → repeat least-practiced → one refresher."""
+    """Due reviews → unmastered at level → at most one mastered refresher.
+
+    Planned items are unique by item id. When fewer than `length` candidates
+    remain, return a shorter queue rather than padding with duplicates.
+    """
     today = local_today()
     queue: list[sqlite3.Row] = []
     seen: set[int] = set()
@@ -299,26 +303,8 @@ def build_adaptive_queue(
         queue.append(row)
         seen.add(row["id"])
 
-    # Level exhausted: repeat least-practiced *unmastered* at this level only.
-    # Never pad with mastered items (plan: mastered absent except ≤1 refresher).
-    if len(queue) < length:
-        repeats = conn.execute(
-            """
-            SELECT i.*
-            FROM items i
-            LEFT JOIN mastery m ON m.item_id = i.id
-            WHERE i.level = ? AND COALESCE(m.mastered, 0) = 0
-            ORDER BY COALESCE(m.correct_count, 0) ASC, i.id ASC
-            """,
-            (level,),
-        ).fetchall()
-        if repeats:
-            idx = 0
-            while len(queue) < length:
-                queue.append(repeats[idx % len(repeats)])
-                idx += 1
-
     # At most one mastered refresher when there is still room (shorter session OK).
+    # Never pad with duplicate unmastered items or a stack of mastered items.
     if len(queue) < length:
         mastered = conn.execute(
             """

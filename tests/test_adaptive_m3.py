@@ -198,10 +198,10 @@ def test_same_session_miss_reinsert(tmp_env):
     assert len(play2) == len(play)
 
 
-def test_planned_repeats_all_count_for_ratio(tmp_env):
-    """B2: adaptive repeat-fill slots count; all-correct → full correct_count."""
+def test_exhausted_level_queue_stays_unique(tmp_env):
+    """B2: few unmastered left → shorter unique queue, no repeat-fill padding."""
     conn = tmp_env["conn"]
-    # Master all but two level-1 items so the queue repeats those two.
+    # Master all but two level-1 items so only those two remain for practice.
     level1 = conn.execute(
         "SELECT id FROM items WHERE level = 1 ORDER BY id"
     ).fetchall()
@@ -231,12 +231,20 @@ def test_planned_repeats_all_count_for_ratio(tmp_env):
             )
     conn.commit()
 
+    queue = build_adaptive_queue(conn, level=1, length=10)
+    queue_ids = [row["id"] for row in queue]
+    assert len(queue_ids) == len(set(queue_ids))
+    assert keep <= set(queue_ids)
+    # Two unmastered + at most one mastered refresher — never pad to 10.
+    assert len(queue_ids) <= 3
+    assert len([i for i in queue_ids if i in keep]) == 2
+
     data = start_session(conn, level=1)
     sid = data["session_id"]
-    assert len(data["items"]) == 10
     ids = [i["id"] for i in data["items"]]
-    assert set(ids) <= keep
-    assert len(set(ids)) == 2  # only the two unmastered, repeated
+    assert len(ids) == len(set(ids))
+    assert len(ids) <= 3
+    assert keep <= set(ids)
 
     for qi, item in enumerate(data["items"]):
         resp = _apply(
@@ -256,10 +264,106 @@ def test_planned_repeats_all_count_for_ratio(tmp_env):
     row = conn.execute(
         "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
     ).fetchone()
-    assert row["planned_count"] == 10
-    assert row["correct_count"] == 10  # every planned slot, not unique item_id
-    done = complete_session(conn, sid)
-    assert done["level_after"] >= data["level"]  # 10/10 moves up (unless already 7)
+    assert row["planned_count"] == len(ids)
+    assert row["correct_count"] == len(ids)
+
+
+def test_session_planned_items_are_unique(tmp_env):
+    """Fresh level-1 start: a 10-word set must not contain duplicate item ids."""
+    conn = tmp_env["conn"]
+    level1_n = conn.execute(
+        "SELECT COUNT(*) AS n FROM items WHERE level = 1"
+    ).fetchone()["n"]
+    assert level1_n >= 10
+
+    queue = build_adaptive_queue(conn, level=1, length=10)
+    assert len(queue) == 10
+    assert len({row["id"] for row in queue}) == 10
+
+    data = start_session(conn, level=1)
+    ids = [i["id"] for i in data["items"]]
+    assert len(ids) == 10
+    assert len(set(ids)) == 10
+
+
+def test_five_remaining_words_do_not_repeat_to_ten(tmp_env):
+    """Only five practice candidates left → session of five unique words, not 5×2."""
+    from app.db import local_now_iso
+
+    conn = tmp_env["conn"]
+    level1 = conn.execute(
+        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    ).fetchall()
+    assert len(level1) >= 10
+    keep = {row["id"] for row in level1[:5]}
+    skip = {row["id"] for row in level1[5:]}
+
+    # Mark the other level-1 words as already correct today so fill skips them.
+    cur = conn.execute(
+        """
+        INSERT INTO sessions (
+          started_at, ended_at, mode, level, planned_count, planned_item_ids,
+          play_item_ids, ratio_flags, correct_count, stars, low_session,
+          level_after, completed
+        ) VALUES (?, ?, 'beginner', 1, ?, ?, ?, ?, 0, 0, 0, 1, 1)
+        """,
+        (
+            local_now_iso(),
+            local_now_iso(),
+            len(skip),
+            json.dumps(sorted(skip)),
+            json.dumps(sorted(skip)),
+            json.dumps([True] * len(skip)),
+        ),
+    )
+    sid_prev = int(cur.lastrowid)
+    for item_id in skip:
+        conn.execute(
+            """
+            INSERT INTO attempts (
+              session_id, item_id, heard, confidence, word_scores, result,
+              counts_for_session, is_replay, queue_index, replay_word, created_at
+            ) VALUES (?, ?, '', NULL, '[]', 'correct', 1, 0, 0, '', ?)
+            """,
+            (sid_prev, item_id, local_now_iso()),
+        )
+        conn.execute(
+            """
+            INSERT INTO mastery (item_id, correct_count, days_json, miss_count,
+              review_step, next_review_on, mastered)
+            VALUES (?, 0, '[]', 0, 0, NULL, 0)
+            ON CONFLICT(item_id) DO UPDATE SET mastered=0
+            """,
+            (item_id,),
+        )
+    for item_id in keep:
+        conn.execute(
+            """
+            INSERT INTO mastery (item_id, correct_count, days_json, miss_count,
+              review_step, next_review_on, mastered)
+            VALUES (?, 0, '[]', 0, 0, NULL, 0)
+            ON CONFLICT(item_id) DO UPDATE SET mastered=0, correct_count=0
+            """,
+            (item_id,),
+        )
+    conn.commit()
+
+    queue = build_adaptive_queue(conn, level=1, length=10)
+    queue_ids = [row["id"] for row in queue]
+    assert len(queue_ids) == len(set(queue_ids))
+    assert set(queue_ids) == keep
+    assert len(queue_ids) == 5
+
+    data = start_session(conn, level=1)
+    ids = [i["id"] for i in data["items"]]
+    assert len(ids) == 5
+    assert len(set(ids)) == 5
+    assert set(ids) == keep
+    row = conn.execute(
+        "SELECT planned_count FROM sessions WHERE id = ?",
+        (data["session_id"],),
+    ).fetchone()
+    assert row["planned_count"] == 5
 
 
 def test_reinsert_correct_does_not_increase_correct_count(tmp_env):
