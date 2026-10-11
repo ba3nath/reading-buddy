@@ -199,14 +199,14 @@ def test_same_session_miss_reinsert(tmp_env):
 
 
 def test_exhausted_level_queue_stays_unique(tmp_env):
-    """B2: few unmastered left → shorter unique queue, no repeat-fill padding."""
+    """Few unmastered in Words → unique 5-pack (pad with mastered, never repeat)."""
     conn = tmp_env["conn"]
-    # Master all but two level-1 items so only those two remain for practice.
-    level1 = conn.execute(
-        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    # Words difficulty spans content levels 1–3.
+    words = conn.execute(
+        "SELECT id FROM items WHERE level IN (1, 2, 3) ORDER BY id"
     ).fetchall()
-    keep = {level1[0]["id"], level1[1]["id"]}
-    for row in level1:
+    keep = {words[0]["id"], words[1]["id"]}
+    for row in words:
         if row["id"] in keep:
             conn.execute(
                 """
@@ -235,15 +235,15 @@ def test_exhausted_level_queue_stays_unique(tmp_env):
     queue_ids = [row["id"] for row in queue]
     assert len(queue_ids) == len(set(queue_ids))
     assert keep <= set(queue_ids)
-    # Two unmastered + at most one mastered refresher — never pad to 10.
-    assert len(queue_ids) <= 3
+    # Pad with mastered to a uniform 10 — never duplicates, never 6–9.
+    assert len(queue_ids) == 10
     assert len([i for i in queue_ids if i in keep]) == 2
 
     data = start_session(conn, level=1)
     sid = data["session_id"]
     ids = [i["id"] for i in data["items"]]
     assert len(ids) == len(set(ids))
-    assert len(ids) <= 3
+    assert len(ids) == 10
     assert keep <= set(ids)
 
     for qi, item in enumerate(data["items"]):
@@ -287,54 +287,25 @@ def test_session_planned_items_are_unique(tmp_env):
 
 
 def test_five_remaining_words_do_not_repeat_to_ten(tmp_env):
-    """Only five practice candidates left → session of five unique words, not 5×2."""
-    from app.db import local_now_iso
-
+    """Five fresh Words + mastered padding → uniform 10 unique ids, never 5×2 repeats."""
     conn = tmp_env["conn"]
-    level1 = conn.execute(
-        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    words = conn.execute(
+        "SELECT id FROM items WHERE level IN (1, 2, 3) ORDER BY id"
     ).fetchall()
-    assert len(level1) >= 10
-    keep = {row["id"] for row in level1[:5]}
-    skip = {row["id"] for row in level1[5:]}
+    assert len(words) >= 10
+    keep = {row["id"] for row in words[:5]}
+    mastered_ids = {row["id"] for row in words[5:]}
 
-    # Mark the other level-1 words as already correct today so fill skips them.
-    cur = conn.execute(
-        """
-        INSERT INTO sessions (
-          started_at, ended_at, mode, level, planned_count, planned_item_ids,
-          play_item_ids, ratio_flags, correct_count, stars, low_session,
-          level_after, completed
-        ) VALUES (?, ?, 'beginner', 1, ?, ?, ?, ?, 0, 0, 0, 1, 1)
-        """,
-        (
-            local_now_iso(),
-            local_now_iso(),
-            len(skip),
-            json.dumps(sorted(skip)),
-            json.dumps(sorted(skip)),
-            json.dumps([True] * len(skip)),
-        ),
-    )
-    sid_prev = int(cur.lastrowid)
-    for item_id in skip:
-        conn.execute(
-            """
-            INSERT INTO attempts (
-              session_id, item_id, heard, confidence, word_scores, result,
-              counts_for_session, is_replay, queue_index, replay_word, created_at
-            ) VALUES (?, ?, '', NULL, '[]', 'correct', 1, 0, 0, '', ?)
-            """,
-            (sid_prev, item_id, local_now_iso()),
-        )
+    for item_id in mastered_ids:
         conn.execute(
             """
             INSERT INTO mastery (item_id, correct_count, days_json, miss_count,
-              review_step, next_review_on, mastered)
-            VALUES (?, 0, '[]', 0, 0, NULL, 0)
-            ON CONFLICT(item_id) DO UPDATE SET mastered=0
+              review_step, next_review_on, mastered, last_seen_on)
+            VALUES (?, 3, ?, 0, 0, NULL, 1, '2020-01-01')
+            ON CONFLICT(item_id) DO UPDATE SET mastered=1, correct_count=3,
+              next_review_on=NULL, last_seen_on='2020-01-01'
             """,
-            (item_id,),
+            (item_id, json.dumps(["2020-01-01", "2020-01-02"])),
         )
     for item_id in keep:
         conn.execute(
@@ -351,19 +322,19 @@ def test_five_remaining_words_do_not_repeat_to_ten(tmp_env):
     queue = build_adaptive_queue(conn, level=1, length=10)
     queue_ids = [row["id"] for row in queue]
     assert len(queue_ids) == len(set(queue_ids))
-    assert set(queue_ids) == keep
-    assert len(queue_ids) == 5
+    assert keep <= set(queue_ids)
+    assert len(queue_ids) == 10
 
     data = start_session(conn, level=1)
     ids = [i["id"] for i in data["items"]]
-    assert len(ids) == 5
-    assert len(set(ids)) == 5
-    assert set(ids) == keep
+    assert len(ids) == 10
+    assert len(set(ids)) == 10
+    assert keep <= set(ids)
     row = conn.execute(
         "SELECT planned_count FROM sessions WHERE id = ?",
         (data["session_id"],),
     ).fetchone()
-    assert row["planned_count"] == 5
+    assert row["planned_count"] == 10
 
 
 def test_reinsert_correct_does_not_increase_correct_count(tmp_env):
@@ -534,19 +505,41 @@ def test_queue_due_before_unmastered(tmp_env):
     assert queue[0]["id"] == due["id"]
 
 
-def test_start_session_levels_4_to_7(tmp_env):
+def test_start_session_four_difficulty_tiers(tmp_env):
+    """Difficulties 1–4 map to words / phrases / rhymes / stories content."""
+    from app.config import DIFFICULTY_TIERS, content_levels_for_difficulty
+
     conn = tmp_env["conn"]
-    for level in (4, 5, 6, 7):
-        data = start_session(conn, level=level)
-        assert data["level"] == level
-        assert len(data["items"]) == 10
+    expect = {
+        1: {"label": "Words", "kinds": {"word"}},
+        2: {"label": "Phrases", "kinds": {"phrase"}},
+        3: {"label": "Rhymes", "kinds": {"line"}},
+        4: {"label": "Stories", "kinds": {"sentence"}},
+    }
+    for difficulty, meta in expect.items():
+        data = start_session(conn, level=difficulty)
+        assert data["level"] == difficulty
+        assert data["difficulty"] == difficulty
+        assert data["difficulty_label"] == meta["label"]
+        assert len(data["items"]) in (5, 10)
+        assert len(data["items"]) == len({i["id"] for i in data["items"]})
         kinds = {i["kind"] for i in data["items"]}
-        if level == 4:
-            assert "phrase" in kinds
-        if level == 5:
-            assert "sentence" in kinds
-        if level >= 6:
-            assert "line" in kinds
+        assert kinds <= meta["kinds"]
+        content_levels = set(content_levels_for_difficulty(difficulty))
+        assert content_levels == set(DIFFICULTY_TIERS[difficulty]["content_levels"])
+
+
+def test_legacy_content_level_maps_into_difficulty(tmp_env):
+    """Old content picks 5–7 still start a session in the matching tier."""
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=7)
+    assert data["level"] == 3
+    assert data["difficulty_label"] == "Rhymes"
+    assert all(i["kind"] == "line" for i in data["items"])
+    data = start_session(conn, level=5)
+    assert data["level"] == 4
+    assert data["difficulty_label"] == "Stories"
+    assert all(i["kind"] == "sentence" for i in data["items"])
 
 
 def test_strict_mode_on_session(tmp_env):
@@ -565,14 +558,14 @@ def test_strict_mode_on_session(tmp_env):
     assert resp["result"] == match.result
 
 
-def test_all_mastered_queue_at_most_one_refresher(tmp_env):
-    """C1: 10/10 mastered must not return a full session of mastered items."""
+def test_all_mastered_queue_fills_uniform_length(tmp_env):
+    """All Words mastered → unique refresher set of 5 or 10, never empty/503."""
     conn = tmp_env["conn"]
-    level1 = conn.execute(
-        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    words = conn.execute(
+        "SELECT id FROM items WHERE level IN (1, 2, 3) ORDER BY id"
     ).fetchall()
-    assert len(level1) >= 10
-    for row in level1:
+    assert len(words) >= 10
+    for row in words:
         conn.execute(
             """
             INSERT INTO mastery (
@@ -588,37 +581,33 @@ def test_all_mastered_queue_at_most_one_refresher(tmp_env):
     conn.commit()
 
     queue = build_adaptive_queue(conn, level=1, length=10)
-    mastered_flags = []
+    assert len(queue) == 10
+    assert len({row["id"] for row in queue}) == 10
     for row in queue:
         m = conn.execute(
             "SELECT mastered FROM mastery WHERE item_id = ?", (row["id"],)
         ).fetchone()
-        mastered_flags.append(int(m["mastered"]) if m else 0)
-    assert len(queue) <= 1
-    assert sum(mastered_flags) <= 1
-    assert all(f == 1 for f in mastered_flags)
+        assert int(m["mastered"]) == 1
 
-    # Session start must also stay short — not pad via fixed-queue fallback.
     data = start_session(conn, level=1)
-    assert len(data["items"]) <= 1
+    assert len(data["items"]) == 10
     row = conn.execute(
         "SELECT planned_count FROM sessions WHERE id = ?",
         (data["session_id"],),
     ).fetchone()
-    assert row["planned_count"] == len(data["items"])
-    assert row["planned_count"] <= 1
+    assert row["planned_count"] == 10
 
 
 def test_all_mastered_ineligible_refresher_does_not_503(tmp_env):
-    """C7: ineligible refresher must still start a short session, not 503."""
+    """C7: ineligible gated refreshers still pad to 5/10 — never 503."""
     from app.db import local_now_iso
     from app.session import SessionError
 
     conn = tmp_env["conn"]
-    level1 = conn.execute(
-        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    words = conn.execute(
+        "SELECT id FROM items WHERE level IN (1, 2, 3) ORDER BY id"
     ).fetchall()
-    for row in level1:
+    for row in words:
         conn.execute(
             """
             INSERT INTO mastery (
@@ -648,12 +637,12 @@ def test_all_mastered_ineligible_refresher_does_not_503(tmp_env):
         (
             local_now_iso(),
             local_now_iso(),
-            json.dumps([level1[0]["id"]]),
-            json.dumps([level1[0]["id"]]),
+            json.dumps([words[0]["id"]]),
+            json.dumps([words[0]["id"]]),
         ),
     )
     sid = int(cur.lastrowid)
-    for row in level1:
+    for row in words:
         conn.execute(
             """
             INSERT INTO attempts (
@@ -667,10 +656,10 @@ def test_all_mastered_ineligible_refresher_does_not_503(tmp_env):
 
     from app.adaptive import sessions_since_item
 
-    assert sessions_since_item(conn, level1[0]["id"]) < 7
+    assert sessions_since_item(conn, words[0]["id"]) < 7
 
     queue = build_adaptive_queue(conn, level=1, length=10)
-    assert len(queue) == 1
+    assert len(queue) == 10
     m = conn.execute(
         "SELECT mastered FROM mastery WHERE item_id = ?", (queue[0]["id"],)
     ).fetchone()
@@ -680,7 +669,7 @@ def test_all_mastered_ineligible_refresher_does_not_503(tmp_env):
         data = start_session(conn, level=1)
     except SessionError as exc:
         raise AssertionError(f"start must not 503: {exc.code} {exc.message}") from exc
-    assert len(data["items"]) == 1
+    assert len(data["items"]) == 10
     assert data["level"] == 1
 
 

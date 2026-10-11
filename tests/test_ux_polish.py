@@ -147,8 +147,13 @@ def test_celebration_and_encourage_motion():
 def test_start_primary_and_more_levels():
     assert 'class="btn primary" data-start>Start</button>' in HTML
     assert "more-levels" in HTML
-    assert 'data-level-pick="2"' in HTML
-    assert 'data-level-pick="1"' not in HTML
+    assert "Pick a difficulty" in HTML
+    assert 'data-level-pick="1">Words</button>' in HTML
+    assert 'data-level-pick="2">Phrases</button>' in HTML
+    assert 'data-level-pick="3">Rhymes</button>' in HTML
+    assert 'data-level-pick="4">Stories</button>' in HTML
+    # Primary Start has no level pick — uses saved difficulty.
+    assert 'class="btn primary" data-start data-level-pick' not in HTML
 
 
 def test_read_again_indicator_when_retry_needed():
@@ -172,6 +177,7 @@ def test_level7_does_not_stack_previous_and_current_audio():
     assert "rhymeListenMessage" in JS
     assert "Listen and sing along…" in JS
     assert "isRhymeSingAlongItem" in JS
+    assert "state.level === 3" in JS
     # Locking results advance directly — only the new screen's showListen plays.
     assert "setTimeout(() => advance(), 1400)" in JS
     assert "maybeSingAlongThen(advance)" not in JS
@@ -197,12 +203,13 @@ def test_level7_does_not_stack_previous_and_current_audio():
 
 
 def test_level7_session_lines_have_unique_audio_slugs(tmp_env, client):
-    """Each level-7 line on screen maps to its own slug wav — not a shared/group clip."""
+    """Rhymes difficulty: each line on screen maps to its own slug wav."""
     from app.session import start_session
 
     conn = tmp_env["conn"]
-    data = start_session(conn, level=7)
-    assert data["level"] == 7
+    data = start_session(conn, level=3)
+    assert data["level"] == 3
+    assert data["difficulty_label"] == "Rhymes"
     items = data["items"]
     assert len(items) >= 2
     assert all(i.get("kind") == "line" for i in items)

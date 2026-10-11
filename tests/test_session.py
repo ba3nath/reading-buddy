@@ -61,12 +61,21 @@ def test_correct_word_adds_star(tmp_env):
 
 def test_hard_bonus_first_try(tmp_env):
     conn = tmp_env["conn"]
-    data = start_session(conn, level=3)
-    item = data["items"][0]
-    row = conn.execute("SELECT hard FROM items WHERE id = ?", (item["id"],)).fetchone()
-    assert row["hard"] == 1
-    match = score_attempt(item["text"], item["text"], [0.95], mode="beginner")
-    resp = _apply(conn, data["session_id"], item["id"], match, qi=0)
+    hard = conn.execute(
+        "SELECT id, text FROM items WHERE hard = 1 AND level IN (1, 2, 3) ORDER BY id LIMIT 1"
+    ).fetchone()
+    assert hard is not None
+    data = start_session(conn, level=1)
+    sid = data["session_id"]
+    # Pin the hard word at slot 0 (Words tier includes content levels 1–3).
+    play = [hard["id"]] + [i["id"] for i in data["items"] if i["id"] != hard["id"]]
+    play = play[: len(data["items"])]
+    from app.session import set_play_and_ratio_flags
+
+    set_play_and_ratio_flags(conn, sid, play, [True] * len(play))
+    conn.commit()
+    match = score_attempt(hard["text"], hard["text"], [0.95], mode="beginner")
+    resp = _apply(conn, sid, hard["id"], match, qi=0)
     assert resp["result"] == "correct"
     assert resp["stars_awarded"] == 2  # word + hard bonus
     assert resp["stars_total"] == 2
@@ -139,18 +148,28 @@ def test_beginner_humpty_dumpty_session_is_miss_not_close(tmp_env):
 def test_strict_close_second_take_no_hard_bonus(tmp_env):
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
-    data = start_session(conn, level=3)
+    hard = conn.execute(
+        "SELECT id, text FROM items WHERE hard = 1 AND level IN (1, 2, 3) ORDER BY id LIMIT 1"
+    ).fetchone()
+    assert hard is not None
+    data = start_session(conn, level=1)
     assert data["mode"] == "strict"
-    item = data["items"][0]
-    text = item["text"]
+    sid = data["session_id"]
+    play = [hard["id"]] + [i["id"] for i in data["items"] if i["id"] != hard["id"]]
+    play = play[: len(data["items"])]
+    from app.session import set_play_and_ratio_flags
+
+    set_play_and_ratio_flags(conn, sid, play, [True] * len(play))
+    conn.commit()
+    text = hard["text"]
     close_match = score_attempt(text, text, [0.40], mode="strict")
     assert close_match.result == "close"
-    first = _apply(conn, data["session_id"], item["id"], close_match, qi=0)
+    first = _apply(conn, sid, hard["id"], close_match, qi=0)
     assert first["again"] is True
     assert first["stars_awarded"] == 0
 
     second_match = score_attempt(text, text, [0.95], mode="strict")
-    second = _apply(conn, data["session_id"], item["id"], second_match, qi=0)
+    second = _apply(conn, sid, hard["id"], second_match, qi=0)
     assert second["result"] == "correct"
     assert second["again"] is False
     assert second["stars_awarded"] == 1  # no hard bonus on second take
@@ -162,7 +181,7 @@ def test_strict_close_second_take_no_hard_bonus(tmp_env):
         WHERE session_id = ? AND item_id = ?
         ORDER BY id
         """,
-        (data["session_id"], item["id"]),
+        (sid, hard["id"]),
     ).fetchall()
     assert locks[0]["counts_for_session"] == 0
     assert locks[0]["result"] == "close"

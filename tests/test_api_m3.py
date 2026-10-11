@@ -120,13 +120,24 @@ def test_complete_returns_level_after(client, whisper_double, tone_wav, tmp_env)
     assert load_settings()["level"] == 2
 
 
-def test_levels_4_7_session_start(client):
-    for level in (4, 5, 6, 7):
-        res = client.post("/api/sessions", json={"level": level})
+def test_difficulty_tiers_session_start(client):
+    """POST level 1–4 starts that tier; legacy 5–7 map into a tier."""
+    expect = {
+        1: ("Words", 1),
+        2: ("Phrases", 2),
+        3: ("Rhymes", 3),
+        4: ("Stories", 4),
+        5: ("Stories", 4),
+        6: ("Rhymes", 3),
+        7: ("Rhymes", 3),
+    }
+    for raw, (label, difficulty) in expect.items():
+        res = client.post("/api/sessions", json={"level": raw})
         assert res.status_code == 200, res.text
         body = res.json()
-        assert body["level"] == level
-        assert len(body["items"]) == 10
+        assert body["level"] == difficulty
+        assert body["difficulty_label"] == label
+        assert len(body["items"]) in (5, 10)
 
 
 def test_start_omits_level_uses_settings(client):
@@ -135,20 +146,21 @@ def test_start_omits_level_uses_settings(client):
     res = client.post("/api/sessions")
     assert res.status_code == 200
     assert res.json()["level"] == 4
+    assert res.json()["difficulty_label"] == "Stories"
     assert len(res.json()["items"]) >= 1
 
 
 def test_start_all_mastered_ineligible_not_503(client, tmp_env):
-    """C7 API: all-mastered + recent sees → 200 short session, not 503."""
+    """C7 API: all-mastered Words still starts a uniform 5/10 session, not 503."""
     import json
 
     from app.db import local_now_iso, local_today
 
     conn = tmp_env["conn"]
-    level1 = conn.execute(
-        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    words = conn.execute(
+        "SELECT id FROM items WHERE level IN (1, 2, 3) ORDER BY id"
     ).fetchall()
-    for row in level1:
+    for row in words:
         conn.execute(
             """
             INSERT INTO mastery (
@@ -177,12 +189,12 @@ def test_start_all_mastered_ineligible_not_503(client, tmp_env):
         (
             local_now_iso(),
             local_now_iso(),
-            json.dumps([level1[0]["id"]]),
-            json.dumps([level1[0]["id"]]),
+            json.dumps([words[0]["id"]]),
+            json.dumps([words[0]["id"]]),
         ),
     )
     sid = int(cur.lastrowid)
-    for row in level1:
+    for row in words:
         conn.execute(
             """
             INSERT INTO attempts (
@@ -198,7 +210,7 @@ def test_start_all_mastered_ineligible_not_503(client, tmp_env):
     assert res.status_code == 200, res.text
     body = res.json()
     assert body["level"] == 1
-    assert len(body["items"]) == 1
+    assert len(body["items"]) == 10
 
 
 def test_start_button_omits_level_pick():
@@ -207,5 +219,5 @@ def test_start_button_omits_level_pick():
 
     html = Path("static/index.html").read_text(encoding="utf-8")
     assert 'class="btn primary" data-start>Start</button>' in html
-    assert 'data-level-pick="1"' not in html
-    assert 'data-level-pick="2"' in html  # demo overrides remain
+    assert 'class="btn primary" data-start data-level-pick' not in html
+    assert 'data-level-pick="2">Phrases</button>' in html

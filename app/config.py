@@ -57,6 +57,59 @@ def normalize_session_length(value: object) -> int:
     if n in ALLOWED_SESSION_LENGTHS:
         return n
     return 5 if abs(n - 5) <= abs(n - 10) else 10
+
+
+# Four difficulty tiers (settings/session ``level``). Content rows keep item.level 1–7.
+DIFFICULTY_TIERS: dict[int, dict[str, object]] = {
+    1: {"key": "words", "label": "Words", "content_levels": (1, 2, 3)},
+    2: {"key": "phrases", "label": "Phrases", "content_levels": (4,)},
+    3: {"key": "rhymes", "label": "Rhymes", "content_levels": (6, 7)},
+    4: {"key": "stories", "label": "Stories", "content_levels": (5,)},
+}
+MAX_DIFFICULTY = 4
+
+
+def content_levels_for_difficulty(difficulty: int) -> tuple[int, ...]:
+    tier = DIFFICULTY_TIERS.get(int(difficulty))
+    if not tier:
+        return (1, 2, 3)
+    return tuple(tier["content_levels"])  # type: ignore[arg-type]
+
+
+def difficulty_label(difficulty: int) -> str:
+    tier = DIFFICULTY_TIERS.get(int(difficulty))
+    return str(tier["label"]) if tier else "Words"
+
+
+def migrate_legacy_level_to_difficulty(level: object) -> int:
+    """Map old content levels 1–7 onto difficulty tiers 1–4."""
+    try:
+        n = int(level)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 1
+    if n <= 3:
+        return 1  # words
+    if n == 4:
+        return 2  # phrases
+    if n == 5:
+        return 4  # stories
+    if n >= 6:
+        return 3  # rhymes
+    return 1
+
+
+def normalize_difficulty(value: object) -> int:
+    try:
+        n = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 1
+    if n < 1:
+        return 1
+    if n > MAX_DIFFICULTY:
+        return migrate_legacy_level_to_difficulty(n)
+    return n
+
+
 MASTERED_EVERY_N_SESSIONS = 7
 AUTO_STRICT_SESSIONS = 3  # consecutive move-up sessions → mode=strict when auto_strict
 
@@ -82,7 +135,8 @@ def msg_retry(next_try: int, tries_max: int) -> str:
 DEFAULT_SETTINGS = {
     "profile_name": "",
     "mode": "beginner",
-    "level": 1,
+    "level": 1,  # difficulty tier 1–4 (words / phrases / rhymes / stories)
+    "difficulty_migrated": True,
     "session_length": DEFAULT_SESSION_LENGTH,
     "keep_audio": False,
     "buddy": "krishna",  # krishna | unicorn

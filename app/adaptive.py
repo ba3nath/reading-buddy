@@ -33,15 +33,18 @@ def apply_level_and_auto_strict(
     planned_count: int,
     settings: dict[str, Any],
 ) -> tuple[int, dict[str, Any]]:
-    """Return (level_after, updated_settings) for a completed session."""
+    """Return (level_after, updated_settings) for a completed session.
+
+    ``level`` is a difficulty tier 1–4 (words / phrases / rhymes / stories).
+    """
     settings = dict(settings)
-    level = max(1, min(7, int(level)))
+    level = config.normalize_difficulty(level)
     low_streak = int(settings.get("low_streak", 0))
     move_up_streak = int(settings.get("move_up_streak", 0))
     level_after = level
 
     if move_up_score(correct_count, planned_count):
-        level_after = min(7, level + 1)
+        level_after = min(config.MAX_DIFFICULTY, level + 1)
         low_streak = 0
         move_up_streak += 1
     elif under_half(correct_count, planned_count):
@@ -57,6 +60,7 @@ def apply_level_and_auto_strict(
     settings["low_streak"] = low_streak
     settings["move_up_streak"] = move_up_streak
     settings["level"] = level_after
+    settings["difficulty_migrated"] = True
 
     if settings.get("auto_strict", True):
         streak_need = int(
@@ -218,146 +222,161 @@ def sessions_since_item(conn: sqlite3.Connection, item_id: int) -> int:
     return max(0, int(current) - int(last))
 
 
-def _level7_grouped(conn: sqlite3.Connection, level: int) -> list[sqlite3.Row]:
-    """Prefer whole rhyme groups in line_index order for level 7."""
+def _placeholders(n: int) -> str:
+    return ",".join("?" * n)
+
+
+def _rhyme_grouped(conn: sqlite3.Connection, content_levels: tuple[int, ...]) -> list[sqlite3.Row]:
+    """Prefer whole rhyme groups in line_index order across rhyme content levels."""
+    ph = _placeholders(len(content_levels))
     groups = conn.execute(
-        """
+        f"""
         SELECT rhyme_group, MIN(line_index) AS mi
         FROM items
-        WHERE level = ? AND rhyme_group IS NOT NULL
+        WHERE level IN ({ph}) AND rhyme_group IS NOT NULL
         GROUP BY rhyme_group
         ORDER BY mi ASC, rhyme_group ASC
         """,
-        (level,),
+        content_levels,
     ).fetchall()
     rows: list[sqlite3.Row] = []
     for g in groups:
         lines = conn.execute(
-            """
+            f"""
             SELECT i.*
             FROM items i
             LEFT JOIN mastery m ON m.item_id = i.id
-            WHERE i.level = ? AND i.rhyme_group = ?
+            WHERE i.level IN ({ph}) AND i.rhyme_group = ?
               AND COALESCE(m.mastered, 0) = 0
-            ORDER BY i.line_index ASC, i.id ASC
+            ORDER BY i.level ASC, i.line_index ASC, i.id ASC
             """,
-            (level, g["rhyme_group"]),
+            (*content_levels, g["rhyme_group"]),
         ).fetchall()
         rows.extend(lines)
     return rows
 
 
+def _snap_uniform_length(queue: list[sqlite3.Row], target: int) -> list[sqlite3.Row]:
+    """Return exactly 5 or 10 items when possible (never 6–9)."""
+    target = config.normalize_session_length(target)
+    n = len(queue)
+    if n >= target:
+        return queue[:target]
+    if target == 10 and n >= 5:
+        return queue[:5]
+    return queue
+
+
 def build_adaptive_queue(
     conn: sqlite3.Connection, level: int, length: int
 ) -> list[sqlite3.Row]:
-    """Due reviews → unmastered at level → at most one mastered refresher.
+    """Build a unique queue for a difficulty tier (1–4).
 
-    Planned items are unique by item id. When fewer than `length` candidates
-    remain, return a shorter queue rather than padding with duplicates.
+    Fills from all content levels in the tier: due → fresh unmastered →
+    practiced-today unmastered → mastered, then snaps to 5 or 10.
     """
+    difficulty = config.normalize_difficulty(level)
+    length = config.normalize_session_length(length)
+    content_levels = config.content_levels_for_difficulty(difficulty)
+    ph = _placeholders(len(content_levels))
     today = local_today()
     queue: list[sqlite3.Row] = []
     seen: set[int] = set()
 
+    def _take(rows: list[sqlite3.Row], *, skip_correct_today: bool = False) -> None:
+        for row in rows:
+            if len(queue) >= length:
+                return
+            if row["id"] in seen:
+                continue
+            if skip_correct_today and had_correct_today(conn, row["id"]):
+                continue
+            queue.append(row)
+            seen.add(row["id"])
+
     due = conn.execute(
-        """
+        f"""
         SELECT i.*
         FROM items i
         JOIN mastery m ON m.item_id = i.id
-        WHERE m.mastered = 0
+        WHERE i.level IN ({ph})
+          AND m.mastered = 0
           AND m.next_review_on IS NOT NULL
           AND m.next_review_on <= ?
         ORDER BY m.next_review_on ASC, i.id ASC
         """,
-        (today,),
+        (*content_levels, today),
     ).fetchall()
-    for row in due:
-        if len(queue) >= length:
-            break
-        if row["id"] in seen:
-            continue
-        queue.append(row)
-        seen.add(row["id"])
+    _take(due)
 
-    if level >= 7:
-        fill = _level7_grouped(conn, level)
+    if difficulty == 3:  # rhymes
+        fill = _rhyme_grouped(conn, content_levels)
     else:
         fill = conn.execute(
-            """
+            f"""
             SELECT i.*
             FROM items i
             LEFT JOIN mastery m ON m.item_id = i.id
-            WHERE i.level = ?
+            WHERE i.level IN ({ph})
               AND COALESCE(m.mastered, 0) = 0
-            ORDER BY COALESCE(m.correct_count, 0) ASC, i.id ASC
+            ORDER BY COALESCE(m.correct_count, 0) ASC, i.level ASC, i.id ASC
             """,
-            (level,),
+            content_levels,
         ).fetchall()
-    for row in fill:
-        if len(queue) >= length:
-            break
-        if row["id"] in seen:
-            continue
-        if had_correct_today(conn, row["id"]):
-            continue
-        queue.append(row)
-        seen.add(row["id"])
+    _take(fill, skip_correct_today=True)
+    # Prefer a full 5/10 set: allow same-day unmastered before mastered padding.
+    if len(queue) < length:
+        _take(fill, skip_correct_today=False)
 
-    # At most one mastered refresher when there is still room (shorter session OK).
-    # Never pad with duplicate unmastered items or a stack of mastered items.
     if len(queue) < length:
         mastered = conn.execute(
-            """
+            f"""
             SELECT i.*, m.last_seen_on
             FROM items i
             JOIN mastery m ON m.item_id = i.id
-            WHERE m.mastered = 1 AND i.level = ?
+            WHERE m.mastered = 1 AND i.level IN ({ph})
             ORDER BY CASE WHEN m.last_seen_on IS NULL THEN 0 ELSE 1 END,
                      m.last_seen_on ASC, i.id ASC
             """,
-            (level,),
+            content_levels,
         ).fetchall()
         for row in mastered:
+            if len(queue) >= length:
+                break
             if row["id"] in seen:
                 continue
+            # Prefer gated refreshers first; then any mastered to hit 5/10.
             if sessions_since_item(conn, row["id"]) >= config.MASTERED_EVERY_N_SESSIONS:
                 queue.append(row)
                 seen.add(row["id"])
+        for row in mastered:
+            if len(queue) >= length:
                 break
+            if row["id"] in seen:
+                continue
+            queue.append(row)
+            seen.add(row["id"])
 
-    # C7: never return an empty queue when any item exists at this level.
-    # If unmastered/due are gone and the refresher gate is ineligible, still
-    # offer at most one least-recently-seen mastered item as a last resort.
+    # C7: never return an empty queue when any item exists in the tier.
     if not queue:
         fallback = conn.execute(
-            """
+            f"""
             SELECT i.*
             FROM items i
-            JOIN mastery m ON m.item_id = i.id
-            WHERE m.mastered = 1 AND i.level = ?
+            LEFT JOIN mastery m ON m.item_id = i.id
+            WHERE i.level IN ({ph})
             ORDER BY CASE WHEN m.last_seen_on IS NULL THEN 0 ELSE 1 END,
                      m.last_seen_on ASC, i.id ASC
             LIMIT 1
             """,
-            (level,),
+            content_levels,
         ).fetchone()
         if fallback is not None:
             queue.append(fallback)
-        else:
-            any_item = conn.execute(
-                """
-                SELECT * FROM items WHERE level = ?
-                ORDER BY id ASC LIMIT 1
-                """,
-                (level,),
-            ).fetchone()
-            if any_item is not None:
-                queue.append(any_item)
 
     if not queue:
-        raise ValueError(f"No content for level {level}")
-    # May be shorter than `length` when the level is exhausted of unmastered items.
-    return queue[:length]
+        raise ValueError(f"No content for difficulty {difficulty}")
+    return _snap_uniform_length(queue, length)
 
 
 def maybe_reinsert_miss(

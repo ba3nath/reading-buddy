@@ -172,6 +172,18 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
     if int(merged.get("session_length", 0) or 0) != length:
         merged["session_length"] = length
         dirty = True
+    # Content levels 1–7 → difficulty tiers 1–4 (once).
+    if not merged.get("difficulty_migrated"):
+        merged["level"] = config.migrate_legacy_level_to_difficulty(
+            merged.get("level", 1)
+        )
+        merged["difficulty_migrated"] = True
+        dirty = True
+    else:
+        difficulty = config.normalize_difficulty(merged.get("level", 1))
+        if int(merged.get("level", 0) or 0) != difficulty:
+            merged["level"] = difficulty
+            dirty = True
     if dirty:
         save_settings(merged, settings_path)
     return merged

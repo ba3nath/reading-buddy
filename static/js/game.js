@@ -87,6 +87,7 @@ const state = {
   index: 0,
   stars: 0,
   level: 1,
+  difficultyLabel: "",
   buddy: "krishna",
   closeAgainPending: false,
   /** When set, another read is required for the current word. */
@@ -742,7 +743,7 @@ async function continueSession() {
   const badge = $("[data-level]");
   if (badge && state.level) {
     badge.hidden = false;
-    badge.textContent = `Level ${state.level}`;
+    badge.textContent = state.difficultyLabel || `Level ${state.level}`;
   }
   setStars(state.stars);
   setProgress();
@@ -769,6 +770,8 @@ async function startSession(level) {
   state.index = 0;
   state.stars = 0;
   state.level = data.level;
+  state.difficultyLabel =
+    data.difficulty_label || data.difficultyLabel || `Level ${data.level}`;
   if (data.buddy) await loadBuddySvg(data.buddy);
   state.closeAgainPending = false;
   state.replay = [];
@@ -779,7 +782,7 @@ async function startSession(level) {
   setStars(0);
   const badge = $("[data-level]");
   badge.hidden = false;
-  badge.textContent = `Level ${data.level}`;
+  badge.textContent = state.difficultyLabel;
   $('[data-view="home"]').hidden = true;
   $('[data-view="end"]').hidden = true;
   syncHomeControls();
@@ -957,16 +960,12 @@ function applyReinsert(result) {
 }
 
 function isRhymeSingAlongItem(item) {
-  return (
-    item &&
-    item.kind === "line" &&
-    (state.level === 6 || state.level === 7) &&
-    item.slug
-  );
+  // Difficulty 3 = Rhymes (content levels 6–7).
+  return item && item.kind === "line" && state.level === 3 && item.slug;
 }
 
 /**
- * Rhyme-time (L6–7): the listen clip on the *current* screen is the sing-along.
+ * Rhyme-time: the listen clip on the *current* screen is the sing-along.
  * Do not replay the previous line before advancing — that stacked previous + current
  * audio when the next line appeared.
  */

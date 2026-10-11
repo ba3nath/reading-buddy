@@ -67,7 +67,7 @@ $env:HF_HUB_OFFLINE = "1"
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (Krishna / unicorn), garden growth on each completed session, rhyme-time listen-and-sing-along on levels 6–7 (one clip per line on screen). Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (Krishna / unicorn), garden growth on each completed session, four difficulties (Words / Phrases / Rhymes / Stories) with uniform 5 or 10 items, Home · pause / Continue mid-session, and rhyme-time listen-and-sing-along on Rhymes (one clip per line on screen). Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
 
 `GET /api/health` reports `{ "whisper", "ffmpeg", "offline", "audio" }`.
 

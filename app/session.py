@@ -62,9 +62,17 @@ def build_fixed_queue(conn: sqlite3.Connection, level: int, length: int) -> list
 
 def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[str, Any]:
     settings = load_settings()
-    target_level = int(level if level is not None else settings.get("level", 1))
-    if target_level < 1 or target_level > 7:
-        raise SessionError("bad_request", "level must be between 1 and 7", 400)
+    raw_level = level if level is not None else settings.get("level", 1)
+    target_level = config.normalize_difficulty(raw_level)
+    if int(raw_level) != target_level and int(raw_level) > config.MAX_DIFFICULTY:
+        # Accept legacy content-level picks (5–7) by mapping into a tier.
+        target_level = config.migrate_legacy_level_to_difficulty(raw_level)
+    if target_level < 1 or target_level > config.MAX_DIFFICULTY:
+        raise SessionError(
+            "bad_request",
+            f"level must be between 1 and {config.MAX_DIFFICULTY}",
+            400,
+        )
 
     length = config.normalize_session_length(
         settings.get("session_length", config.DEFAULT_SESSION_LENGTH)
@@ -111,6 +119,8 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     return {
         "session_id": session_id,
         "level": target_level,
+        "difficulty": target_level,
+        "difficulty_label": config.difficulty_label(target_level),
         "mode": mode,
         "buddy": settings.get("buddy", "krishna"),
         "items": [item_public(row) for row in queue],

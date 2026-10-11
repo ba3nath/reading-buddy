@@ -257,10 +257,9 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
 
     if settings.get("mode") not in ("beginner", "strict"):
         raise ValueError("mode must be beginner or strict")
-    level = int(settings["level"])
-    if level < 1 or level > 7:
-        raise ValueError("level must be between 1 and 7")
+    level = config.normalize_difficulty(settings.get("level", 1))
     settings["level"] = level
+    settings["difficulty_migrated"] = True
     settings["session_length"] = config.normalize_session_length(
         settings.get("session_length", config.DEFAULT_SESSION_LENGTH)
     )
