@@ -10,7 +10,11 @@ const state = {
   stars: 0,
   level: 1,
   closeAgainPending: false,
+  replay: [],
+  replayIndex: 0,
+  phase: "read", // "read" | "replay"
   recorder: new RecordingSession(),
+  audioEl: null,
 };
 
 function setState(id) {
@@ -20,6 +24,7 @@ function setState(id) {
   const end = $('[data-view="end"]');
   const bootErr = $('[data-view="boot-error"]');
   home.hidden = id !== "home";
+  // Full-screen end only between rounds / after replay — not during listen/replay play.
   end.hidden = id !== "session-end";
   bootErr.hidden = id !== "boot-error";
 }
@@ -28,8 +33,10 @@ function setMessage(text) {
   $("[data-message]").textContent = text || "";
 }
 
-function setWord(text) {
-  $("[data-word]").textContent = text || "";
+function setWord(text, { highlight = false } = {}) {
+  const el = $("[data-word]");
+  el.textContent = text || "";
+  el.classList.toggle("highlight", Boolean(highlight));
 }
 
 function setStars(n) {
@@ -44,6 +51,14 @@ function setStars(n) {
 }
 
 function setProgress() {
+  if (state.phase === "replay") {
+    if (!state.replay.length) {
+      $("[data-progress]").textContent = "";
+      return;
+    }
+    $("[data-progress]").textContent = `Try again ${Math.min(state.replayIndex + 1, state.replay.length)} of ${state.replay.length}`;
+    return;
+  }
   if (!state.items.length) {
     $("[data-progress]").textContent = "";
     return;
@@ -53,6 +68,35 @@ function setProgress() {
 
 function setMicEnabled(on) {
   $("[data-mic]").disabled = !on;
+}
+
+function stopClip() {
+  if (state.audioEl) {
+    try {
+      state.audioEl.pause();
+      state.audioEl.removeAttribute("src");
+      state.audioEl.load();
+    } catch {
+      /* ignore */
+    }
+    state.audioEl = null;
+  }
+}
+
+function playClip(url) {
+  return new Promise((resolve) => {
+    stopClip();
+    const audio = new Audio(url);
+    state.audioEl = audio;
+    const done = () => {
+      audio.removeEventListener("ended", done);
+      audio.removeEventListener("error", done);
+      resolve();
+    };
+    audio.addEventListener("ended", done);
+    audio.addEventListener("error", done);
+    audio.play().catch(done);
+  });
 }
 
 async function api(path, options = {}) {
@@ -77,6 +121,15 @@ async function boot() {
     const health = await api("/api/health");
     if (!health.whisper || !health.ffmpeg) {
       setState("boot-error");
+      $("[data-boot-error]").textContent =
+        "Reading Buddy needs Whisper and ffmpeg on this computer. Ask an adult to finish setup, then reload.";
+      return;
+    }
+    // M2: missing clips are a setup/health issue, not a broken child play screen.
+    if (health.audio === false) {
+      setState("boot-error");
+      $("[data-boot-error]").textContent =
+        "Voice clips are not ready yet. Ask an adult to run: python scripts/generate_audio.py";
       return;
     }
     setState("home");
@@ -101,37 +154,48 @@ async function startSession(level) {
   state.stars = 0;
   state.level = data.level;
   state.closeAgainPending = false;
+  state.replay = [];
+  state.replayIndex = 0;
+  state.phase = "read";
   setStars(0);
   const badge = $("[data-level]");
   badge.hidden = false;
   badge.textContent = `Level ${data.level}`;
   $('[data-view="home"]').hidden = true;
-  showListenPlaceholder();
+  $('[data-view="end"]').hidden = true;
+  showListen();
 }
 
 function currentItem() {
   return state.items[state.index];
 }
 
-function showListenPlaceholder() {
+function currentReplay() {
+  return state.replay[state.replayIndex];
+}
+
+async function showListen() {
   const item = currentItem();
   if (!item) {
     finishSession();
     return;
   }
-  setState("listen-placeholder");
+  setState("listen");
   setWord(item.text);
-  setMessage("Your turn");
+  setMessage("Listen…");
   setProgress();
   setMicEnabled(false);
-  setTimeout(() => {
-    if (state.id === "listen-placeholder") enterIdle();
-  }, 1000);
+  try {
+    await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
+  } catch (err) {
+    console.error(err);
+  }
+  if (state.id === "listen") enterIdle();
 }
 
 function enterIdle() {
   setState("idle");
-  setMessage("Tap the button and read the word");
+  setMessage("Your turn — tap and read the word");
   setMicEnabled(true);
 }
 
@@ -154,10 +218,13 @@ async function onMicTap() {
 async function onRecordComplete(blob) {
   setState("scoring");
   setMessage("Listening…");
-  const item = currentItem();
+  const item =
+    state.phase === "replay"
+      ? { id: currentReplay().item_id, text: currentReplay().text }
+      : currentItem();
   const form = new FormData();
   form.append("item_id", String(item.id));
-  form.append("phase", "read");
+  form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");
   try {
     const result = await api(`/api/sessions/${state.sessionId}/attempts`, {
@@ -168,7 +235,10 @@ async function onRecordComplete(blob) {
   } catch (err) {
     console.error(err);
     setMessage("Something went quiet on our side. Try that word again.");
-    setTimeout(() => showListenPlaceholder(), 1200);
+    setTimeout(() => {
+      if (state.phase === "replay") showReplayItem();
+      else showListen();
+    }, 1200);
   }
 }
 
@@ -185,13 +255,19 @@ function handleAttempt(result) {
   }
   if (result.retry || result.result === "retry") {
     setState("result-retry");
-    setTimeout(() => showListenPlaceholder(), 1400);
+    setTimeout(() => {
+      if (state.phase === "replay") showReplayItem();
+      else showListen();
+    }, 1400);
     return;
   }
   if (result.result === "close" && result.again) {
     setState("result-close");
     state.closeAgainPending = true;
-    setTimeout(() => showListenPlaceholder(), 1400);
+    setTimeout(() => {
+      if (state.phase === "replay") showReplayItem();
+      else showListen();
+    }, 1400);
     return;
   }
   if (result.result === "correct") {
@@ -200,23 +276,32 @@ function handleAttempt(result) {
     setTimeout(() => advance(), 1200);
     return;
   }
-  // missed or locking close
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
   setTimeout(() => advance(), 1400);
 }
 
 function advance() {
+  if (state.phase === "replay") {
+    state.replayIndex += 1;
+    if (state.replayIndex >= state.replay.length) {
+      finishReplay();
+    } else {
+      showReplayItem();
+    }
+    return;
+  }
   state.index += 1;
   if (state.index >= state.items.length) {
     finishSession();
   } else {
-    showListenPlaceholder();
+    showListen();
   }
 }
 
 async function finishSession() {
   setMicEnabled(false);
+  stopClip();
   try {
     const data = await api(`/api/sessions/${state.sessionId}/complete`, {
       method: "POST",
@@ -229,11 +314,56 @@ async function finishSession() {
     setWord("");
     setMessage("");
     $("[data-progress]").textContent = "";
+    state.replay = data.replay || [];
+    state.replayIndex = 0;
+    if (state.replay.length) {
+      setTimeout(() => startReplay(), 900);
+    }
   } catch (err) {
     console.error(err);
     setState("session-end");
     $("[data-end-stars]").textContent = String(state.stars);
   }
+}
+
+function startReplay() {
+  state.phase = "replay";
+  state.replayIndex = 0;
+  $('[data-view="end"]').hidden = true;
+  showReplayItem();
+}
+
+async function showReplayItem() {
+  const entry = currentReplay();
+  if (!entry) {
+    finishReplay();
+    return;
+  }
+  setState("session-replay");
+  setWord(entry.text, { highlight: true });
+  setMessage("Listen, then try again");
+  setProgress();
+  setMicEnabled(false);
+  const url = entry.audio_url || `/api/audio/${encodeURIComponent(entry.text)}`;
+  try {
+    await playClip(url);
+  } catch (err) {
+    console.error(err);
+  }
+  if (state.id === "session-replay") {
+    setState("idle");
+    setMessage("Your turn — tap and read the word");
+    setMicEnabled(true);
+  }
+}
+
+function finishReplay() {
+  state.phase = "read";
+  setWord("");
+  setMessage("Nice reading!");
+  setProgress();
+  setMicEnabled(false);
+  setState("session-end");
 }
 
 function wire() {
@@ -251,10 +381,14 @@ function wire() {
     onMicTap().catch(console.error);
   });
   $("[data-play-again]").addEventListener("click", () => {
+    stopClip();
     state.sessionId = null;
     state.items = [];
     state.index = 0;
     state.closeAgainPending = false;
+    state.replay = [];
+    state.replayIndex = 0;
+    state.phase = "read";
     setStars(0);
     setWord("");
     setMessage("");

@@ -1,4 +1,4 @@
-"""Reading Buddy FastAPI app — Milestone 1."""
+"""Reading Buddy FastAPI app — Milestones 1–2."""
 
 from __future__ import annotations
 
@@ -19,8 +19,10 @@ from app.audio_files import (
     convert_to_wav,
     delete_quiet,
     ffmpeg_available,
+    generated_audio_ready,
     is_silence,
     new_temp_paths,
+    resolve_audio_slug,
     write_bytes,
 )
 from app.db import connect, init_schema, load_settings, upsert_items_from_json
@@ -114,10 +116,19 @@ async def unhandled_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 def health() -> dict[str, bool]:
+    # Additive `audio` flag (M2): all content slugs have human or generated wav.
+    audio_ok = False
+    try:
+        conn = get_conn()
+        slugs = [r["slug"] for r in conn.execute("SELECT slug FROM items").fetchall()]
+        audio_ok = bool(slugs) and generated_audio_ready(slugs)
+    except Exception:  # noqa: BLE001
+        audio_ok = False
     return {
         "whisper": bool(engine.ready),
         "ffmpeg": ffmpeg_available(),
         "offline": config.is_offline_configured(),
+        "audio": audio_ok,
     }
 
 
@@ -180,12 +191,12 @@ async def post_attempt(
     phase: str = Form(...),
     audio: UploadFile = File(...),
 ):
-    if phase != "read":
+    if phase not in ("read", "replay"):
         return JSONResponse(
             status_code=400,
             content=error_body(
                 "bad_request",
-                "Milestone 1 only accepts phase=read",
+                "phase must be read or replay",
             ),
         )
 
@@ -199,9 +210,9 @@ async def post_attempt(
             content=error_body("unavailable", "Whisper or ffmpeg unavailable"),
         )
 
-    # Queue / session / resolved-item checks before ffmpeg or Whisper (C3).
+    # Queue / session / resolved-item checks before ffmpeg or Whisper.
     try:
-        item = validate_attempt_access(conn, session_id, item_id)
+        item = validate_attempt_access(conn, session_id, item_id, phase=phase)
     except SessionError as exc:
         return JSONResponse(
             status_code=exc.status,
@@ -312,6 +323,17 @@ async def post_complete(session_id: int):
             status_code=exc.status,
             content=error_body(exc.code, exc.message),
         )
+
+
+@app.get("/api/audio/{slug}")
+def get_audio(slug: str):
+    path = resolve_audio_slug(slug)
+    if path is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_body("not_found", f"No audio for slug '{slug}'"),
+        )
+    return FileResponse(path, media_type="audio/wav", filename=f"{slug}.wav")
 
 
 @app.get("/")

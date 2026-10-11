@@ -227,6 +227,27 @@ def touch_mastery(conn: sqlite3.Connection, item_id: int, result: str) -> None:
     )
 
 
+def credit_mastery_correct(conn: sqlite3.Connection, item_id: int) -> None:
+    """Increment mastery correct_count and days (M2 replay / locking correct)."""
+    ensure_mastery_row(conn, item_id)
+    row = conn.execute(
+        "SELECT correct_count, days_json FROM mastery WHERE item_id = ?",
+        (item_id,),
+    ).fetchone()
+    days = json.loads(row["days_json"] or "[]")
+    today = local_today()
+    if today not in days:
+        days.append(today)
+    conn.execute(
+        """
+        UPDATE mastery
+        SET correct_count = ?, days_json = ?, last_result = 'correct', last_seen_on = ?
+        WHERE item_id = ?
+        """,
+        (int(row["correct_count"]) + 1, json.dumps(days), today, item_id),
+    )
+
+
 def item_public(row: sqlite3.Row) -> dict[str, Any]:
     return {
         "id": row["id"],

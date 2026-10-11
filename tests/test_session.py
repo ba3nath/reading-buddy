@@ -242,7 +242,7 @@ def test_complete_rejects_abandoned(tmp_env):
         assert exc.code == "session_closed"
 
 
-def test_complete_replay_empty_m1(tmp_env):
+def test_complete_replay_empty_when_no_misses(tmp_env):
     conn = tmp_env["conn"]
     data = start_session(conn, level=1)
     item = data["items"][0]
@@ -253,6 +253,60 @@ def test_complete_replay_empty_m1(tmp_env):
     assert done["stars"] >= 1
     assert "correct_count" in done
     assert "planned_count" in done
+
+
+def test_replay_awards_stars_without_changing_ratio(tmp_env):
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = data["items"][0]
+    sid = data["session_id"]
+    apply_attempt(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
+    )
+    done = complete_session(conn, sid)
+    assert done["correct_count"] == 0
+    planned = done["planned_count"]
+    stars_before = done["stars"]
+    assert len(done["replay"]) == 1
+    assert done["replay"][0]["item_id"] == item["id"]
+
+    replay = apply_attempt(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
+        phase="replay",
+    )
+    assert replay["result"] == "correct"
+    assert replay["stars_awarded"] == 1
+    assert replay["stars_total"] == stars_before + 1
+
+    session = conn.execute(
+        "SELECT correct_count, planned_count, stars FROM sessions WHERE id = ?",
+        (sid,),
+    ).fetchone()
+    assert session["correct_count"] == 0
+    assert session["planned_count"] == planned
+    assert session["stars"] == stars_before + 1
+
+    row = conn.execute(
+        """
+        SELECT is_replay, counts_for_session FROM attempts
+        WHERE session_id = ? AND is_replay = 1
+        """,
+        (sid,),
+    ).fetchone()
+    assert row["is_replay"] == 1
+    assert row["counts_for_session"] == 0
+
+    mastery = conn.execute(
+        "SELECT correct_count FROM mastery WHERE item_id = ?",
+        (item["id"],),
+    ).fetchone()
+    assert mastery["correct_count"] >= 1
 
 
 def test_stars_never_decrease(tmp_env):

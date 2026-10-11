@@ -105,10 +105,49 @@ def delete_quiet(*paths: Path | None) -> None:
 
 
 def resolve_audio_slug(slug: str) -> Path | None:
+    """Prefer human override, else generated. Returns path or None."""
+    if not slug or "/" in slug or "\\" in slug or ".." in slug:
+        return None
     human = config.AUDIO_HUMAN / f"{slug}.wav"
-    if human.exists():
+    if human.is_file():
         return human
     generated = config.AUDIO_GENERATED / f"{slug}.wav"
-    if generated.exists():
+    if generated.is_file():
         return generated
     return None
+
+
+def postprocess_generated_wav(src: Path, dest: Path) -> None:
+    """Mono 16-bit PCM, trim silence, loudness-normalize (ffmpeg)."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(src),
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        "-af",
+        "silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:"
+        "stop_periods=1:stop_silence=0.08:stop_threshold=-40dB,"
+        "loudnorm=I=-16:TP=-1.5:LRA=11",
+        str(dest),
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, check=False, timeout=60)
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
+        raise AudioError(f"ffmpeg postprocess failed: {exc}") from exc
+    if result.returncode != 0 or not dest.exists():
+        err = (result.stderr or b"").decode("utf-8", errors="replace")[:400]
+        raise AudioError(f"ffmpeg postprocess failed: {err}")
+
+
+def generated_audio_ready(slugs: list[str] | None = None) -> bool:
+    """True when every slug has human or generated wav (M2 health)."""
+    if slugs is None:
+        return True
+    return all(resolve_audio_slug(slug) is not None for slug in slugs)

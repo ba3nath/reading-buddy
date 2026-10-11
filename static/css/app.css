@@ -134,6 +134,18 @@ body[data-state="result-correct"] .buddy {
   min-height: 1.1em;
 }
 
+.word.highlight {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+}
+
+body[data-state="listen"] .buddy,
+body[data-state="session-replay"] .buddy {
+  animation: buddy-listen 1.2s ease-in-out infinite;
+}
+
 .phrase-score {
   margin: 0;
   color: var(--ink-soft);

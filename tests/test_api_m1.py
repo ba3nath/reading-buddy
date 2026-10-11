@@ -198,7 +198,8 @@ def test_complete_m1(client, whisper_double, tone_wav):
     assert "planned_count" in body
 
 
-def test_phase_replay_rejected(client, tone_wav, assert_error_envelope):
+def test_phase_replay_before_complete_rejected(client, tone_wav, assert_error_envelope):
+    """Replay is M2-only after complete; open sessions still reject phase=replay."""
     start = client.post("/api/sessions", json={"level": 1}).json()
     item = start["items"][0]
     res = client.post(
