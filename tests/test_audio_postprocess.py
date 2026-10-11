@@ -19,9 +19,8 @@ def test_postprocess_keeps_tail_plosives():
 
 
 def test_tts_render_lengthens_short_words():
-    spoken, speed = tts_render("cup")
-    assert spoken.endswith(".")
-    assert speed < 1.0
+    # cup uses a carrier; other short words still get period + slowdown.
+    assert tts_render("cup") == ("the cup", 0.95)
     spoken_the, speed_the = tts_render("the")
     assert spoken_the == "the."
     assert speed_the <= 0.88
@@ -37,34 +36,27 @@ def test_tts_render_lengthens_short_words():
 
 
 def test_tts_render_avoids_logee_netee_trailing_syllable():
-    """Period + slow Kokoro en-gb turns log/net into logee/netee."""
-    log, log_speed = tts_render("log")
-    assert log == "log"
-    assert not log.endswith(".")
-    assert 0.85 <= log_speed <= 0.95
-    net, net_speed = tts_render("net")
-    assert net == "net"
-    assert not net.endswith(".")
-    assert net_speed >= 0.94
+    """Bare period+slow turns log/net into logee/netee; both use carriers."""
+    assert tts_render("log") == ("wooden log", 0.95)
+    assert tts_voice("log") == ("bf_emma", "en-gb")
+    assert tts_render("net") == ("the net", 0.95)
+    assert tts_voice("net") == ("bf_emma", "en-gb")
 
 
 def test_tts_render_avoids_a_and_bring_trailing_burst():
-    """Period on bare 'a' / 'bring' adds a second energy burst (ay-uh / bring-uh)."""
+    """Period on bare 'a' adds a burst; bring uses a clear carrier phrase."""
     a, a_speed = tts_render("a")
     assert a == "a"
     assert not a.endswith(".")
     assert 0.85 <= a_speed <= 0.92
-    bring, bring_speed = tts_render("bring")
-    assert bring == "bring"
-    assert not bring.endswith(".")
-    assert 0.85 <= bring_speed <= 0.92
+    assert tts_render("bring") == ("please bring", 0.95)
+    assert tts_voice("bring") == ("bf_alice", "en-gb")
 
 
 def test_tts_render_ng_is_not_treated_as_plosive_g():
     """bring/long end in /ŋ/, not a /g/ burst — don't crawl to 0.78."""
-    # bring is bare (trailing-burst override); still must not use plosive 0.78.
     bring, bring_speed = tts_render("bring")
-    assert bring == "bring"
+    assert "bring" in bring
     assert bring_speed >= 0.84
     long, long_speed = tts_render("long")
     assert long == "long."
@@ -78,38 +70,35 @@ def test_tts_render_ng_is_not_treated_as_plosive_g():
 
 
 def test_tts_render_sit_keeps_unvoiced_s():
-    """'sit.' @ slow speed voices the onset as /zIt/; bang + 1.0 keeps /s/."""
+    """Carrier 'please sit' + emma keeps /s/ (bare sit! still drifted)."""
     spoken, speed = tts_render("sit")
-    assert spoken == "sit!"
-    assert speed >= 0.98
+    assert spoken == "please sit"
+    assert speed == 0.95
+    assert tts_voice("sit") == ("bf_emma", "en-gb")
 
 
 def test_tts_voice_top_avoids_topi_release():
-    """bf_isabella vowelizes top's /p/ → topi; alice keeps a clean stop."""
+    """Carrier 'on top' + emma — bare top often collapses for Whisper."""
     voice, lang = tts_voice("top")
-    assert voice == "bf_alice"
+    assert voice == "bf_emma"
     assert lang == "en-gb"
-    # Default words stay on the session voice.
-    assert tts_voice("cup") == (None, None)
+    assert tts_voice("cup") == ("bf_emma", "en-gb")
     spoken, speed = tts_render("top")
-    assert spoken == "top."
-    assert speed <= 0.88
+    assert spoken == "on top"
+    assert speed == 0.95
 
 
 def test_tts_render_can_avoids_cant_trailing_burst():
-    """'can.' adds a second energy burst heard as can't / cantttt."""
-    spoken, speed = tts_render("can")
-    assert spoken == "can"
-    assert not spoken.endswith(".")
-    assert 0.94 <= speed <= 1.0
+    """Bare 'can.' bursts to can't; carrier 'we can' is clear."""
+    assert tts_render("can") == ("we can", 0.95)
+    assert tts_voice("can") == ("bf_alice", "en-gb")
 
 
-def test_tts_render_were_stays_were_not_was():
-    """Isabella bare drifts to 'Worched'; lewis bare is Beginner-close 'Where?'."""
+def test_tts_render_were_uses_carrier_phrase():
+    """Bare 'were' → Where?; carrier 'they were' + lewis is clear."""
     spoken, speed = tts_render("were")
-    assert spoken == "were"
-    assert not spoken.endswith(".")
-    assert speed >= 0.98
+    assert spoken == "they were"
+    assert speed == 0.95
     voice, lang = tts_voice("were")
     assert voice == "bm_lewis"
     assert lang == "en-gb"
@@ -120,10 +109,22 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_render("sheep") == ("a sheep", 0.95)
     assert tts_render("truck") == ("a truck", 0.95)
     assert tts_voice("truck") == ("bf_emma", "en-gb")
-    assert tts_render("thin") == ("thin", 0.96)
-    assert tts_voice("thin") == ("bf_alice", "en-gb")
-    assert tts_render("pen") == ("pen!", 1.0)
-    assert tts_voice("pen") == ("bf_alice", "en-gb")
-    assert tts_voice("sit") == ("bf_alice", "en-gb")
-    assert tts_render("when") == ("when!", 1.0)
+    assert tts_render("thin") == ("so thin", 0.95)
+    assert tts_voice("thin") == ("bf_emma", "en-gb")
+    assert tts_voice("sheep") == ("bf_emma", "en-gb")
+    assert tts_render("top") == ("on top", 0.95)
+    assert tts_render("can") == ("we can", 0.95)
+    assert tts_render("log") == ("wooden log", 0.95)
+    assert tts_render("pen") == ("the pen", 0.95)
+    assert tts_voice("pen") == ("bf_emma", "en-gb")
+    assert tts_render("sit") == ("please sit", 0.95)
+    assert tts_voice("sit") == ("bf_emma", "en-gb")
+    assert tts_render("when") == ("say when", 0.95)
     assert tts_voice("when") == ("bf_alice", "en-gb")
+    assert tts_render("cup") == ("the cup", 0.95)
+    assert tts_voice("cup") == ("bf_emma", "en-gb")
+    assert tts_render("cat") == ("fat cat", 0.95)
+    assert tts_voice("cat") == ("bf_alice", "en-gb")
+    assert tts_render("map") == ("a map", 0.95)
+    assert tts_render("bring") == ("please bring", 0.95)
+    assert tts_render("net") == ("the net", 0.95)
