@@ -103,8 +103,23 @@ def test_tts_render_can_avoids_cant_trailing_burst():
 
 
 def test_tts_render_were_stays_were_not_was():
-    """'were.' @ slow speed drifts toward was/what; bare @ 1.0 keeps were."""
+    """Isabella bare drifts to 'Worched'; lewis bare is Beginner-close 'Where?'."""
     spoken, speed = tts_render("were")
     assert spoken == "were"
     assert not spoken.endswith(".")
     assert speed >= 0.98
+    voice, lang = tts_voice("were")
+    assert voice == "bm_lewis"
+    assert lang == "en-gb"
+
+
+def test_tts_overrides_for_whisper_clear_words():
+    """Spot-check overrides for clips Whisper often misheard."""
+    assert tts_render("sheep") == ("a sheep", 0.95)
+    assert tts_render("truck") == ("a truck", 0.95)
+    assert tts_voice("truck") == ("bf_emma", "en-gb")
+    assert tts_render("thin") == ("thin", 0.96)
+    assert tts_voice("thin") == ("bf_alice", "en-gb")
+    assert tts_render("pen") == ("pen!", 1.0)
+    assert tts_voice("pen") == ("bf_alice", "en-gb")
+    assert tts_voice("sit") == ("bf_alice", "en-gb")

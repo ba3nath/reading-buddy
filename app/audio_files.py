@@ -118,10 +118,15 @@ def resolve_audio_slug(slug: str) -> Path | None:
 
 
 # Per-word Kokoro en-gb overrides: (spoken_text, speed).
+# Tuned by Whisper spot-checks so listen clips match the on-screen word.
 # - Bare a/bring/log/net: period + slow speed adds a trailing vowel burst.
-# - sit!: "sit." @ 0.84 voices the onset (/zIt/); bang + full speed keeps /s/.
-# - can: "can." adds a second burst heard as "can't" / cantttt; bare + ~1.0 is clean.
-# - were: "were." @ 0.88 drifts toward "was/what"; bare @ 1.0 keeps "were".
+# - sit!: bang + alice keeps /s/ (isabella drifts to /zIt/).
+# - can: "can." adds a second burst heard as "can't"; bare + ~1.0 is clean.
+# - were: isabella bare → "Worched"; lewis bare is a Beginner-close "Where?".
+# - sheep/truck: bare Kokoro is unreliable; short carrier "a …" is clear.
+# - top.: alice + period → "the top" (Beginner-correct on the target word).
+# - thin: alice bare; isabella often lengthens to "thinned".
+# - pen!: alice bang; isabella period → "PENJI".
 _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "a": ("a", 0.88),
     "bring": ("bring", 0.88),
@@ -130,12 +135,24 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "sit": ("sit!", 1.0),
     "can": ("can", 0.96),
     "were": ("were", 1.0),
+    "top": ("top.", 0.88),
+    "thin": ("thin", 0.96),
+    "sheep": ("a sheep", 0.95),
+    "truck": ("a truck", 0.95),
+    "pen": ("pen!", 1.0),
+    "dog": ("a dog", 0.95),
+    "when": ("when!", 1.0),
 }
 
 # Per-word voice overrides: (voice_id, lang).
-# bf_isabella vowelizes the /p/ release on "top" → "topi"; alice keeps a clean stop.
 _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "top": ("bf_alice", "en-gb"),
+    "sit": ("bf_alice", "en-gb"),
+    "were": ("bm_lewis", "en-gb"),
+    "thin": ("bf_alice", "en-gb"),
+    "truck": ("bf_emma", "en-gb"),
+    "pen": ("bf_alice", "en-gb"),
+    "when": ("bf_alice", "en-gb"),
 }
 
 
