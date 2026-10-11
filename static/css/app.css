@@ -224,8 +224,8 @@ body.app {
 }
 
 .buddy-tile-unicorn {
-  background: linear-gradient(165deg, #f0e6f5 0%, #faf6f2 70%);
-  border-color: rgba(168, 140, 190, 0.4);
+  background: linear-gradient(165deg, #ffd0e0 0%, #fff0d8 45%, #d8f4ff 100%);
+  border-color: rgba(255, 143, 107, 0.4);
 }
 
 .buddy-tile:hover {
@@ -252,8 +252,8 @@ body.app {
 
 .buddy-tile-unicorn.selected,
 .buddy-tile-unicorn[aria-pressed="true"] {
-  border-color: #a88cbe;
-  box-shadow: 0 0 0 3px rgba(168, 140, 190, 0.35);
+  border-color: var(--coral-deep);
+  box-shadow: 0 0 0 3px rgba(255, 143, 107, 0.35);
 }
 
 .buddy-tile-art {

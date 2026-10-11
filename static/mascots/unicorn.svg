@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Friendly unicorn buddy">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Colorful unicorn horse buddy">
   <style>
-    /* Original unicorn: cream coat, soft lavender mane, gold horn — kid-friendly. */
-    .horn, .mane, .eye, .ear, .tail { transform-box: fill-box; transform-origin: center; }
+    .horn, .mane, .eye, .ear, .tail, .body { transform-box: fill-box; transform-origin: center; }
     .idle .mane { animation: sway 2.8s ease-in-out infinite; }
     .idle .tail { animation: sway 2.4s ease-in-out infinite reverse; }
     .idle .eye { animation: blink 4s step-end infinite; }
@@ -18,36 +17,50 @@
     @keyframes nod { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
   </style>
   <g class="buddy-root idle">
-    <path class="tail" d="M88 82 Q108 70 102 48" fill="none" stroke="#c4b0d8" stroke-width="7" stroke-linecap="round"/>
-    <path d="M96 58 Q104 52 100 44" fill="none" stroke="#e8c4d4" stroke-width="4" stroke-linecap="round"/>
+    <g class="tail">
+      <path d="M90 76 Q112 68 110 48" fill="none" stroke="#ff8f6b" stroke-width="6.5" stroke-linecap="round"/>
+      <path d="M92 80 Q114 90 102 102" fill="none" stroke="#ffd56a" stroke-width="5.5" stroke-linecap="round"/>
+      <path d="M88 74 Q108 58 116 66" fill="none" stroke="#7ec8e8" stroke-width="5" stroke-linecap="round"/>
+      <path d="M91 82 Q106 98 94 106" fill="none" stroke="#7bc47f" stroke-width="4.5" stroke-linecap="round"/>
+    </g>
     <g class="body">
-      <ellipse cx="56" cy="80" rx="32" ry="24" fill="#f7efe6"/>
-      <circle cx="56" cy="48" r="27" fill="#f7efe6"/>
+      <!-- horse torso -->
+      <ellipse cx="62" cy="84" rx="32" ry="24" fill="#ff9ec0"/>
+      <!-- neck -->
+      <ellipse cx="70" cy="62" rx="14" ry="20" fill="#ff9ec0"/>
+      <!-- head + long muzzle (horse) -->
+      <ellipse cx="52" cy="44" rx="24" ry="20" fill="#ffb0c8"/>
+      <ellipse class="muzzle" cx="28" cy="50" rx="16" ry="11" fill="#ffd0e0"/>
       <!-- ears -->
-      <ellipse class="ear" cx="34" cy="26" rx="7" ry="11" fill="#f7efe6" transform="rotate(-18 34 26)"/>
-      <ellipse class="ear" cx="78" cy="26" rx="7" ry="11" fill="#f7efe6" transform="rotate(18 78 26)"/>
-      <ellipse cx="34" cy="27" rx="3.5" ry="6" fill="#f0c8d4" transform="rotate(-18 34 27)"/>
-      <ellipse cx="78" cy="27" rx="3.5" ry="6" fill="#f0c8d4" transform="rotate(18 78 27)"/>
-      <!-- horn -->
-      <polygon class="horn" points="56,22 50,4 62,4" fill="#e8c878"/>
-      <line x1="53" y1="16" x2="59" y2="16" stroke="#d4a84a" stroke-width="1.2" opacity="0.7"/>
-      <line x1="54" y1="10" x2="58" y2="10" stroke="#d4a84a" stroke-width="1.2" opacity="0.7"/>
-      <!-- mane -->
+      <polygon class="ear" points="44,28 40,8 54,26" fill="#ff9ec0"/>
+      <polygon class="ear" points="66,26 70,6 78,28" fill="#ff9ec0"/>
+      <polygon points="45,24 43,12 52,24" fill="#ff8f6b"/>
+      <polygon points="68,22 70,10 76,24" fill="#ff8f6b"/>
+      <!-- horn seated on forehead -->
+      <polygon class="horn" points="56,26 51,4 61,4" fill="#ffd56a"/>
+      <path d="M53 20 Q56 16 59 20 M54 13 Q56 10 58 13" stroke="#e09b45" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- rainbow mane along neck -->
       <g class="mane">
-        <path d="M42 30 Q36 18 48 22 Q44 34 42 30" fill="#c4b0d8"/>
-        <path d="M50 28 Q48 12 58 16 Q54 30 50 28" fill="#e8c4d4"/>
-        <path d="M60 28 Q62 12 70 18 Q66 32 60 28" fill="#b8d4e8"/>
-        <path d="M68 32 Q78 22 76 36 Q70 36 68 32" fill="#c4b0d8"/>
+        <path d="M74 30 Q86 14 94 30 Q84 38 74 30" fill="#ff8f6b"/>
+        <path d="M76 38 Q92 24 98 42 Q86 48 76 38" fill="#ffd56a"/>
+        <path d="M78 48 Q96 40 100 56 Q86 58 78 48" fill="#7ec8e8"/>
+        <path d="M78 58 Q96 56 98 72 Q84 70 78 58" fill="#7bc47f"/>
+        <path d="M72 26 Q78 8 88 18 Q80 32 72 26" fill="#ffb020"/>
       </g>
       <!-- face -->
-      <circle class="eye" cx="46" cy="48" r="3.8" fill="#3a2a28"/>
-      <circle class="eye" cx="66" cy="48" r="3.8" fill="#3a2a28"/>
-      <circle cx="47.4" cy="46.8" r="1.2" fill="#fff" opacity="0.9"/>
-      <circle cx="67.4" cy="46.8" r="1.2" fill="#fff" opacity="0.9"/>
-      <circle cx="40" cy="56" r="5" fill="#f0c8d4" opacity="0.55"/>
-      <circle cx="72" cy="56" r="5" fill="#f0c8d4" opacity="0.55"/>
-      <ellipse cx="56" cy="56" rx="4.5" ry="3.2" fill="#e8a0a8"/>
-      <path d="M50 64 Q56 69 62 64" stroke="#3a2a28" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle class="eye" cx="46" cy="40" r="3.8" fill="#2c241c"/>
+      <circle class="eye" cx="62" cy="38" r="3.8" fill="#2c241c"/>
+      <circle cx="47.3" cy="38.7" r="1.15" fill="#fff" opacity="0.9"/>
+      <circle cx="63.3" cy="36.7" r="1.15" fill="#fff" opacity="0.9"/>
+      <ellipse cx="22" cy="48" rx="4" ry="3" fill="#ff8f6b" opacity="0.5"/>
+      <ellipse cx="30" cy="52" rx="4" ry="2.8" fill="#e0898a"/>
+      <path d="M20 54 Q28 59 36 54" stroke="#2c241c" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+      <!-- colorful belly -->
+      <ellipse cx="58" cy="90" rx="18" ry="11" fill="#ffe7b8"/>
+      <!-- legs -->
+      <rect x="42" y="98" width="8" height="14" rx="3.5" fill="#ff8fb0"/>
+      <rect x="56" y="99" width="8" height="13" rx="3.5" fill="#ff8fb0"/>
+      <rect x="70" y="98" width="8" height="14" rx="3.5" fill="#ff8fb0"/>
     </g>
   </g>
 </svg>

@@ -242,8 +242,15 @@ def test_mascot_svgs_served(client):
     assert "mickey" not in unicorn
     assert "buddy-root" in unicorn
     assert "horn" in unicorn
+    assert "muzzle" in unicorn  # horse snout, not a round blob
+    assert "mane" in unicorn
+    assert "colorful" in unicorn or "horse" in unicorn
+    # rainbow mane / colorful coat (not plain cream-only)
+    assert "#ff8f6b" in unicorn or "#ffb0c8" in unicorn
+    assert "#7ec8e8" in unicorn
     assert "#ff0000" not in unicorn
     assert "fill=\"red\"" not in unicorn
+    assert "\x14" not in unicorn  # no invalid XML control chars
     krishna = client.get("/static/mascots/krishna.svg").text.lower()
     assert "flute" in krishna
     assert "feather" in krishna
