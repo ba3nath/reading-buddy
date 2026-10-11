@@ -102,7 +102,23 @@ def test_session_start_reports_difficulty_label(tmp_env):
     assert data["difficulty"] == 2
     assert data["difficulty_label"] == "Phrases"
     assert len(data["items"]) == 5
+    assert data["planned_count"] == 5
     assert normalize_session_length(8) == 10
+
+
+def test_ui_progress_uses_planned_count_not_grown_queue():
+    """Progress copy must never say Word N of 11 — only 5 or 10."""
+    from pathlib import Path
+
+    js = Path("static/js/game.js").read_text(encoding="utf-8")
+    assert "plannedCount" in js
+    assert "planned_count" in js
+    prog = js.split("function setProgress()")[1].split("\nfunction ")[0]
+    assert "state.plannedCount" in prog
+    assert "of 11" not in prog
+    # Client refuses to grow the queue from a legacy reinsert payload.
+    apply = js.split("function applyReinsert(")[1].split("\nfunction ")[0]
+    assert "result.reinsert = null" in apply
 
 
 def test_home_ui_exposes_four_difficulties():

@@ -85,6 +85,8 @@ const state = {
   sessionId: null,
   items: [],
   index: 0,
+  /** Planned session size (5 or 10) — progress label never uses a grown queue. */
+  plannedCount: 0,
   stars: 0,
   level: 1,
   difficultyLabel: "",
@@ -427,17 +429,20 @@ function setProgress() {
     labelEl.textContent = "";
     return;
   }
-  const cur = Math.min(state.index + 1, state.items.length);
-  const total = state.items.length;
+  // Sessions are only 5 or 10 — never show a grown total (e.g. 11 from old reinserts).
+  let total = state.plannedCount;
+  if (total !== 5 && total !== 10) {
+    total = state.items.length === 5 || state.items.length === 10 ? state.items.length : 10;
+  }
+  const cur = Math.min(state.index + 1, total);
   const item = currentItem();
   labelEl.textContent =
     item && item.kind === "line"
       ? `Line ${cur} of ${total}`
       : `Word ${cur} of ${total}`;
   if (dots) {
-    const maxDots = Math.min(total, 12);
     dots.innerHTML = "";
-    for (let i = 0; i < maxDots; i++) {
+    for (let i = 0; i < total; i++) {
       const d = document.createElement("span");
       d.className = "dot";
       if (i < state.index) d.classList.add("done");
@@ -727,8 +732,12 @@ function pauseToHome() {
   setState("home");
   const hint = $("[data-pause-hint]");
   if (hint) {
-    const cur = Math.min(state.index + 1, state.items.length);
-    hint.textContent = `Paused on ${cur} of ${state.items.length} — Continue anytime`;
+    const total =
+      state.plannedCount === 5 || state.plannedCount === 10
+        ? state.plannedCount
+        : state.items.length;
+    const cur = Math.min(state.index + 1, total);
+    hint.textContent = `Paused on ${cur} of ${total} — Continue anytime`;
   }
 }
 
@@ -769,6 +778,17 @@ async function startSession(level) {
   state.sessionId = data.session_id;
   state.items = data.items || [];
   state.index = 0;
+  const planned = Number(data.planned_count);
+  state.plannedCount =
+    planned === 5 || planned === 10
+      ? planned
+      : state.items.length === 5 || state.items.length === 10
+        ? state.items.length
+        : 10;
+  // Never keep a longer play list than the planned session size.
+  if (state.items.length > state.plannedCount) {
+    state.items = state.items.slice(0, state.plannedCount);
+  }
   state.stars = 0;
   state.level = data.level;
   state.difficultyLabel =
@@ -962,14 +982,11 @@ function showPhraseScore(result) {
 }
 
 function applyReinsert(result) {
-  const info = result.reinsert;
-  if (!info || !info.item) return;
-  const at = Number(info.queue_index);
-  if (!Number.isFinite(at)) {
-    state.items.push(info.item);
-    return;
+  // Same-session reinsert is disabled server-side so sessions stay 5 or 10.
+  // Ignore any legacy payload that would grow the on-screen queue.
+  if (result && result.reinsert) {
+    result.reinsert = null;
   }
-  state.items.splice(at, 0, info.item);
 }
 
 function isRhymeSingAlongItem(item) {
@@ -1246,6 +1263,7 @@ function wire() {
     state.sessionId = null;
     state.items = [];
     state.index = 0;
+    state.plannedCount = 0;
     state.paused = false;
     state.closeAgainPending = false;
     state.replay = [];

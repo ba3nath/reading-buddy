@@ -152,12 +152,15 @@ def test_complete_applies_level_and_abandon_does_not(tmp_env):
     assert row["ended_at"] is not None
 
 
-def test_same_session_miss_reinsert(tmp_env):
+def test_same_session_miss_does_not_grow_queue(tmp_env):
+    """Misses must not inflate a 5/10 session (no Word 3 of 11)."""
     conn = tmp_env["conn"]
     data = start_session(conn, level=1)
     sid = data["session_id"]
     item = data["items"][0]
     before = len(data["items"])
+    assert before in (5, 10)
+    assert data["planned_count"] == before
     resp = _apply(
         conn,
         sid,
@@ -166,36 +169,13 @@ def test_same_session_miss_reinsert(tmp_env):
         qi=0,
     )
     assert resp["result"] == "missed"
-    assert resp["reinsert"] is not None
-    assert resp["reinsert"]["item"]["id"] == item["id"]
-    assert resp["reinsert"]["queue_index"] == 3  # two ahead of slot 0 → index 3
+    assert resp["reinsert"] is None
     play = play_ids(conn.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone())
-    assert len(play) == before + 1
-    assert play[3] == item["id"]
-
-    # Second miss on the reinserted slot does not insert again
-    re_qi = resp["reinsert"]["queue_index"]
-    # Resolve slots 1 and 2 first so we can hit reinsert cleanly
-    for qi in (1, 2):
-        it = data["items"][qi]
-        _apply(
-            conn,
-            sid,
-            it["id"],
-            score_attempt(it["text"], it["text"], [0.95], mode="beginner"),
-            qi=qi,
-        )
-    second = _apply(
-        conn,
-        sid,
-        item["id"],
-        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
-        qi=re_qi,
-    )
-    assert second["result"] == "missed"
-    assert second["reinsert"] is None
-    play2 = play_ids(conn.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone())
-    assert len(play2) == len(play)
+    assert len(play) == before
+    row = conn.execute(
+        "SELECT planned_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert row["planned_count"] == before
 
 
 def test_exhausted_level_queue_stays_unique(tmp_env):
@@ -337,73 +317,8 @@ def test_five_remaining_words_do_not_repeat_to_ten(tmp_env):
     assert row["planned_count"] == 10
 
 
-def test_reinsert_correct_does_not_increase_correct_count(tmp_env):
-    """B1: same-session reinsert correct must not change the session ratio."""
-    conn = tmp_env["conn"]
-    data = start_session(conn, level=1)
-    sid = data["session_id"]
-    item = data["items"][0]
-    planned = conn.execute(
-        "SELECT planned_count, correct_count FROM sessions WHERE id = ?", (sid,)
-    ).fetchone()
-    assert planned["correct_count"] == 0
-    planned_n = int(planned["planned_count"])
-
-    miss = _apply(
-        conn,
-        sid,
-        item["id"],
-        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
-        qi=0,
-    )
-    assert miss["result"] == "missed"
-    assert miss["reinsert"] is not None
-    re_qi = miss["reinsert"]["queue_index"]
-
-    row = conn.execute(
-        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
-    ).fetchone()
-    assert row["correct_count"] == 0
-    assert row["planned_count"] == planned_n
-
-    # Resolve intervening planned slots with corrects (no further reinserts).
-    for qi in range(1, re_qi):
-        it = data["items"][qi]
-        _apply(
-            conn,
-            sid,
-            it["id"],
-            score_attempt(it["text"], it["text"], [0.95], mode="beginner"),
-            qi=qi,
-        )
-
-    before = conn.execute(
-        "SELECT correct_count, planned_count, stars FROM sessions WHERE id = ?",
-        (sid,),
-    ).fetchone()
-    assert before["correct_count"] == re_qi - 1  # planned corrects only
-    assert before["planned_count"] == planned_n
-
-    again = _apply(
-        conn,
-        sid,
-        item["id"],
-        score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
-        qi=re_qi,
-    )
-    assert again["result"] == "correct"
-    assert again["stars_awarded"] >= 1  # stars / mastery still credit
-    assert again["stars_total"] == before["stars"] + again["stars_awarded"]
-
-    after = conn.execute(
-        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
-    ).fetchone()
-    assert after["correct_count"] == before["correct_count"]  # reinsert did not bump
-    assert after["planned_count"] == planned_n
-
-
-def test_reinsert_skip_does_not_shrink_planned_count(tmp_env):
-    """B1: three-retry skip on a reinsert slot must not distort the ratio."""
+def test_miss_keeps_planned_count_for_ratio(tmp_env):
+    """A miss locks the planned slot; planned_count stays 5 or 10 for the ratio."""
     conn = tmp_env["conn"]
     data = start_session(conn, level=1)
     sid = data["session_id"]
@@ -413,6 +328,7 @@ def test_reinsert_skip_does_not_shrink_planned_count(tmp_env):
             "SELECT planned_count FROM sessions WHERE id = ?", (sid,)
         ).fetchone()["planned_count"]
     )
+    assert planned_n in (5, 10)
     miss = _apply(
         conn,
         sid,
@@ -420,9 +336,15 @@ def test_reinsert_skip_does_not_shrink_planned_count(tmp_env):
         score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
         qi=0,
     )
-    re_qi = miss["reinsert"]["queue_index"]
-    for qi in range(1, re_qi):
-        it = data["items"][qi]
+    assert miss["result"] == "missed"
+    assert miss["reinsert"] is None
+    row = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert row["correct_count"] == 0
+    assert row["planned_count"] == planned_n
+    # Rest of the planned set still scores against the same N.
+    for qi, it in enumerate(data["items"][1:], start=1):
         _apply(
             conn,
             sid,
@@ -430,21 +352,11 @@ def test_reinsert_skip_does_not_shrink_planned_count(tmp_env):
             score_attempt(it["text"], it["text"], [0.95], mode="beginner"),
             qi=qi,
         )
-    for _ in range(3):
-        resp = _apply(
-            conn,
-            sid,
-            item["id"],
-            score_attempt(item["text"], "", mode="beginner", force_retry=True),
-            qi=re_qi,
-            silence=True,
-        )
-    assert resp["result"] == "skipped"
-    row = conn.execute(
-        "SELECT planned_count, correct_count FROM sessions WHERE id = ?", (sid,)
+    after = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
     ).fetchone()
-    assert row["planned_count"] == planned_n
-    assert row["correct_count"] == re_qi - 1  # only intervening planned corrects
+    assert after["planned_count"] == planned_n
+    assert after["correct_count"] == planned_n - 1
 
 
 def test_day_ladder_and_mastery(tmp_env):

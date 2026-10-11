@@ -123,6 +123,7 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
         "difficulty_label": config.difficulty_label(target_level),
         "mode": mode,
         "buddy": settings.get("buddy", "krishna"),
+        "planned_count": length,
         "items": [item_public(row) for row in queue],
     }
 

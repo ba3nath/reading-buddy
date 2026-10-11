@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from app import config
-from app.db import get_item, item_public, local_today, ensure_mastery_row
+from app.db import ensure_mastery_row, local_today
 
 
 def move_up_score(correct_count: int, planned_count: int) -> bool:
@@ -386,31 +386,11 @@ def maybe_reinsert_miss(
     play: list[int],
     flags: list[bool],
 ) -> tuple[list[int], list[bool], dict[str, Any] | None]:
-    """Insert miss once, two items ahead. Reinsert slots do not count for ratio.
+    """Same-session miss reinsert is disabled — sessions stay exactly 5 or 10.
 
-    Only planned (ratio) slots trigger a reinsert. A miss on an already-inserted
-    reinsert does not insert again. At most one reinsert per item_id per session.
+    Growing the play queue (e.g. 10 → 11) made the kid UI show ``Word 3 of 11``.
+    Missed words still surface in end-of-session replay; ratio/mastery still score
+    the original planned slot.
     """
-    if queue_index < 0 or queue_index >= len(play) or queue_index >= len(flags):
-        return play, flags, None
-    if play[queue_index] != item_id:
-        return play, flags, None
-    # Miss on a reinsert slot — do not insert again.
-    if not flags[queue_index]:
-        return play, flags, None
-    # Already reinserted this item once this session.
-    for i, is_ratio in enumerate(flags):
-        if not is_ratio and play[i] == item_id:
-            return play, flags, None
-    insert_at = min(queue_index + 3, len(play))
-    new_play = list(play)
-    new_flags = list(flags)
-    new_play.insert(insert_at, item_id)
-    new_flags.insert(insert_at, False)  # reinsert: does not count for ratio
-    row = get_item(conn, item_id)
-    if row is None:
-        return play, flags, None
-    return new_play, new_flags, {
-        "item": item_public(row),
-        "queue_index": insert_at,
-    }
+    _ = (conn, item_id, queue_index)
+    return play, flags, None
