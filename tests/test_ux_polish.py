@@ -43,6 +43,17 @@ def test_home_landing_is_colorful():
     assert "brand-glow" in CSS or "background-clip: text" in CSS
 
 
+def test_home_brand_is_not_clipped():
+    """Tall home content + justify center was shearing the Reading Buddy title."""
+    assert "home-brand" in HTML
+    assert "safe center" in CSS
+    assert "safe-area-inset-top" in CSS
+    assert "line-height: 1.2" in CSS
+    assert "background-position" in CSS
+    assert "filter: saturate" not in CSS
+    assert "@media (max-height: 700px)" in CSS
+
+
 def test_home_has_gamify_quest_hud():
     assert "data-play-hud" in HTML
     assert "Today's quest" in HTML

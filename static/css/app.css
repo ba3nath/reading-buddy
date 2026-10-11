@@ -1217,3 +1217,34 @@ body[data-state="result-correct"] .stage {
     min-width: 0;
   }
 }
+
+/* Short phones: keep brand + Start reachable without a long scroll. */
+@media (max-height: 700px) {
+  .view-home {
+    gap: 0.55rem;
+  }
+
+  .view-home .home-brand {
+    font-size: clamp(2.1rem, 7.5vw, 3rem);
+  }
+
+  .view-home .lede {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  .home-buddy .buddy-slot,
+  .home-buddy-slot {
+    width: min(150px, 38vw);
+    height: min(150px, 38vw);
+  }
+
+  .play-hud {
+    margin: 0;
+    gap: 0.35rem;
+  }
+
+  .quest {
+    padding: 0.55rem 0.8rem;
+  }
+}
