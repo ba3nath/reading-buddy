@@ -120,12 +120,16 @@ def resolve_audio_slug(slug: str) -> Path | None:
 # Per-word Kokoro en-gb overrides: (spoken_text, speed).
 # - Bare a/bring/log/net: period + slow speed adds a trailing vowel burst.
 # - sit!: "sit." @ 0.84 voices the onset (/zIt/); bang + full speed keeps /s/.
+# - can: "can." adds a second burst heard as "can't" / cantttt; bare + ~1.0 is clean.
+# - were: "were." @ 0.88 drifts toward "was/what"; bare @ 1.0 keeps "were".
 _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "a": ("a", 0.88),
     "bring": ("bring", 0.88),
     "log": ("log", 0.88),
     "net": ("net", 0.96),
     "sit": ("sit!", 1.0),
+    "can": ("can", 0.96),
+    "were": ("were", 1.0),
 }
 
 # Per-word voice overrides: (voice_id, lang).

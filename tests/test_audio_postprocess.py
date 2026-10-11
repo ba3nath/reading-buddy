@@ -92,3 +92,19 @@ def test_tts_voice_top_avoids_topi_release():
     spoken, speed = tts_render("top")
     assert spoken == "top."
     assert speed <= 0.88
+
+
+def test_tts_render_can_avoids_cant_trailing_burst():
+    """'can.' adds a second energy burst heard as can't / cantttt."""
+    spoken, speed = tts_render("can")
+    assert spoken == "can"
+    assert not spoken.endswith(".")
+    assert 0.94 <= speed <= 1.0
+
+
+def test_tts_render_were_stays_were_not_was():
+    """'were.' @ slow speed drifts toward was/what; bare @ 1.0 keeps were."""
+    spoken, speed = tts_render("were")
+    assert spoken == "were"
+    assert not spoken.endswith(".")
+    assert speed >= 0.98
