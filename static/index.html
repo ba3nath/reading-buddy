@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reading Buddy</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body class="app" data-state="boot">
+  <header class="top">
+    <div class="brand">Reading Buddy</div>
+    <div class="stars" aria-live="polite">★ <span data-stars>0</span></div>
+    <div class="level-badge" data-level hidden></div>
+  </header>
+
+  <main class="stage">
+    <div class="buddy" data-buddy-state="idle" aria-hidden="true">
+      <svg class="buddy-art" viewBox="0 0 120 120" role="img" aria-label="Friendly cat buddy">
+        <ellipse cx="60" cy="78" rx="36" ry="28" fill="#f2c48a"/>
+        <circle cx="60" cy="48" r="30" fill="#f2c48a"/>
+        <polygon points="32,30 40,8 52,28" fill="#f2c48a"/>
+        <polygon points="88,30 80,8 68,28" fill="#f2c48a"/>
+        <circle cx="48" cy="48" r="4" fill="#3a2a1a"/>
+        <circle cx="72" cy="48" r="4" fill="#3a2a1a"/>
+        <ellipse cx="60" cy="58" rx="5" ry="3.5" fill="#e0896a"/>
+        <path d="M52 64 Q60 70 68 64" stroke="#3a2a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="prompt" data-message>Getting ready…</p>
+    <p class="word" data-word></p>
+    <p class="phrase-score" hidden>
+      <span data-words-correct>0</span> of <span data-words-total>0</span> words
+    </p>
+    <button class="mic" type="button" data-mic aria-label="Record" disabled>
+      <span class="mic-icon" aria-hidden="true">●</span>
+      <span class="mic-label">Tap to read</span>
+    </button>
+  </main>
+
+  <footer class="chrome">
+    <div class="session-progress" data-progress></div>
+  </footer>
+
+  <section class="view-home" data-view="home" hidden>
+    <h1>Reading Buddy</h1>
+    <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
+    <div class="start-row">
+      <button type="button" class="btn primary" data-start data-level-pick="1">Start</button>
+      <button type="button" class="btn ghost" data-start data-level-pick="2">Level 2</button>
+      <button type="button" class="btn ghost" data-start data-level-pick="3">Level 3</button>
+    </div>
+  </section>
+
+  <section class="view-end" data-view="end" hidden>
+    <h2>Nice reading!</h2>
+    <p class="end-stars">You earned <span data-end-stars>0</span> stars</p>
+    <button type="button" class="btn primary" data-play-again>Play again</button>
+  </section>
+
+  <section class="view-boot-error" data-view="boot-error" hidden>
+    <h2>Not quite ready</h2>
+    <p data-boot-error>
+      Reading Buddy needs Whisper and ffmpeg on this computer.
+      Ask an adult to finish setup, then reload.
+    </p>
+  </section>
+
+  <script type="module" src="/static/js/game.js"></script>
+</body>
+</html>

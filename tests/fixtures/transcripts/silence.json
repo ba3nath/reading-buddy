@@ -1,0 +1,15 @@
+{
+  "id": "silence",
+  "mode": "beginner",
+  "target_text": "cat",
+  "heard_text": "",
+  "word_confidences": [],
+  "force_retry": true,
+  "expect": {
+    "result": "retry",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [],
+    "replay_words": []
+  }
+}

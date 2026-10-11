@@ -1,0 +1,16 @@
+{
+  "id": "cat-dog",
+  "mode": "beginner",
+  "target_text": "cat",
+  "heard_text": "dog",
+  "word_confidences": [0.91],
+  "expect": {
+    "result": "missed",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "cat", "heard": "dog", "confidence": 0.91, "result": "missed" }
+    ],
+    "replay_words": ["cat"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "cat-plural-strict",
+  "mode": "strict",
+  "target_text": "cat",
+  "heard_text": "cats",
+  "word_confidences": [0.92],
+  "expect": {
+    "result": "missed",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "cat", "heard": "cats", "confidence": 0.92, "result": "missed" }
+    ],
+    "replay_words": ["cat"]
+  }
+}

@@ -1,0 +1,66 @@
+"""Paths, thresholds, bind address, and kindness message strings."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+DATA_DIR = ROOT / "data"
+MODELS_DIR = ROOT / "models"
+AUDIO_GENERATED = ROOT / "audio" / "generated"
+AUDIO_HUMAN = ROOT / "audio" / "human"
+CONTENT_ITEMS = ROOT / "content" / "items.json"
+SETTINGS_PATH = DATA_DIR / "settings.json"
+DB_PATH = DATA_DIR / "reading.db"
+STATIC_DIR = ROOT / "static"
+TEMP_DIR = DATA_DIR / "tmp"
+KEPT_DIR = DATA_DIR / "kept"
+
+HOST = "127.0.0.1"
+PORT = 8765
+
+RMS_MIN = 0.01
+MIN_AUDIO_SECONDS = 0.3
+NO_SPEECH_PROB_MAX = 0.60
+LOW_TOKEN_PROB = 0.25
+BEGINNER_CORRECT_MIN_PROB = 0.60
+STRICT_CORRECT_MIN_PROB = 0.85
+
+WHISPER_MODEL = "small.en"
+WHISPER_DEVICE = "cpu"
+WHISPER_COMPUTE_TYPE = "int8"
+WHISPER_COMPUTE_TYPE_FALLBACK = "int8_float32"
+WHISPER_BEAM_SIZE = 1
+
+MAX_RETRIES_PER_ITEM = 3
+DEFAULT_SESSION_LENGTH = 10
+MASTERED_EVERY_N_SESSIONS = 7
+
+MSG_RETRY = "I didn't hear that — try again."
+MSG_CLOSE = "Almost, one more go!"
+MSG_MISS = "That one's tricky, we'll visit it again."
+MSG_SKIP = "We'll try that one another time."
+MSG_CORRECT = "You got it!"
+
+DEFAULT_SETTINGS = {
+    "profile_name": "",
+    "mode": "beginner",
+    "level": 1,
+    "session_length": DEFAULT_SESSION_LENGTH,
+    "keep_audio": False,
+    "buddy": "cat",
+    "auto_strict": True,
+    "low_streak": 0,
+}
+
+
+def ensure_dirs() -> None:
+    for path in (DATA_DIR, MODELS_DIR, AUDIO_GENERATED, AUDIO_HUMAN, TEMP_DIR, KEPT_DIR):
+        path.mkdir(parents=True, exist_ok=True)
+
+
+def is_offline_configured() -> bool:
+    value = os.environ.get("HF_HUB_OFFLINE", "")
+    return value.strip() in {"1", "true", "True", "yes", "YES"}

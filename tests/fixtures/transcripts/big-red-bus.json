@@ -1,0 +1,19 @@
+{
+  "id": "big-red-bus",
+  "mode": "beginner",
+  "target_text": "a big red bus",
+  "heard_text": "a big red",
+  "word_confidences": [0.95, 0.94, 0.93],
+  "expect": {
+    "result": "missed",
+    "words_correct": 3,
+    "words_total": 4,
+    "word_scores": [
+      { "word": "a", "heard": "a", "confidence": 0.95, "result": "correct" },
+      { "word": "big", "heard": "big", "confidence": 0.94, "result": "correct" },
+      { "word": "red", "heard": "red", "confidence": 0.93, "result": "correct" },
+      { "word": "bus", "heard": "", "confidence": null, "result": "missed" }
+    ],
+    "replay_words": ["bus"]
+  }
+}

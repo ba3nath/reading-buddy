@@ -1,0 +1,16 @@
+{
+  "id": "cat-plural-beginner",
+  "mode": "beginner",
+  "target_text": "cat",
+  "heard_text": "cats",
+  "word_confidences": [0.92],
+  "expect": {
+    "result": "correct",
+    "words_correct": 1,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "cat", "heard": "cats", "confidence": 0.92, "result": "correct" }
+    ],
+    "replay_words": []
+  }
+}

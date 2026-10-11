@@ -1,0 +1,16 @@
+{
+  "id": "cat-exact",
+  "mode": "beginner",
+  "target_text": "cat",
+  "heard_text": "cat",
+  "word_confidences": [0.95],
+  "expect": {
+    "result": "correct",
+    "words_correct": 1,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "cat", "heard": "cat", "confidence": 0.95, "result": "correct" }
+    ],
+    "replay_words": []
+  }
+}

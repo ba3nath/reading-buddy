@@ -1,0 +1,22 @@
+{
+  "id": "fox-strict",
+  "mode": "strict",
+  "target_text": "Quick brown fox jumped over the box",
+  "heard_text": "Quick down fox jump over the dox",
+  "word_confidences": [0.95, 0.91, 0.94, 0.90, 0.93, 0.96, 0.88],
+  "expect": {
+    "result": "missed",
+    "words_correct": 4,
+    "words_total": 7,
+    "word_scores": [
+      { "word": "quick", "heard": "quick", "confidence": 0.95, "result": "correct" },
+      { "word": "brown", "heard": "down", "confidence": 0.91, "result": "missed" },
+      { "word": "fox", "heard": "fox", "confidence": 0.94, "result": "correct" },
+      { "word": "jumped", "heard": "jump", "confidence": 0.90, "result": "missed" },
+      { "word": "over", "heard": "over", "confidence": 0.93, "result": "correct" },
+      { "word": "the", "heard": "the", "confidence": 0.96, "result": "correct" },
+      { "word": "box", "heard": "dox", "confidence": 0.88, "result": "missed" }
+    ],
+    "replay_words": ["brown", "jumped", "box"]
+  }
+}

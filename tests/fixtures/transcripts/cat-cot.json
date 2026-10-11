@@ -1,0 +1,16 @@
+{
+  "id": "cat-cot",
+  "mode": "beginner",
+  "target_text": "cat",
+  "heard_text": "cot",
+  "word_confidences": [0.90],
+  "expect": {
+    "result": "close",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "cat", "heard": "cot", "confidence": 0.90, "result": "close" }
+    ],
+    "replay_words": []
+  }
+}
