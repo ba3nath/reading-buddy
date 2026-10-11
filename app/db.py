@@ -83,7 +83,6 @@ CREATE TABLE IF NOT EXISTS attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_attempts_session ON attempts (session_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_item_created ON attempts (item_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_attempts_queue ON attempts (session_id, queue_index);
 
 CREATE TABLE IF NOT EXISTS mastery (
   item_id INTEGER PRIMARY KEY REFERENCES items(id),
@@ -113,6 +112,10 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _ensure_column(conn, "sessions", "play_item_ids", "TEXT NOT NULL DEFAULT '[]'")
     _ensure_column(conn, "attempts", "queue_index", "INTEGER")
     _ensure_column(conn, "attempts", "replay_word", "TEXT NOT NULL DEFAULT ''")
+    # Indexes that depend on migrated columns (must run after _ensure_column).
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_attempts_queue ON attempts (session_id, queue_index)"
+    )
     # Backfill play_item_ids from planned when empty.
     conn.execute(
         """
