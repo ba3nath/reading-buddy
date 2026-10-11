@@ -54,6 +54,14 @@ def test_home_brand_is_not_clipped():
     assert "@media (max-height: 700px)" in CSS
 
 
+def test_home_start_comes_before_quest_hud():
+    """Start must sit above the quest block so common viewports don't miss it."""
+    start_at = HTML.index('class="btn primary" data-start>Start</button>')
+    quest_at = HTML.index("Today's quest")
+    buddy_at = HTML.index("data-buddy-pick")
+    assert buddy_at < start_at < quest_at
+
+
 def test_home_has_gamify_quest_hud():
     assert "data-play-hud" in HTML
     assert "Today's quest" in HTML

@@ -55,21 +55,6 @@
     <h1 class="home-brand">Reading Buddy</h1>
     <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
 
-    <div class="play-hud" data-play-hud>
-      <div class="quest" data-quest>
-        <span class="quest-mark" data-quest-mark aria-hidden="true">◇</span>
-        <div class="quest-copy">
-          <p class="quest-title">Today's quest</p>
-          <p class="quest-label" data-quest-label>Finish today's reading</p>
-        </div>
-      </div>
-      <div class="play-stats">
-        <p class="stat-streak" data-streak>Streak 0</p>
-        <p class="stat-bank" data-star-bank>★ 0 all-time</p>
-      </div>
-      <div class="badge-row" data-badges aria-label="Badges"></div>
-    </div>
-
     <div class="home-buddy" data-home-buddy data-buddy-state="idle">
       <div class="buddy-slot home-buddy-slot" data-home-buddy-slot></div>
       <p class="home-buddy-wave" data-home-greeting>Hi — pick me, then Start!</p>
@@ -93,14 +78,30 @@
       </div>
     </div>
 
+    <div class="start-row">
+      <button type="button" class="btn primary" data-start>Start</button>
+    </div>
+
+    <div class="play-hud" data-play-hud>
+      <div class="quest" data-quest>
+        <span class="quest-mark" data-quest-mark aria-hidden="true">◇</span>
+        <div class="quest-copy">
+          <p class="quest-title">Today's quest</p>
+          <p class="quest-label" data-quest-label>Finish today's reading</p>
+        </div>
+      </div>
+      <div class="play-stats">
+        <p class="stat-streak" data-streak>Streak 0</p>
+        <p class="stat-bank" data-star-bank>★ 0 all-time</p>
+      </div>
+      <div class="badge-row" data-badges aria-label="Badges"></div>
+    </div>
+
     <div class="garden-home" data-garden-home hidden>
       <object class="garden-art" data="/static/mascots/garden.svg" type="image/svg+xml" aria-label="Garden"></object>
       <p class="garden-caption" data-garden-caption></p>
     </div>
 
-    <div class="start-row">
-      <button type="button" class="btn primary" data-start>Start</button>
-    </div>
     <details class="more-levels">
       <summary>More levels</summary>
       <div class="start-row level-row">
