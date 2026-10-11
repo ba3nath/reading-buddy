@@ -21,6 +21,8 @@ const state = {
   audioEl: null,
   gardenGrowth: 0,
   svgCache: {},
+  combo: 0,
+  play: null, // home quest / streak / badges snapshot
 };
 
 function setState(id) {
@@ -319,6 +321,111 @@ function showGardenHome(growth) {
   applyGardenStage(wrap, growth);
 }
 
+function renderPlayHud(play, { highlightNew = [] } = {}) {
+  state.play = play || state.play;
+  const p = state.play || {
+    quest_complete: false,
+    quest_label: "Finish today's reading",
+    day_streak: 0,
+    lifetime_stars: 0,
+    badges: [],
+  };
+  const quest = $("[data-quest]");
+  const mark = $("[data-quest-mark]");
+  const label = $("[data-quest-label]");
+  if (quest) quest.classList.toggle("is-done", Boolean(p.quest_complete));
+  if (mark) mark.textContent = p.quest_complete ? "✓" : "◇";
+  if (label) {
+    label.textContent = p.quest_complete
+      ? "Done for today — play again anytime!"
+      : p.quest_label || "Finish today's reading";
+  }
+  const streak = $("[data-streak]");
+  if (streak) {
+    const n = Number(p.day_streak) || 0;
+    streak.textContent = n > 0 ? `Streak ${n} day${n === 1 ? "" : "s"}` : "Start a streak today";
+  }
+  const bank = $("[data-star-bank]");
+  if (bank) bank.textContent = `★ ${Number(p.lifetime_stars) || 0} all-time`;
+  const row = $("[data-badges]");
+  if (row) {
+    const badges = p.badges || [];
+    const news = new Set(highlightNew.map((b) => b.id || b));
+    row.innerHTML = "";
+    badges.forEach((b) => {
+      const chip = document.createElement("span");
+      chip.className = "badge-chip" + (news.has(b.id) ? " is-new" : "");
+      chip.textContent = b.label || b.id;
+      row.appendChild(chip);
+    });
+    if (!badges.length) {
+      const tip = document.createElement("span");
+      tip.className = "badge-chip";
+      tip.textContent = "Badges unlock as you read";
+      row.appendChild(tip);
+    }
+  }
+}
+
+function setCombo(n) {
+  state.combo = Math.max(0, n);
+  const el = $("[data-combo]");
+  if (!el) return;
+  if (state.combo < 2) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.textContent = `Sunny streak ×${state.combo}`;
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
+}
+
+function popStarFloat(amount) {
+  const el = $("[data-star-float]");
+  if (!el || !(amount > 0)) return;
+  el.textContent = `+${amount}★`;
+  el.classList.remove("pop");
+  void el.offsetWidth;
+  el.classList.add("pop");
+}
+
+function showEndPlayRewards(play) {
+  const quest = $("[data-end-quest]");
+  const streak = $("[data-end-streak]");
+  const badges = $("[data-end-badges]");
+  if (quest) {
+    quest.hidden = !play?.quest_complete;
+  }
+  if (streak) {
+    const n = Number(play?.day_streak) || 0;
+    if (n > 0) {
+      streak.hidden = false;
+      streak.textContent =
+        n === 1 ? "Streak started — come back tomorrow!" : `${n}-day reading streak!`;
+    } else {
+      streak.hidden = true;
+    }
+  }
+  if (badges) {
+    const neu = play?.new_badges || [];
+    if (neu.length) {
+      badges.hidden = false;
+      badges.innerHTML = "";
+      neu.forEach((b) => {
+        const chip = document.createElement("span");
+        chip.className = "badge-chip is-new";
+        chip.textContent = `New: ${b.label || b.id}`;
+        badges.appendChild(chip);
+      });
+    } else {
+      badges.hidden = true;
+      badges.innerHTML = "";
+    }
+  }
+}
+
 async function boot() {
   setState("boot");
   setMessage("Getting ready…");
@@ -340,6 +447,13 @@ async function boot() {
     const settings = await api("/api/parent/settings");
     await loadBuddySvg(settings.buddy || "cat");
     showGardenHome(Number(settings.garden_growth) || 0);
+    renderPlayHud(settings.play || {
+      lifetime_stars: settings.lifetime_stars || 0,
+      day_streak: settings.day_streak || 0,
+      quest_complete: false,
+      quest_label: "Finish today's reading",
+      badges: [],
+    });
     setState("home");
     setMessage("");
   } catch {
@@ -384,6 +498,8 @@ async function startSession(level) {
   state.replay = [];
   state.replayIndex = 0;
   state.phase = "read";
+  state.combo = 0;
+  setCombo(0);
   setStars(0);
   const badge = $("[data-level]");
   badge.hidden = false;
@@ -597,6 +713,7 @@ function handleAttempt(result) {
   applyReinsert(result);
 
   if (result.skipped || result.result === "skipped") {
+    setCombo(0);
     setStars(result.stars_total);
     setMessage(result.message || "");
     setState("result-skip");
@@ -606,6 +723,7 @@ function handleAttempt(result) {
     return;
   }
   if (result.retry || result.result === "retry") {
+    setCombo(0);
     setStars(result.stars_total);
     const tryNumber = Number(result.try_number) || 2;
     const triesMax = Number(result.tries_max) || 3;
@@ -621,6 +739,7 @@ function handleAttempt(result) {
   }
   // Close second-chance only when again/read_again is true — never on locked close.
   if (result.result === "close" && needsAnotherRead(result)) {
+    setCombo(0);
     setStars(result.stars_total);
     setReadAgain({
       tryNumber: Number(result.try_number) || 2,
@@ -638,7 +757,10 @@ function handleAttempt(result) {
     return;
   }
   if (result.result === "correct") {
+    setCombo(state.combo + 1);
+    const gained = Number(result.stars_awarded) || 0;
     setStars(result.stars_total, { celebrate: true });
+    popStarFloat(gained);
     setMessage(result.message || "");
     setState("result-correct");
     state.closeAgainPending = false;
@@ -647,7 +769,12 @@ function handleAttempt(result) {
     return;
   }
   // Locked close / miss — move on; never keep "one more" copy.
+  if (result.result === "missed") setCombo(0);
+  else setCombo(state.combo + 1); // locked close still nudges the sunny streak
   setStars(result.stars_total);
+  if ((Number(result.stars_awarded) || 0) > 0) {
+    popStarFloat(Number(result.stars_awarded));
+  }
   setMessage(result.message || "");
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
@@ -686,6 +813,7 @@ async function finishSession() {
     setState("session-end");
     $("[data-end-stars]").textContent = String(data.stars);
     setStars(data.stars, { celebrate: true });
+    setCombo(0);
     setWord("");
     setMessage("");
     $("[data-progress]").textContent = "";
@@ -710,6 +838,12 @@ async function finishSession() {
         applyGardenStage(wrap, data.garden.growth);
       }
       showGardenHome(data.garden.growth);
+    }
+    if (data.play) {
+      showEndPlayRewards(data.play);
+      renderPlayHud(data.home || data.play, {
+        highlightNew: data.play.new_badges || [],
+      });
     }
     syncBuddyAnim();
     if (state.replay.length) {

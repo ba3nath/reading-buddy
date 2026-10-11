@@ -9,7 +9,7 @@ import shutil
 import zipfile
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from app import config
 from app.db import load_settings, local_today, save_settings
@@ -292,3 +292,101 @@ def garden_stage_name(growth: int) -> str:
     if growth <= 9:
         return "creature"
     return "sticker"
+
+
+# id → (label, predicate over settings-like dict)
+BADGE_DEFS: list[tuple[str, str, Callable[[dict[str, Any]], bool]]] = [
+    ("first_star", "First star", lambda s: int(s.get("lifetime_stars", 0)) >= 1),
+    ("garden_seed", "Garden planted", lambda s: int(s.get("garden_growth", 0)) >= 1),
+    ("streak_3", "3-day streak", lambda s: int(s.get("day_streak", 0)) >= 3),
+    ("star_10", "10 stars", lambda s: int(s.get("lifetime_stars", 0)) >= 10),
+    ("garden_flower", "Flower garden", lambda s: int(s.get("garden_growth", 0)) >= 3),
+    ("streak_7", "Week of reading", lambda s: int(s.get("day_streak", 0)) >= 7),
+    ("star_50", "Star collector", lambda s: int(s.get("lifetime_stars", 0)) >= 50),
+    ("garden_sticker", "Garden sticker", lambda s: int(s.get("garden_growth", 0)) >= 10),
+]
+
+
+def compute_badges(settings: dict[str, Any]) -> list[dict[str, str]]:
+    earned: list[dict[str, str]] = []
+    for badge_id, label, pred in BADGE_DEFS:
+        try:
+            if pred(settings):
+                earned.append({"id": badge_id, "label": label})
+        except Exception:  # noqa: BLE001
+            continue
+    return earned
+
+
+def bump_play_stats(
+    settings: dict[str, Any],
+    *,
+    stars_earned: int,
+) -> dict[str, Any]:
+    """Update lifetime stars, day streak, badges after a completed session."""
+    settings = dict(settings)
+    today = local_today()
+    last = str(settings.get("last_play_date") or "")
+    streak = int(settings.get("day_streak", 0) or 0)
+
+    if last == today:
+        # Already played today — keep streak; still add stars.
+        pass
+    elif last:
+        try:
+            prev = date.fromisoformat(last)
+            today_d = date.fromisoformat(today)
+            if (today_d - prev).days == 1:
+                streak += 1
+            elif (today_d - prev).days > 1:
+                streak = 1  # quiet reset — no scolding
+            # same day already handled
+        except ValueError:
+            streak = 1
+    else:
+        streak = 1
+
+    prev_badges = set(settings.get("badges_earned") or [])
+    settings["lifetime_stars"] = int(settings.get("lifetime_stars", 0) or 0) + max(
+        0, int(stars_earned)
+    )
+    settings["day_streak"] = max(1, streak)
+    settings["last_play_date"] = today
+
+    all_badges = compute_badges(settings)
+    badge_ids = [b["id"] for b in all_badges]
+    settings["badges_earned"] = badge_ids
+    new_badges = [b for b in all_badges if b["id"] not in prev_badges]
+
+    save_settings(settings)
+    return {
+        "lifetime_stars": int(settings["lifetime_stars"]),
+        "day_streak": int(settings["day_streak"]),
+        "quest_complete": True,
+        "quest_label": "Finish today's reading",
+        "badges": all_badges,
+        "new_badges": new_badges,
+        "last_play_date": today,
+    }
+
+
+def play_summary(settings: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Home-screen quest / streak / badge snapshot."""
+    settings = dict(settings or load_settings())
+    today = local_today()
+    last = str(settings.get("last_play_date") or "")
+    quest_complete = last == today
+    badges = compute_badges(settings)
+    # Persist derived badge ids if settings lag behind (e.g. after upgrade).
+    earned_ids = [b["id"] for b in badges]
+    if set(earned_ids) != set(settings.get("badges_earned") or []):
+        settings["badges_earned"] = earned_ids
+        save_settings(settings)
+    return {
+        "lifetime_stars": int(settings.get("lifetime_stars", 0) or 0),
+        "day_streak": int(settings.get("day_streak", 0) or 0),
+        "quest_complete": quest_complete,
+        "quest_label": "Finish today's reading",
+        "badges": badges,
+        "last_play_date": last,
+    }

@@ -32,7 +32,9 @@
         <span class="mic-label">Tap to read</span>
       </button>
     </div>
+    <p class="combo" data-combo hidden aria-live="polite">Sunny streak ×1</p>
     <div class="star-burst" data-star-burst aria-hidden="true"></div>
+    <div class="star-float" data-star-float aria-hidden="true"></div>
   </main>
 
   <footer class="chrome">
@@ -49,6 +51,21 @@
     </div>
     <h1 class="home-brand">Reading Buddy</h1>
     <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
+
+    <div class="play-hud" data-play-hud>
+      <div class="quest" data-quest>
+        <span class="quest-mark" data-quest-mark aria-hidden="true">◇</span>
+        <div class="quest-copy">
+          <p class="quest-title">Today's quest</p>
+          <p class="quest-label" data-quest-label>Finish today's reading</p>
+        </div>
+      </div>
+      <div class="play-stats">
+        <p class="stat-streak" data-streak>Streak 0</p>
+        <p class="stat-bank" data-star-bank>★ 0 all-time</p>
+      </div>
+      <div class="badge-row" data-badges aria-label="Badges"></div>
+    </div>
 
     <div class="home-buddy" data-home-buddy data-buddy-state="idle">
       <div class="buddy-slot home-buddy-slot" data-home-buddy-slot></div>
@@ -101,6 +118,9 @@
     </div>
     <h2>Nice reading!</h2>
     <p class="end-stars">You earned <span data-end-stars>0</span> stars</p>
+    <p class="end-quest" data-end-quest hidden>Quest complete — you finished today's reading!</p>
+    <p class="end-streak" data-end-streak hidden></p>
+    <div class="end-badges" data-end-badges hidden></div>
     <div class="garden-end" data-garden-end hidden>
       <object class="garden-art" data="/static/mascots/garden.svg" type="image/svg+xml" aria-label="Garden grew"></object>
       <p class="garden-caption" data-garden-end-caption></p>

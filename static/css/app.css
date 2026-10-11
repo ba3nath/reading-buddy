@@ -794,6 +794,200 @@ body[data-state="recording"] .mic-particles {
   font-weight: 700;
 }
 
+.play-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: min(100%, 24rem);
+  margin: 0.15rem 0 0.25rem;
+}
+
+.quest {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.7rem 0.95rem;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(255, 213, 106, 0.55), rgba(126, 200, 232, 0.4));
+  border: 2px solid rgba(255, 176, 32, 0.35);
+  text-align: left;
+}
+
+.quest.is-done {
+  background: linear-gradient(120deg, rgba(123, 196, 127, 0.45), rgba(126, 200, 232, 0.35));
+  border-color: rgba(63, 154, 95, 0.4);
+}
+
+.quest-mark {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--sun-deep);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.quest.is-done .quest-mark {
+  color: var(--meadow-deep);
+  background: rgba(232, 247, 234, 0.95);
+}
+
+.quest-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6a4a12;
+}
+
+.quest-label {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.play-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.stat-streak {
+  margin: 0;
+  color: var(--coral-deep);
+}
+
+.stat-bank {
+  margin: 0;
+  color: var(--sun-deep);
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 1.6rem;
+}
+
+.badge-chip {
+  margin: 0;
+  padding: 0.28rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #1f4f63;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(58, 160, 208, 0.35);
+}
+
+.badge-chip.is-new {
+  animation: badge-pop 0.7s ease;
+  border-color: var(--coral-deep);
+  color: #7a2e16;
+  background: #ffe4d8;
+}
+
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.combo {
+  margin: 0.15rem 0 0;
+  min-height: 1.3rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--coral-deep);
+  animation: combo-pop 0.45s ease;
+}
+
+.combo[hidden] {
+  display: none !important;
+}
+
+@keyframes combo-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.star-float {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  pointer-events: none;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--sun-deep);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7);
+  opacity: 0;
+}
+
+.star-float.pop {
+  animation: star-float-up 0.85s ease forwards;
+}
+
+@keyframes star-float-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.7);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -48px) scale(1.15);
+  }
+}
+
+.end-quest,
+.end-streak {
+  margin: 0;
+  font-weight: 800;
+}
+
+.end-quest {
+  color: var(--meadow-deep);
+}
+
+.end-streak {
+  color: var(--coral-deep);
+}
+
+.end-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
 .lede,
 .end-stars,
 .view-boot-error p {
@@ -910,7 +1104,10 @@ body[data-state="result-correct"] .stage {
   .garden-end,
   .read-again,
   .home-blob,
-  .view-home .home-brand {
+  .view-home .home-brand,
+  .combo,
+  .badge-chip.is-new,
+  .star-float {
     animation: none !important;
   }
 

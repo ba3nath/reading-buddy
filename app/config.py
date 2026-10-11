@@ -79,6 +79,11 @@ DEFAULT_SETTINGS = {
     "low_streak": 0,
     "move_up_streak": 0,
     "garden_growth": 0,  # completed sessions; only increases
+    # Play stats (growth-only kindness: streaks reset quietly, never scold)
+    "lifetime_stars": 0,
+    "day_streak": 0,
+    "last_play_date": "",
+    "badges_earned": [],  # list of badge ids
 }
 
 BUDDIES = ("cat", "krishna", "mouse")

@@ -433,7 +433,11 @@ async def post_complete(session_id: int):
 
 @app.get("/api/parent/settings")
 def get_parent_settings():
-    return load_settings()
+    from app.parent import play_summary
+
+    settings = load_settings()
+    settings["play"] = play_summary(settings)
+    return settings
 
 
 @app.put("/api/parent/settings")

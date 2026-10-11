@@ -856,9 +856,12 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         settings=settings,
     )
     save_settings(new_settings)
-    from app.parent import bump_garden
+    from app.parent import bump_garden, bump_play_stats, play_summary
 
     garden = bump_garden(new_settings)
+    # Re-load after garden write so play stats see latest growth.
+    after_garden = load_settings()
+    play = bump_play_stats(after_garden, stars_earned=int(session["stars"]))
     conn.execute(
         """
         UPDATE sessions
@@ -877,7 +880,9 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "planned_count": int(session["planned_count"]),
         "replay": replay,
         "level_after": level_after,
-        "mode": new_settings.get("mode", session["mode"]),
+        "mode": load_settings().get("mode", session["mode"]),
         "garden": garden,
-        "buddy": new_settings.get("buddy", "cat"),
+        "buddy": load_settings().get("buddy", "cat"),
+        "play": play,
+        "home": play_summary(),
     }

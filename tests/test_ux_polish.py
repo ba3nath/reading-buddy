@@ -43,6 +43,13 @@ def test_home_landing_is_colorful():
     assert "brand-glow" in CSS or "background-clip: text" in CSS
 
 
+def test_home_has_gamify_quest_hud():
+    assert "data-play-hud" in HTML
+    assert "Today's quest" in HTML
+    assert "data-streak" in HTML
+    assert "data-badges" in HTML
+
+
 def test_mic_hear_you_feedback_no_timer():
     assert "mic-particles" in HTML
     assert "I hear you" in JS
