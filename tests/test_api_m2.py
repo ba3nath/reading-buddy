@@ -84,23 +84,18 @@ def test_complete_replay_missed_only(client, whisper_double, tone_wav):
         "result"
     ] == "missed"
 
+    # Near-miss close (beginner locks on first take — no second try).
+    near = "cot" if items[2]["text"] == "cat" else items[2]["text"][:-1] + "x"
     whisper_double.set_transcript(
         AttemptTranscript(
-            transcript=items[2]["text"],
-            words=[TranscriptWord(word=items[2]["text"], probability=0.4)],
+            transcript=near,
+            words=[TranscriptWord(word=near, probability=0.9)],
             no_speech_prob=0.05,
         )
     )
     close = _post_attempt(client, sid, items[2]["id"], tone_wav.read_bytes(), qi=2).json()
     assert close["result"] == "close"
-    whisper_double.set_transcript(
-        AttemptTranscript(
-            transcript=items[2]["text"],
-            words=[TranscriptWord(word=items[2]["text"], probability=0.95)],
-            no_speech_prob=0.05,
-        )
-    )
-    _post_attempt(client, sid, items[2]["id"], tone_wav.read_bytes(), qi=2)
+    assert close["again"] is False
 
     done = client.post(f"/api/sessions/{sid}/complete").json()
     assert done["replay"]
@@ -206,10 +201,11 @@ def test_replay_close_no_again_then_advance(
     planned = done["planned_count"]
     correct = done["correct_count"]
 
+    heard_close = "cot" if word == "cat" else word[:-1] + "x"
     whisper_double.set_transcript(
         AttemptTranscript(
-            transcript=word,
-            words=[TranscriptWord(word=word, probability=0.40)],
+            transcript=heard_close,
+            words=[TranscriptWord(word=heard_close, probability=0.90)],
             no_speech_prob=0.05,
         )
     )

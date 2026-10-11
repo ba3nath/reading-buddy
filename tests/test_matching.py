@@ -102,8 +102,15 @@ def test_fox_alignment_keeps_later_corrects():
     assert by_target["box"] == "dox"
 
 
-def test_low_confidence_exact_is_close_beginner():
+def test_low_confidence_exact_is_correct_beginner():
+    # Whisper often scores kid short words under 0.60 — still count as correct.
     result = score_attempt("cat", "cat", [0.40], mode="beginner")
+    assert result.result == "correct"
+    assert result.word_scores[0].result == "correct"
+
+
+def test_low_confidence_exact_still_close_strict():
+    result = score_attempt("cat", "cat", [0.40], mode="strict")
     assert result.result == "close"
     assert result.word_scores[0].result == "close"
 

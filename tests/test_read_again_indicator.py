@@ -1,4 +1,4 @@
-"""API + copy for when another read is required."""
+"""API + copy for when another read is required (silence / strict close)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def test_retry_payload_flags_read_again(client, assert_attempt_shape):
     assert body["message"] == msg_retry(2, 3)
 
 
-def test_close_again_message_asks_for_another_read(
+def test_beginner_close_does_not_ask_again(
     client, whisper_double, tone_wav, assert_attempt_shape
 ):
     start = client.post("/api/sessions", json={"level": 1}).json()
@@ -54,9 +54,39 @@ def test_close_again_message_asks_for_another_read(
     body = res.json()
     assert_attempt_shape(body)
     assert body["result"] == "close"
+    assert body["again"] is False
+    assert body["read_again"] is False
+    assert body["message"] == MSG_CLOSE_OK
+
+
+def test_strict_close_asks_for_another_read(
+    client, whisper_double, tone_wav, assert_attempt_shape
+):
+    client.put("/api/parent/settings", json={"mode": "strict", "auto_strict": False})
+    start = client.post("/api/sessions", json={"level": 1}).json()
+    assert start["mode"] == "strict"
+    item = start["items"][0]
+    qi = 0
+    # Strict close = exact word, low Whisper confidence.
+    whisper_double.set_transcript(
+        AttemptTranscript(
+            transcript=item["text"],
+            words=[TranscriptWord(word=item["text"], probability=0.40)],
+            no_speech_prob=0.05,
+        )
+    )
+    res = post_attempt(
+        client,
+        start["session_id"],
+        item["id"],
+        tone_wav.read_bytes(),
+        queue_index=qi,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert_attempt_shape(body)
+    assert body["result"] == "close"
     assert body["again"] is True
     assert body["read_again"] is True
     assert body["try_number"] == 2
-    assert body["tries_max"] == 2
     assert body["message"] == MSG_CLOSE
-    assert "one more time" in body["message"].lower()

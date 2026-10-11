@@ -683,7 +683,15 @@ def apply_attempt(
     else:
         assert queue_index is not None
         replacing_close = has_provisional_close(conn, session_id, queue_index)
-        if result == "close" and not replacing_close:
+        session_mode = str(session["mode"] or "beginner").lower()
+        # Strict keeps a close second-chance. Beginner does not — kids were
+        # forced into a second try whenever Whisper marked a near-miss.
+        ask_close_again = (
+            result == "close"
+            and not replacing_close
+            and session_mode == "strict"
+        )
+        if ask_close_again:
             again = True
             stars_awarded = 0
             message = config.MSG_CLOSE
@@ -720,7 +728,7 @@ def apply_attempt(
                     conn, item_id, keep_plus_one_day=bool(earlier_miss)
                 )
             elif result == "close":
-                # Second close take locks — no further read required.
+                # Beginner first close, or strict second close — lock & move on.
                 message = config.MSG_CLOSE_OK
                 again = False
             else:

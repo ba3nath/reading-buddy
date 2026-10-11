@@ -148,18 +148,16 @@ def score_word(
             return "close"
         return "missed"
 
-    # Beginner
+    # Beginner — trust an exact (or plural) transcript over Whisper
+    # confidence. Kid short words often land at 0.3–0.55 and used to force
+    # a pointless "close" second try.
     if not heard:
         return "missed"
     if is_plural_pair(target, heard):
-        if conf >= config.BEGINNER_CORRECT_MIN_PROB:
-            return "correct"
-        return "close"
+        return "correct"
     dist = levenshtein(target, heard)
     if dist == 0:
-        if conf >= config.BEGINNER_CORRECT_MIN_PROB:
-            return "correct"
-        return "close"
+        return "correct"
     if dist <= 1:
         return "close"
     if metaphone_primary(target) == metaphone_primary(heard) and dist <= 2:

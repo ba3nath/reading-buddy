@@ -1,10 +1,11 @@
-"""End-to-end multi-read flows: retry, close second-chance, lock, skip.
+"""End-to-end multi-read flows: silence retry, beginner no forced close-again, strict close.
 
-Contract:
-- First silence → read_again, try_number is the *next* try (2 of 3).
-- First close → read_again, asks for one more; try_number 2 of 2.
-- Second close / correct after close → NOT read_again; message must not ask again.
-- Third silence → skip; not read_again.
+Contract (beginner default):
+- Exact transcript → correct even at low Whisper confidence (no second try).
+- Near-miss close → lock & move on (no second try).
+- Silence → read_again with next try count; third silence → skip.
+
+Strict mode still offers one close second-chance.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.config import MSG_CLOSE, MSG_CLOSE_OK, MSG_CORRECT, MSG_SKIP, msg_retry
+from app.db import load_settings, save_settings
 from app.matching import score_attempt
 from app.session import apply_attempt, start_session
 from app.whisper_engine import AttemptTranscript, TranscriptWord
@@ -20,7 +22,6 @@ from tests.helpers import post_attempt
 ROOT = Path(__file__).resolve().parents[1]
 GAME_JS = (ROOT / "static" / "js" / "game.js").read_text(encoding="utf-8")
 CSS = (ROOT / "static" / "css" / "app.css").read_text(encoding="utf-8")
-CONFIG_SRC = (ROOT / "app" / "config.py").read_text(encoding="utf-8")
 
 
 def _apply(conn, sid, item_id, match, *, qi, silence=False):
@@ -42,8 +43,6 @@ def _assert_asks_another(body: dict, *, try_number: int, tries_max: int) -> None
     assert body["tries_max"] == tries_max
     msg = body["message"].lower()
     assert "read" in msg and ("again" in msg or "one more" in msg)
-    # Must not look like a finished / move-on line.
-    assert "on to the next" not in msg
 
 
 def _assert_done_no_another(body: dict) -> None:
@@ -57,18 +56,56 @@ def _assert_done_no_another(body: dict) -> None:
     assert "please read" not in msg
 
 
-def test_close_then_correct_stops_asking(tmp_env):
+def test_beginner_exact_low_conf_first_take_done(tmp_env):
     conn = tmp_env["conn"]
     data = start_session(conn, level=1)
     item = data["items"][0]
     text = item["text"]
+    resp = _apply(
+        conn,
+        data["session_id"],
+        item["id"],
+        score_attempt(text, text, [0.35], mode="beginner"),
+        qi=0,
+    )
+    assert resp["result"] == "correct"
+    assert resp["message"] == MSG_CORRECT
+    _assert_done_no_another(resp)
 
+
+def test_beginner_close_near_miss_no_second_try(tmp_env):
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = next((i for i in data["items"] if i["text"] == "cat"), data["items"][0])
+    qi = data["items"].index(item)
     first = _apply(
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.40], mode="beginner"),
-        qi=0,
+        score_attempt(item["text"], "cot", [0.90], mode="beginner"),
+        qi=qi,
+    )
+    assert first["result"] == "close"
+    assert first["message"] == MSG_CLOSE_OK
+    _assert_done_no_another(first)
+
+
+def test_strict_close_then_correct_second_chance(tmp_env):
+    conn = tmp_env["conn"]
+    save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
+    data = start_session(conn, level=1)
+    assert data["mode"] == "strict"
+    item = data["items"][0]
+    qi = 0
+    text = item["text"]
+
+    # Strict close = exact transcript, low confidence.
+    first = _apply(
+        conn,
+        data["session_id"],
+        item["id"],
+        score_attempt(text, text, [0.40], mode="strict"),
+        qi=qi,
     )
     assert first["result"] == "close"
     _assert_asks_another(first, try_number=2, tries_max=2)
@@ -78,41 +115,41 @@ def test_close_then_correct_stops_asking(tmp_env):
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.95], mode="beginner"),
-        qi=0,
+        score_attempt(text, text, [0.95], mode="strict"),
+        qi=qi,
     )
     assert second["result"] == "correct"
     assert second["message"] == MSG_CORRECT
     _assert_done_no_another(second)
 
 
-def test_close_then_close_locks_without_one_more(tmp_env):
+def test_strict_close_then_close_locks_without_one_more(tmp_env):
     conn = tmp_env["conn"]
+    save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
     data = start_session(conn, level=1)
     item = data["items"][0]
+    qi = 0
     text = item["text"]
 
     first = _apply(
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.40], mode="beginner"),
-        qi=0,
+        score_attempt(text, text, [0.40], mode="strict"),
+        qi=qi,
     )
-    assert first["result"] == "close"
     _assert_asks_another(first, try_number=2, tries_max=2)
 
     second = _apply(
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.45], mode="beginner"),
-        qi=0,
+        score_attempt(text, text, [0.40], mode="strict"),
+        qi=qi,
     )
     assert second["result"] == "close"
     assert second["message"] == MSG_CLOSE_OK
     _assert_done_no_another(second)
-
 
 def test_silence_retry_then_correct_clears_read_again(tmp_env):
     conn = tmp_env["conn"]
@@ -184,59 +221,37 @@ def test_three_silences_skip_does_not_ask_again(tmp_env):
     _assert_done_no_another(skip)
 
 
-def test_api_close_second_take_no_one_more(
+def test_api_beginner_exact_no_second_try(
     client, whisper_double, tone_wav, assert_attempt_shape
 ):
     start = client.post("/api/sessions", json={"level": 1}).json()
-    item = next((i for i in start["items"] if i["text"] == "cat"), start["items"][0])
-    qi = start["items"].index(item)
-    sid = start["session_id"]
-
-    whisper_double.set_transcript(
-        AttemptTranscript(
-            transcript="cot",
-            words=[TranscriptWord(word="cot", probability=0.9)],
-            no_speech_prob=0.05,
-        )
-    )
-    first = post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=qi)
-    assert first.status_code == 200
-    body1 = first.json()
-    assert_attempt_shape(body1)
-    if body1["result"] != "close":
-        # Queue without cat close path — still assert copy invariants.
-        assert "one more" in MSG_CLOSE.lower()
-        assert "one more" not in MSG_CLOSE_OK.lower()
-        return
-
-    _assert_asks_another(body1, try_number=2, tries_max=2)
-
+    item = start["items"][0]
     whisper_double.set_transcript(
         AttemptTranscript(
             transcript=item["text"],
-            words=[TranscriptWord(word=item["text"], probability=0.95)],
+            words=[TranscriptWord(word=item["text"], probability=0.35)],
             no_speech_prob=0.05,
         )
     )
-    second = post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=qi)
-    assert second.status_code == 200
-    body2 = second.json()
-    assert_attempt_shape(body2)
-    assert body2["result"] == "correct"
-    _assert_done_no_another(body2)
+    res = post_attempt(
+        client, start["session_id"], item["id"], tone_wav.read_bytes(), queue_index=0
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert_attempt_shape(body)
+    assert body["result"] == "correct"
+    _assert_done_no_another(body)
 
 
-def test_api_close_then_close_message_is_close_ok(
+def test_api_beginner_close_no_second_try(
     client, whisper_double, tone_wav, assert_attempt_shape
 ):
     start = client.post("/api/sessions", json={"level": 1}).json()
     item = next((i for i in start["items"] if i["text"] == "cat"), None)
     if item is None:
-        assert "on to the next" in MSG_CLOSE_OK.lower()
+        assert "one more" not in MSG_CLOSE_OK.lower()
         return
     qi = start["items"].index(item)
-    sid = start["session_id"]
-
     whisper_double.set_transcript(
         AttemptTranscript(
             transcript="cot",
@@ -244,26 +259,14 @@ def test_api_close_then_close_message_is_close_ok(
             no_speech_prob=0.05,
         )
     )
-    first = post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=qi)
-    body1 = first.json()
-    assert body1["result"] == "close"
-    assert body1["again"] is True
-
-    # Second take still "close" confidence — must lock, not ask again.
-    whisper_double.set_transcript(
-        AttemptTranscript(
-            transcript=item["text"],
-            words=[TranscriptWord(word=item["text"], probability=0.4)],
-            no_speech_prob=0.05,
-        )
+    res = post_attempt(
+        client, start["session_id"], item["id"], tone_wav.read_bytes(), queue_index=qi
     )
-    second = post_attempt(client, sid, item["id"], tone_wav.read_bytes(), queue_index=qi)
-    assert second.status_code == 200
-    body2 = second.json()
-    assert_attempt_shape(body2)
-    assert body2["result"] == "close"
-    assert body2["message"] == MSG_CLOSE_OK
-    _assert_done_no_another(body2)
+    body = res.json()
+    assert_attempt_shape(body)
+    assert body["result"] == "close"
+    assert body["message"] == MSG_CLOSE_OK
+    _assert_done_no_another(body)
 
 
 def test_ui_hides_read_again_while_recording_or_scoring():
@@ -271,6 +274,4 @@ def test_ui_hides_read_again_while_recording_or_scoring():
     assert 'body[data-state="recording"] .read-again' in CSS
     assert 'body[data-state="scoring"] .read-again' in CSS
     assert "needsAnotherRead" in GAME_JS
-    # Locked-close copy must not ask for another read.
-    assert "on to the next" in CONFIG_SRC.lower() or "MSG_CLOSE_OK" in CONFIG_SRC
     assert "one more" not in MSG_CLOSE_OK.lower()

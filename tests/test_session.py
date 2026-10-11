@@ -72,22 +72,54 @@ def test_hard_bonus_first_try(tmp_env):
     assert resp["stars_total"] == 2
 
 
-def test_hard_bonus_not_on_close_second_take(tmp_env):
+def test_beginner_exact_low_conf_no_second_try(tmp_env):
+    """Exact transcript at low Whisper conf must not force a second read."""
     conn = tmp_env["conn"]
-    data = start_session(conn, level=3)
+    data = start_session(conn, level=1)
     item = data["items"][0]
     text = item["text"]
-    close_match = score_attempt(text, text, [0.40], mode="beginner")
+    match = score_attempt(text, text, [0.40], mode="beginner")
+    assert match.result == "correct"
+    resp = _apply(conn, data["session_id"], item["id"], match, qi=0)
+    assert resp["result"] == "correct"
+    assert resp["again"] is False
+    assert resp["read_again"] is False
+    assert resp["stars_awarded"] >= 1
+
+
+def test_beginner_near_miss_close_no_second_try(tmp_env):
+    """Beginner close (e.g. cat/cot) locks on first take — no forced re-read."""
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = next((i for i in data["items"] if i["text"] == "cat"), data["items"][0])
+    qi = data["items"].index(item)
+    close_match = score_attempt(item["text"], "cot", [0.90], mode="beginner")
+    assert close_match.result == "close"
+    first = _apply(conn, data["session_id"], item["id"], close_match, qi=qi)
+    assert first["result"] == "close"
+    assert first["again"] is False
+    assert first["read_again"] is False
+    assert "one more" not in first["message"].lower()
+
+
+def test_strict_close_second_take_no_hard_bonus(tmp_env):
+    conn = tmp_env["conn"]
+    save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
+    data = start_session(conn, level=3)
+    assert data["mode"] == "strict"
+    item = data["items"][0]
+    text = item["text"]
+    close_match = score_attempt(text, text, [0.40], mode="strict")
     assert close_match.result == "close"
     first = _apply(conn, data["session_id"], item["id"], close_match, qi=0)
     assert first["again"] is True
     assert first["stars_awarded"] == 0
 
-    second_match = score_attempt(text, text, [0.95], mode="beginner")
+    second_match = score_attempt(text, text, [0.95], mode="strict")
     second = _apply(conn, data["session_id"], item["id"], second_match, qi=0)
     assert second["result"] == "correct"
     assert second["again"] is False
-    assert second["stars_awarded"] == 1  # no hard bonus
+    assert second["stars_awarded"] == 1  # no hard bonus on second take
     assert second["stars_total"] == 1
 
     locks = conn.execute(
@@ -333,11 +365,13 @@ def test_replay_close_locks_without_again(tmp_env):
     planned = done["planned_count"]
     correct = done["correct_count"]
 
+    # Near-miss (not exact) so result stays "close" under beginner exact-is-correct.
+    heard_close = "cot" if word == "cat" else (word[:-1] + "x" if word else "x")
     close = _apply(
         conn,
         sid,
         item["id"],
-        score_attempt(word, word, [0.40], mode="beginner"),
+        score_attempt(word, heard_close, [0.90], mode="beginner"),
         qi=None,
         phase="replay",
         word=word,
