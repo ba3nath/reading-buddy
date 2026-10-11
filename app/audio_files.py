@@ -117,16 +117,34 @@ def resolve_audio_slug(slug: str) -> Path | None:
     return None
 
 
-def postprocess_generated_wav(src: Path, dest: Path) -> None:
-    """Mono 16-bit PCM, gentle silence trim, loudness-normalize (ffmpeg).
+def tts_render(text: str) -> tuple[str, float]:
+    """Pick Kokoro text + speed so short words keep plosives and length.
 
-    Keep short padding around the word so plosives (C/T in "cat") are not
-    eaten by aggressive silenceremove. Pad after trim so playback does not
-    feel clipped at the edges.
+    Bare "cup"/"map"/"the" come out clipped; a terminal period gives natural
+    lengthening, and a slightly slower speed helps kids hear each sound.
+    """
+    stripped = (text or "").strip()
+    if not stripped:
+        return text, 1.0
+    words = stripped.split()
+    if len(words) == 1 and len(words[0]) <= 6:
+        spoken = words[0]
+        if spoken[-1] not in ".!?":
+            spoken = spoken + "."
+        return spoken, 0.88
+    return stripped, 0.95
+
+
+def postprocess_generated_wav(src: Path, dest: Path) -> None:
+    """Mono 16-bit PCM, gentle lead trim, loudness-normalize (ffmpeg).
+
+    Never strip trailing silence — final plosives in cup/map/cat are quiet and
+    get eaten by stop-period silenceremove. Pad both ends so listen-then-say
+    is not abrupt.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    # -50dB + longer stop_silence: only strip near-true hush, not soft consonants.
-    # adelay/apad: ~120ms lead-in and trail so listen-then-say is not abrupt.
+    # Lead trim only (start_periods). No stop_periods — keeps /p/ /t/ /k/.
+    # adelay/apad: ~200ms lead + 280ms trail for short kid words.
     cmd = [
         "ffmpeg",
         "-y",
@@ -139,9 +157,8 @@ def postprocess_generated_wav(src: Path, dest: Path) -> None:
         "-c:a",
         "pcm_s16le",
         "-af",
-        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-50dB:"
-        "stop_periods=1:stop_duration=0.08:stop_threshold=-50dB:stop_silence=0.2,"
-        "adelay=120|120,apad=pad_dur=0.15,"
+        "silenceremove=start_periods=1:start_duration=0.05:start_threshold=-45dB,"
+        "adelay=200|200,apad=pad_dur=0.28,"
         "loudnorm=I=-16:TP=-1.5:LRA=11",
         str(dest),
     ]

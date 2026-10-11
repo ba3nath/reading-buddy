@@ -42,6 +42,8 @@ pip install -r requirements.txt
 python scripts/download_models.py    # Whisper small.en + Kokoro ONNX
 python scripts/tag_sounds.py --download   # optional: CMU dict → sound_tags
 python scripts/generate_audio.py     # wavs into audio/generated/
+# After TTS/postprocess changes (or if clips sound clipped): 
+#   python scripts/generate_audio.py --force
 ```
 
 Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.

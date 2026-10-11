@@ -1,18 +1,30 @@
-"""Generated-clip postprocess should not aggressively clip plosives."""
+"""Generated-clip postprocess should keep short-word plosives."""
 
 from __future__ import annotations
 
 import inspect
 
 from app import audio_files
+from app.audio_files import tts_render
 
 
-def test_postprocess_filter_is_gentle():
+def test_postprocess_keeps_tail_plosives():
     src = inspect.getsource(audio_files.postprocess_generated_wav)
-    assert "silenceremove" in src
-    # Must keep pad so short words like "cat" are not edge-clipped.
-    assert "apad" in src or "adelay" in src
-    # Threshold should be quieter than the old -40dB default.
-    assert "-50dB" in src
-    assert "start_threshold=-40dB" not in src
-    assert "stop_threshold=-40dB" not in src
+    # Lead trim only — stop_periods= eats /p/ /t/ on cup/map/cat.
+    assert "silenceremove=start_periods=1" in src
+    assert "stop_periods=" not in src
+    assert "apad" in src
+    assert "adelay" in src
+    assert "pad_dur=0.28" in src or "0.28" in src
+
+
+def test_tts_render_lengthens_short_words():
+    spoken, speed = tts_render("cup")
+    assert spoken.endswith(".")
+    assert speed < 1.0
+    spoken_the, speed_the = tts_render("the")
+    assert spoken_the == "the."
+    assert speed_the < 1.0
+    line, line_speed = tts_render("the cat sat")
+    assert line == "the cat sat"
+    assert line_speed <= 1.0
