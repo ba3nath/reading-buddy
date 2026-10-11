@@ -1,4 +1,4 @@
-"""Reading Buddy FastAPI app — Milestones 1–2 (+ pre-M3 locks)."""
+"""Reading Buddy FastAPI app — Milestones 1–3."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from app.audio_files import (
     resolve_audio_slug,
     write_bytes,
 )
-from app.db import connect, init_schema, load_settings, upsert_items_from_json
+from app.db import connect, init_schema, load_settings, save_settings, upsert_items_from_json
 from app.matching import score_attempt
 from app.session import (
     SessionError,
@@ -215,7 +215,17 @@ async def post_attempt(
     conn = get_conn()
     settings = load_settings()
     keep_audio = bool(settings.get("keep_audio", False))
-    mode = "beginner"  # M1/M2; M3 uses settings.mode
+    # Prefer the session's mode (frozen at start) over live settings.
+    session_row = conn.execute(
+        "SELECT mode FROM sessions WHERE id = ?", (session_id,)
+    ).fetchone()
+    mode = (
+        str(session_row["mode"])
+        if session_row
+        else str(settings.get("mode", "beginner"))
+    ).lower()
+    if mode not in ("beginner", "strict"):
+        mode = "beginner"
     replay_word = (word or "").strip()
 
     if not ffmpeg_available() or not engine.ready:
@@ -384,6 +394,75 @@ async def post_complete(session_id: int):
             status_code=exc.status,
             content=error_body(exc.code, exc.message),
         )
+
+
+@app.get("/api/parent/settings")
+def get_parent_settings():
+    return load_settings()
+
+
+@app.put("/api/parent/settings")
+async def put_parent_settings(request: Request):
+    """M3 partial: mode, level, auto_strict, session_length (full parent UI is M4)."""
+    try:
+        payload = await request.json()
+    except Exception:  # noqa: BLE001
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "Invalid JSON body"),
+        )
+    if not isinstance(payload, dict):
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "Body must be a JSON object"),
+        )
+    settings = load_settings()
+    allowed = {
+        "mode",
+        "level",
+        "auto_strict",
+        "auto_strict_sessions",
+        "session_length",
+        "profile_name",
+        "buddy",
+        "keep_audio",
+    }
+    for key, value in payload.items():
+        if key not in allowed:
+            return JSONResponse(
+                status_code=400,
+                content=error_body("bad_request", f"Unknown settings field: {key}"),
+            )
+        settings[key] = value
+    if settings.get("mode") not in ("beginner", "strict"):
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "mode must be beginner or strict"),
+        )
+    try:
+        level = int(settings["level"])
+    except (TypeError, ValueError):
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "level must be an integer"),
+        )
+    if level < 1 or level > 7:
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "level must be between 1 and 7"),
+        )
+    settings["level"] = level
+    try:
+        length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
+    except (TypeError, ValueError):
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "session_length must be an integer"),
+        )
+    settings["session_length"] = max(5, min(20, length))
+    settings["auto_strict"] = bool(settings.get("auto_strict", True))
+    save_settings(settings)
+    return settings
 
 
 @app.get("/api/audio/{slug}")

@@ -7,6 +7,12 @@ import sqlite3
 from typing import Any
 
 from app import config
+from app.adaptive import (
+    apply_day_ladder,
+    apply_level_and_auto_strict,
+    build_adaptive_queue,
+    maybe_reinsert_miss,
+)
 from app.db import (
     credit_mastery_correct,
     ensure_mastery_row,
@@ -16,6 +22,7 @@ from app.db import (
     list_items_for_level,
     load_settings,
     local_now_iso,
+    save_settings,
     touch_mastery,
 )
 from app.matching import MatchResult, normalize_text, tokenize
@@ -58,16 +65,22 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     target_level = int(level if level is not None else settings.get("level", 1))
     if target_level < 1 or target_level > 7:
         raise SessionError("bad_request", "level must be between 1 and 7", 400)
-    # M1/M2 content is levels 1–3; M3 lifts this.
-    if target_level > 3:
-        raise SessionError("bad_request", "Milestone 1 supports levels 1–3 only", 400)
 
     length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
     length = max(5, min(20, length))
-    mode = "beginner"  # M1/M2 product path; M3 reads settings.mode
+    mode = str(settings.get("mode", "beginner")).lower()
+    if mode not in ("beginner", "strict"):
+        mode = "beginner"
 
     abandon_open_sessions(conn)
-    queue = build_fixed_queue(conn, target_level, length)
+    try:
+        queue = build_adaptive_queue(conn, target_level, length)
+    except ValueError as exc:
+        # Fall back to fixed cycle if adaptive cannot fill (empty level).
+        try:
+            queue = build_fixed_queue(conn, target_level, length)
+        except SessionError:
+            raise SessionError("unavailable", str(exc), 503) from exc
     planned_ids = [row["id"] for row in queue]
     for row in queue:
         ensure_mastery_row(conn, row["id"])
@@ -580,6 +593,8 @@ def apply_attempt(
     counts_for_session = 0 if is_replay else 1
     message = config.MSG_CORRECT
 
+    reinsert_info: dict[str, Any] | None = None
+
     if is_replay:
         # Replay: one non-retry take locks and advances. No close re-ask.
         stars_awarded = words_correct
@@ -616,13 +631,33 @@ def apply_attempt(
                 correct_count += 1
                 message = config.MSG_CORRECT
                 again = False
-                credit_mastery_correct(conn, item_id)
+                # Same-session correct after an earlier miss keeps +1 day review.
+                earlier_miss = conn.execute(
+                    """
+                    SELECT 1 FROM attempts
+                    WHERE session_id = ? AND item_id = ? AND is_replay = 0
+                      AND result = 'missed' AND counts_for_session = 1
+                    LIMIT 1
+                    """,
+                    (session_id, item_id),
+                ).fetchone()
+                credit_mastery_correct(
+                    conn, item_id, keep_plus_one_day=bool(earlier_miss)
+                )
             elif result == "close":
                 message = config.MSG_CLOSE
                 again = False
             else:
                 message = config.MSG_MISS
                 again = False
+                if counts_for_session == 1:
+                    apply_day_ladder(conn, item_id, "missed")
+                    play = play_ids(session)
+                    new_play, reinsert_info = maybe_reinsert_miss(
+                        conn, item_id, queue_index, play
+                    )
+                    if reinsert_info is not None:
+                        set_play_ids(conn, session_id, new_play)
 
             stars_total += stars_awarded
             conn.execute(
@@ -650,7 +685,7 @@ def apply_attempt(
     touch_mastery(conn, item_id, result)
     conn.commit()
 
-    return {
+    payload: dict[str, Any] = {
         "result": result,
         "transcript": transcript,
         "word_scores": word_scores,
@@ -662,7 +697,9 @@ def apply_attempt(
         "retry": False,
         "again": again,
         "skipped": False,
+        "reinsert": reinsert_info,
     }
+    return payload
 
 
 def _insert_attempt(
@@ -714,14 +751,21 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
     planned_count = int(session["planned_count"])
     correct_count = int(session["correct_count"])
     low_session = 1 if correct_count * 2 < planned_count else 0
-    # M1/M2: no level move
+    settings = load_settings()
+    level_after, new_settings = apply_level_and_auto_strict(
+        level=int(session["level"]),
+        correct_count=correct_count,
+        planned_count=planned_count,
+        settings=settings,
+    )
+    save_settings(new_settings)
     conn.execute(
         """
         UPDATE sessions
         SET ended_at = ?, completed = 1, low_session = ?, level_after = ?
         WHERE id = ?
         """,
-        (now, low_session, session["level"], session_id),
+        (now, low_session, level_after, session_id),
     )
     conn.commit()
     session = get_session(conn, session_id)
@@ -732,4 +776,6 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "correct_count": int(session["correct_count"]),
         "planned_count": int(session["planned_count"]),
         "replay": replay,
+        "level_after": level_after,
+        "mode": new_settings.get("mode", session["mode"]),
     }

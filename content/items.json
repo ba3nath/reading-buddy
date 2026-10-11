@@ -1,64 +1,1907 @@
 [
-  {"slug": "cat", "text": "cat", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["c", "a", "t"]},
-  {"slug": "sun", "text": "sun", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["s"]},
-  {"slug": "pen", "text": "pen", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["p"]},
-  {"slug": "dog", "text": "dog", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["d"]},
-  {"slug": "hat", "text": "hat", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["h"]},
-  {"slug": "bed", "text": "bed", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["b"]},
-  {"slug": "pig", "text": "pig", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["p"]},
-  {"slug": "cup", "text": "cup", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["c"]},
-  {"slug": "map", "text": "map", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["m"]},
-  {"slug": "bus", "text": "bus", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["b", "s"]},
-  {"slug": "fox", "text": "fox", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["f"]},
-  {"slug": "jam", "text": "jam", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["j"]},
-  {"slug": "kid", "text": "kid", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["k"]},
-  {"slug": "log", "text": "log", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["l"]},
-  {"slug": "net", "text": "net", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["n"]},
-  {"slug": "rat", "text": "rat", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["r"]},
-  {"slug": "sit", "text": "sit", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["s"]},
-  {"slug": "top", "text": "top", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["t"]},
-  {"slug": "van", "text": "van", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["v"]},
-  {"slug": "wet", "text": "wet", "kind": "word", "level": 1, "source": "cvc", "pd_status": "n/a", "sound_tags": ["w"]},
-
-  {"slug": "the", "text": "the", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["th"]},
-  {"slug": "said", "text": "said", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["s"]},
-  {"slug": "was", "text": "was", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["w"]},
-  {"slug": "you", "text": "you", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": []},
-  {"slug": "they", "text": "they", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["th"]},
-  {"slug": "have", "text": "have", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["h"]},
-  {"slug": "from", "text": "from", "kind": "word", "level": 2, "source": "fry", "pd_status": "n/a", "sound_tags": ["f", "r"]},
-  {"slug": "what", "text": "what", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["w"]},
-  {"slug": "were", "text": "were", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["w", "r"]},
-  {"slug": "when", "text": "when", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["w"]},
-  {"slug": "your", "text": "your", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["y"]},
-  {"slug": "can", "text": "can", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["c"]},
-  {"slug": "there", "text": "there", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["th"]},
-  {"slug": "some", "text": "some", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["s"]},
-  {"slug": "her", "text": "her", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["h", "r"]},
-  {"slug": "would", "text": "would", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["w"]},
-  {"slug": "make", "text": "make", "kind": "word", "level": 2, "source": "fry", "pd_status": "n/a", "sound_tags": ["m"]},
-  {"slug": "like", "text": "like", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["l"]},
-  {"slug": "him", "text": "him", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": ["h"]},
-  {"slug": "into", "text": "into", "kind": "word", "level": 2, "source": "dolch", "pd_status": "n/a", "sound_tags": []},
-
-  {"slug": "ship", "text": "ship", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["sh"], "hard": 1},
-  {"slug": "frog", "text": "frog", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["f", "r"], "hard": 1},
-  {"slug": "thin", "text": "thin", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["th"], "hard": 1},
-  {"slug": "chop", "text": "chop", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["ch"], "hard": 1},
-  {"slug": "drum", "text": "drum", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["d", "r"], "hard": 1},
-  {"slug": "flag", "text": "flag", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["f", "l"], "hard": 1},
-  {"slug": "swim", "text": "swim", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["s", "w"], "hard": 1},
-  {"slug": "trap", "text": "trap", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["t", "r"], "hard": 1},
-  {"slug": "brush", "text": "brush", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["b", "r", "sh"], "hard": 1},
-  {"slug": "clock", "text": "clock", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["c", "l"], "hard": 1},
-  {"slug": "grass", "text": "grass", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["g", "r", "s"], "hard": 1},
-  {"slug": "slide", "text": "slide", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["s", "l"], "hard": 1},
-  {"slug": "truck", "text": "truck", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["t", "r"], "hard": 1},
-  {"slug": "chair", "text": "chair", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["ch", "r"], "hard": 1},
-  {"slug": "sheep", "text": "sheep", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["sh"], "hard": 1},
-  {"slug": "bring", "text": "bring", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["b", "r"], "hard": 1},
-  {"slug": "flash", "text": "flash", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["f", "l", "sh"], "hard": 1},
-  {"slug": "spoon", "text": "spoon", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["s", "p"], "hard": 1},
-  {"slug": "train", "text": "train", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["t", "r"], "hard": 1},
-  {"slug": "three", "text": "three", "kind": "word", "level": 3, "source": "phonics", "pd_status": "n/a", "sound_tags": ["th", "r"], "hard": 1}
+  {
+    "slug": "cat",
+    "text": "cat",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "sun",
+    "text": "sun",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ]
+  },
+  {
+    "slug": "pen",
+    "text": "pen",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "dog",
+    "text": "dog",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "hat",
+    "text": "hat",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "bed",
+    "text": "bed",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "pig",
+    "text": "pig",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "cup",
+    "text": "cup",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "map",
+    "text": "map",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "bus",
+    "text": "bus",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ]
+  },
+  {
+    "slug": "fox",
+    "text": "fox",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ]
+  },
+  {
+    "slug": "jam",
+    "text": "jam",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "kid",
+    "text": "kid",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "log",
+    "text": "log",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "net",
+    "text": "net",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "rat",
+    "text": "rat",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ]
+  },
+  {
+    "slug": "sit",
+    "text": "sit",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ]
+  },
+  {
+    "slug": "top",
+    "text": "top",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "van",
+    "text": "van",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "wet",
+    "text": "wet",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "the",
+    "text": "the",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": true
+  },
+  {
+    "slug": "said",
+    "text": "said",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": true
+  },
+  {
+    "slug": "was",
+    "text": "was",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "sounds_locked": true
+  },
+  {
+    "slug": "you",
+    "text": "you",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "they",
+    "text": "they",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": true
+  },
+  {
+    "slug": "have",
+    "text": "have",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "from",
+    "text": "from",
+    "kind": "word",
+    "level": 2,
+    "source": "fry",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ]
+  },
+  {
+    "slug": "what",
+    "text": "what",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "were",
+    "text": "were",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ]
+  },
+  {
+    "slug": "when",
+    "text": "when",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "your",
+    "text": "your",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ]
+  },
+  {
+    "slug": "can",
+    "text": "can",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "there",
+    "text": "there",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": true
+  },
+  {
+    "slug": "some",
+    "text": "some",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ]
+  },
+  {
+    "slug": "her",
+    "text": "her",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ]
+  },
+  {
+    "slug": "would",
+    "text": "would",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "sounds_locked": true
+  },
+  {
+    "slug": "make",
+    "text": "make",
+    "kind": "word",
+    "level": 2,
+    "source": "fry",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "like",
+    "text": "like",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "him",
+    "text": "him",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "into",
+    "text": "into",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": []
+  },
+  {
+    "slug": "ship",
+    "text": "ship",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "frog",
+    "text": "frog",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "thin",
+    "text": "thin",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "chop",
+    "text": "chop",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "ch"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "drum",
+    "text": "drum",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "flag",
+    "text": "flag",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "hard": 1
+  },
+  {
+    "slug": "swim",
+    "text": "swim",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "trap",
+    "text": "trap",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "brush",
+    "text": "brush",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r",
+      "sh"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "clock",
+    "text": "clock",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "hard": 1
+  },
+  {
+    "slug": "grass",
+    "text": "grass",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r",
+      "s"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "slide",
+    "text": "slide",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "truck",
+    "text": "truck",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "chair",
+    "text": "chair",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "ch",
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "sheep",
+    "text": "sheep",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "bring",
+    "text": "bring",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "flash",
+    "text": "flash",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "spoon",
+    "text": "spoon",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1
+  },
+  {
+    "slug": "train",
+    "text": "train",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "three",
+    "text": "three",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true
+  },
+  {
+    "slug": "a-red-bus",
+    "text": "a red bus",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "a red bus",
+    "hard": 0
+  },
+  {
+    "slug": "the-big-dog",
+    "text": "the big dog",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the big dog",
+    "hard": 0
+  },
+  {
+    "slug": "my-blue-pen",
+    "text": "my blue pen",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "sounds_locked": false,
+    "normalized": "my blue pen",
+    "hard": 0
+  },
+  {
+    "slug": "a-hot-sun",
+    "text": "a hot sun",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "a hot sun",
+    "hard": 0
+  },
+  {
+    "slug": "the-fat-cat",
+    "text": "the fat cat",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the fat cat",
+    "hard": 0
+  },
+  {
+    "slug": "one-small-pig",
+    "text": "one small pig",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "one small pig",
+    "hard": 0
+  },
+  {
+    "slug": "two-wet-ducks",
+    "text": "two wet ducks",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "two wet ducks",
+    "hard": 0
+  },
+  {
+    "slug": "a-tall-ship",
+    "text": "a tall ship",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh"
+    ],
+    "sounds_locked": false,
+    "normalized": "a tall ship",
+    "hard": 0
+  },
+  {
+    "slug": "the-green-frog",
+    "text": "the green frog",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the green frog",
+    "hard": 0
+  },
+  {
+    "slug": "my-best-friend",
+    "text": "my best friend",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "my best friend",
+    "hard": 0
+  },
+  {
+    "slug": "a-quick-fox",
+    "text": "a quick fox",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "a quick fox",
+    "hard": 0
+  },
+  {
+    "slug": "the-soft-bed",
+    "text": "the soft bed",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "the soft bed",
+    "hard": 0
+  },
+  {
+    "slug": "three-red-hats",
+    "text": "three red hats",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "three red hats",
+    "hard": 0
+  },
+  {
+    "slug": "a-long-train",
+    "text": "a long train",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "a long train",
+    "hard": 0
+  },
+  {
+    "slug": "the-cold-wind",
+    "text": "the cold wind",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the cold wind",
+    "hard": 0
+  },
+  {
+    "slug": "sit-and-read",
+    "text": "sit and read",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "sit and read",
+    "hard": 0
+  },
+  {
+    "slug": "run-and-jump",
+    "text": "run and jump",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "run and jump",
+    "hard": 0
+  },
+  {
+    "slug": "look-at-that",
+    "text": "look at that",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "look at that",
+    "hard": 0
+  },
+  {
+    "slug": "come-with-me",
+    "text": "come with me",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "come with me",
+    "hard": 0
+  },
+  {
+    "slug": "open-the-book",
+    "text": "open the book",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "open the book",
+    "hard": 0
+  },
+  {
+    "slug": "the-cat-sat-on-the-mat",
+    "text": "The cat sat on the mat.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "the cat sat on the mat",
+    "hard": 0
+  },
+  {
+    "slug": "i-can-see-a-red-bus",
+    "text": "I can see a red bus.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "i can see a red bus",
+    "hard": 0
+  },
+  {
+    "slug": "the-dog-ran-to-the-park",
+    "text": "The dog ran to the park.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the dog ran to the park",
+    "hard": 0
+  },
+  {
+    "slug": "she-has-a-big-green-book",
+    "text": "She has a big green book.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "she has a big green book",
+    "hard": 0
+  },
+  {
+    "slug": "we-like-to-play-with-blocks",
+    "text": "We like to play with blocks.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "we like to play with blocks",
+    "hard": 0
+  },
+  {
+    "slug": "the-sun-is-hot-and-bright",
+    "text": "The sun is hot and bright.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the sun is hot and bright",
+    "hard": 0
+  },
+  {
+    "slug": "he-put-the-pen-in-his-bag",
+    "text": "He put the pen in his bag.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "he put the pen in his bag",
+    "hard": 0
+  },
+  {
+    "slug": "my-mum-made-a-nice-cake",
+    "text": "My mum made a nice cake.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "my mum made a nice cake",
+    "hard": 0
+  },
+  {
+    "slug": "the-frog-jumps-in-the-pond",
+    "text": "The frog jumps in the pond.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "the frog jumps in the pond",
+    "hard": 0
+  },
+  {
+    "slug": "they-went-up-the-steep-hill",
+    "text": "They went up the steep hill.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "they went up the steep hill",
+    "hard": 0
+  },
+  {
+    "slug": "i-read-a-book-every-night",
+    "text": "I read a book every night.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "i read a book every night",
+    "hard": 0
+  },
+  {
+    "slug": "the-ship-sails-on-the-sea",
+    "text": "The ship sails on the sea.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "sh",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "the ship sails on the sea",
+    "hard": 0
+  },
+  {
+    "slug": "can-you-find-the-blue-hat",
+    "text": "Can you find the blue hat?",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "can you find the blue hat",
+    "hard": 0
+  },
+  {
+    "slug": "we-sit-and-drink-hot-milk",
+    "text": "We sit and drink hot milk.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "we sit and drink hot milk",
+    "hard": 0
+  },
+  {
+    "slug": "the-bird-sings-in-the-tree",
+    "text": "The bird sings in the tree.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "the bird sings in the tree",
+    "hard": 0
+  },
+  {
+    "slug": "dad-will-fix-the-old-bike",
+    "text": "Dad will fix the old bike.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "dad will fix the old bike",
+    "hard": 0
+  },
+  {
+    "slug": "look-at-the-bright-full-moon",
+    "text": "Look at the bright full moon.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "look at the bright full moon",
+    "hard": 0
+  },
+  {
+    "slug": "she-drew-a-star-with-chalk",
+    "text": "She drew a star with chalk.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "sh",
+      "r",
+      "s",
+      "th",
+      "ch"
+    ],
+    "sounds_locked": false,
+    "normalized": "she drew a star with chalk",
+    "hard": 0
+  },
+  {
+    "slug": "the-train-stops-at-the-station",
+    "text": "The train stops at the station.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r",
+      "s",
+      "sh"
+    ],
+    "sounds_locked": false,
+    "normalized": "the train stops at the station",
+    "hard": 0
+  },
+  {
+    "slug": "i-help-my-friend-with-reading",
+    "text": "I help my friend with reading.",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "i help my friend with reading",
+    "hard": 0
+  },
+  {
+    "slug": "jack-jill-l1",
+    "text": "Jack and Jill went up the hill",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "jack and jill went up the hill",
+    "hard": 0,
+    "rhyme_group": "jack-and-jill",
+    "line_index": 0
+  },
+  {
+    "slug": "jack-jill-l2",
+    "text": "To fetch a pail of water",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "ch",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "to fetch a pail of water",
+    "hard": 0,
+    "rhyme_group": "jack-and-jill",
+    "line_index": 1
+  },
+  {
+    "slug": "humpty-l1",
+    "text": "Humpty Dumpty sat on a wall",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "humpty dumpty sat on a wall",
+    "hard": 0,
+    "rhyme_group": "humpty-dumpty",
+    "line_index": 0
+  },
+  {
+    "slug": "humpty-l2",
+    "text": "Humpty Dumpty had a great fall",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "humpty dumpty had a great fall",
+    "hard": 0,
+    "rhyme_group": "humpty-dumpty",
+    "line_index": 1
+  },
+  {
+    "slug": "twinkle-l1",
+    "text": "Twinkle twinkle little star",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "twinkle twinkle little star",
+    "hard": 0,
+    "rhyme_group": "twinkle-star",
+    "line_index": 0
+  },
+  {
+    "slug": "twinkle-l2",
+    "text": "How I wonder what you are",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "how i wonder what you are",
+    "hard": 0,
+    "rhyme_group": "twinkle-star",
+    "line_index": 1
+  },
+  {
+    "slug": "baa-l1",
+    "text": "Baa baa black sheep have you any wool",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "sh"
+    ],
+    "sounds_locked": false,
+    "normalized": "baa baa black sheep have you any wool",
+    "hard": 0,
+    "rhyme_group": "baa-baa",
+    "line_index": 0
+  },
+  {
+    "slug": "baa-l2",
+    "text": "Yes sir yes sir three bags full",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s",
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "yes sir yes sir three bags full",
+    "hard": 0,
+    "rhyme_group": "baa-baa",
+    "line_index": 1
+  },
+  {
+    "slug": "hickory-l1",
+    "text": "Hickory dickory dock",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "hickory dickory dock",
+    "hard": 0,
+    "rhyme_group": "hickory-dickory",
+    "line_index": 0
+  },
+  {
+    "slug": "hickory-l2",
+    "text": "The mouse ran up the clock",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the mouse ran up the clock",
+    "hard": 0,
+    "rhyme_group": "hickory-dickory",
+    "line_index": 1
+  },
+  {
+    "slug": "hickory-l3",
+    "text": "The clock struck one",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the clock struck one",
+    "hard": 0,
+    "rhyme_group": "hickory-dickory",
+    "line_index": 2
+  },
+  {
+    "slug": "hickory-l4",
+    "text": "The mouse ran down",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the mouse ran down",
+    "hard": 0,
+    "rhyme_group": "hickory-dickory",
+    "line_index": 3
+  },
+  {
+    "slug": "mary-l1",
+    "text": "Mary had a little lamb",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "mary had a little lamb",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 0
+  },
+  {
+    "slug": "mary-l2",
+    "text": "Its fleece was white as snow",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "its fleece was white as snow",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 1
+  },
+  {
+    "slug": "mary-l3",
+    "text": "And everywhere that Mary went",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "and everywhere that mary went",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 2
+  },
+  {
+    "slug": "mary-l4",
+    "text": "The lamb was sure to go",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "sh",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the lamb was sure to go",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 3
+  },
+  {
+    "slug": "rain-l1",
+    "text": "Rain rain go away",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "rain rain go away",
+    "hard": 0,
+    "rhyme_group": "rain-rain",
+    "line_index": 0
+  },
+  {
+    "slug": "rain-l2",
+    "text": "Come again another day",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "come again another day",
+    "hard": 0,
+    "rhyme_group": "rain-rain",
+    "line_index": 1
+  },
+  {
+    "slug": "boy-blue-l1",
+    "text": "Little Boy Blue come blow your horn",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "little boy blue come blow your horn",
+    "hard": 0,
+    "rhyme_group": "boy-blue",
+    "line_index": 0
+  },
+  {
+    "slug": "boy-blue-l2",
+    "text": "The sheep are in the meadow",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "sh",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the sheep are in the meadow",
+    "hard": 0,
+    "rhyme_group": "boy-blue",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-jack-1",
+    "text": "Jack and Jill went up the hill",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "jack and jill went up the hill",
+    "hard": 0,
+    "rhyme_group": "l7-jack-jill",
+    "line_index": 0
+  },
+  {
+    "slug": "l7-jack-2",
+    "text": "To fetch a pail of water",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "ch",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "to fetch a pail of water",
+    "hard": 0,
+    "rhyme_group": "l7-jack-jill",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-jack-3",
+    "text": "Jack fell down and broke his crown",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "jack fell down and broke his crown",
+    "hard": 0,
+    "rhyme_group": "l7-jack-jill",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-jack-4",
+    "text": "And Jill came tumbling after",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "and jill came tumbling after",
+    "hard": 0,
+    "rhyme_group": "l7-jack-jill",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-humpty-1",
+    "text": "Humpty Dumpty sat on a wall",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "humpty dumpty sat on a wall",
+    "hard": 0,
+    "rhyme_group": "l7-humpty",
+    "line_index": 0
+  },
+  {
+    "slug": "l7-humpty-2",
+    "text": "Humpty Dumpty had a great fall",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "humpty dumpty had a great fall",
+    "hard": 0,
+    "rhyme_group": "l7-humpty",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-humpty-3",
+    "text": "All the king's horses and all the king's men",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "all the kings horses and all the kings men",
+    "hard": 0,
+    "rhyme_group": "l7-humpty",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-humpty-4",
+    "text": "Could not put Humpty together again",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "could not put humpty together again",
+    "hard": 0,
+    "rhyme_group": "l7-humpty",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-twinkle-1",
+    "text": "Twinkle twinkle little star",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "twinkle twinkle little star",
+    "hard": 0,
+    "rhyme_group": "l7-twinkle",
+    "line_index": 0
+  },
+  {
+    "slug": "l7-twinkle-2",
+    "text": "How I wonder what you are",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "how i wonder what you are",
+    "hard": 0,
+    "rhyme_group": "l7-twinkle",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-twinkle-3",
+    "text": "Up above the world so high",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "up above the world so high",
+    "hard": 0,
+    "rhyme_group": "l7-twinkle",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-twinkle-4",
+    "text": "Like a diamond in the sky",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "like a diamond in the sky",
+    "hard": 0,
+    "rhyme_group": "l7-twinkle",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-baa-1",
+    "text": "Baa baa black sheep have you any wool",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "sh"
+    ],
+    "sounds_locked": false,
+    "normalized": "baa baa black sheep have you any wool",
+    "hard": 0,
+    "rhyme_group": "l7-baa",
+    "line_index": 0
+  },
+  {
+    "slug": "l7-baa-2",
+    "text": "Yes sir yes sir three bags full",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s",
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "yes sir yes sir three bags full",
+    "hard": 0,
+    "rhyme_group": "l7-baa",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-baa-3",
+    "text": "One for the master and one for the dame",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "one for the master and one for the dame",
+    "hard": 0,
+    "rhyme_group": "l7-baa",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-baa-4",
+    "text": "And one for the little boy who lives down the lane",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "and one for the little boy who lives down the lane",
+    "hard": 0,
+    "rhyme_group": "l7-baa",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-hickory-1",
+    "text": "Hickory dickory dock",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "hickory dickory dock",
+    "hard": 0,
+    "rhyme_group": "l7-hickory",
+    "line_index": 0
+  },
+  {
+    "slug": "l7-hickory-2",
+    "text": "The mouse ran up the clock",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the mouse ran up the clock",
+    "hard": 0,
+    "rhyme_group": "l7-hickory",
+    "line_index": 1
+  },
+  {
+    "slug": "l7-hickory-3",
+    "text": "The clock struck one the mouse ran down",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the clock struck one the mouse ran down",
+    "hard": 0,
+    "rhyme_group": "l7-hickory",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-hickory-4",
+    "text": "Hickory dickory dock",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "hickory dickory dock",
+    "hard": 0,
+    "rhyme_group": "l7-hickory",
+    "line_index": 3
+  }
 ]

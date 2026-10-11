@@ -46,6 +46,7 @@ AUDIO_SAMPLE_RATE = 24000  # Kokoro native; served files normalized to 16 kHz mo
 MAX_RETRIES_PER_ITEM = 3
 DEFAULT_SESSION_LENGTH = 10
 MASTERED_EVERY_N_SESSIONS = 7
+AUTO_STRICT_SESSIONS = 3  # consecutive move-up sessions → mode=strict when auto_strict
 
 MSG_RETRY = "I didn't hear that — try again."
 MSG_CLOSE = "Almost, one more go!"
@@ -61,7 +62,9 @@ DEFAULT_SETTINGS = {
     "keep_audio": False,
     "buddy": "cat",
     "auto_strict": True,
+    "auto_strict_sessions": AUTO_STRICT_SESSIONS,
     "low_streak": 0,
+    "move_up_streak": 0,
 }
 
 

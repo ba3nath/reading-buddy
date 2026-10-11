@@ -257,10 +257,36 @@ async function onRecordComplete(blob) {
   }
 }
 
+function showPhraseScore(result) {
+  const el = $(".phrase-score");
+  if (!el) return;
+  const total = Number(result.words_total) || 0;
+  const multi = state.phase === "read" && total > 1;
+  el.hidden = !multi;
+  if (multi) {
+    $("[data-words-correct]").textContent = String(result.words_correct ?? 0);
+    $("[data-words-total]").textContent = String(total);
+  }
+}
+
+function applyReinsert(result) {
+  const info = result.reinsert;
+  if (!info || !info.item) return;
+  const at = Number(info.queue_index);
+  if (!Number.isFinite(at)) {
+    state.items.push(info.item);
+    return;
+  }
+  // Keep FE items aligned with server play_item_ids.
+  state.items.splice(at, 0, info.item);
+}
+
 function handleAttempt(result) {
   state.stars = result.stars_total;
   setStars(result.stars_total);
   setMessage(result.message || "");
+  showPhraseScore(result);
+  applyReinsert(result);
 
   if (result.skipped || result.result === "skipped") {
     setState("result-skip");
@@ -331,6 +357,8 @@ async function finishSession() {
     $("[data-progress]").textContent = "";
     state.replay = data.replay || [];
     state.replayIndex = 0;
+    const hint = $("[data-end-hint]");
+    if (hint) hint.hidden = !state.replay.length;
     if (state.replay.length) {
       setTimeout(() => startReplay(), 900);
     }
@@ -378,6 +406,10 @@ function finishReplay() {
   setMessage("Nice reading!");
   setProgress();
   setMicEnabled(false);
+  const endStars = $("[data-end-stars]");
+  if (endStars) endStars.textContent = String(state.stars);
+  const phrase = $(".phrase-score");
+  if (phrase) phrase.hidden = true;
   setState("session-end");
 }
 
