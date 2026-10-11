@@ -102,3 +102,24 @@ def test_read_again_indicator_when_retry_needed():
     assert "read it again" in JS.lower() or "read again" in JS.lower()
     assert ".read-again" in CSS
     assert 'body[data-state="recording"] .read-again' in CSS
+
+
+def test_level7_does_not_stack_previous_and_current_audio():
+    """L6–7 must not replay the finished line before the next line's listen.
+
+    Stacking sing-along(prev) + showListen(current) made the next screen hear
+    both the previous sentence and the current one.
+    """
+    assert "maybeSingAlongThen" not in JS
+    assert "rhymeListenMessage" in JS
+    assert "Listen and sing along…" in JS
+    assert "isRhymeSingAlongItem" in JS
+    # Locking results advance directly — only the new screen's showListen plays.
+    assert "setTimeout(() => advance(), 1200)" in JS
+    assert "setTimeout(() => advance(), 1400)" in JS
+    assert "maybeSingAlongThen(advance)" not in JS
+    # showListen stops any prior clip before swapping text + playing the new slug.
+    show = JS.split("async function showListen()")[1].split("async function ")[0]
+    assert "stopClip()" in show
+    assert "playClip(`/api/audio/${encodeURIComponent(item.slug)}`)" in show
+    assert show.index("stopClip()") < show.index("setWord(")

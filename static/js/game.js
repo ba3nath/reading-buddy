@@ -96,6 +96,7 @@ const state = {
   phase: "read", // "read" | "replay"
   recorder: new RecordingSession(),
   audioEl: null,
+  clipGen: 0,
   gardenGrowth: 0,
   svgCache: {},
   combo: 0,
@@ -367,6 +368,7 @@ function setMicEnabled(on) {
 }
 
 function stopClip() {
+  state.clipGen = (state.clipGen || 0) + 1;
   if (state.audioEl) {
     try {
       state.audioEl.pause();
@@ -382,11 +384,18 @@ function stopClip() {
 function playClip(url) {
   return new Promise((resolve) => {
     stopClip();
+    const gen = state.clipGen;
     const audio = new Audio(url);
     state.audioEl = audio;
     const done = () => {
       audio.removeEventListener("ended", done);
       audio.removeEventListener("error", done);
+      // A newer stopClip/playClip won — do not keep the old element alive.
+      if (gen !== state.clipGen) {
+        resolve();
+        return;
+      }
+      if (state.audioEl === audio) state.audioEl = null;
       resolve();
     };
     audio.addEventListener("ended", done);
@@ -666,15 +675,15 @@ async function showListen() {
     finishSession();
     return;
   }
+  // Always stop any prior clip before swapping the on-screen line + audio.
+  stopClip();
   setState("listen");
   setWord(item.text, { kind: item.kind === "line" ? "line" : "word" });
   if (state.readAgain) {
-    setMessage(
-      item.kind === "line" ? "Listen again, then read the line" : "Listen again, then read it"
-    );
+    setMessage(rhymeListenMessage(item, { again: true }));
     setMicLabel("Tap to read again");
   } else {
-    setMessage(item.kind === "line" ? "Listen to the line…" : "Listen…");
+    setMessage(rhymeListenMessage(item));
     setMicLabel("Tap to read");
   }
   setProgress();
@@ -831,18 +840,21 @@ function isRhymeSingAlongItem(item) {
   );
 }
 
-async function maybeSingAlongThen(next) {
-  const item = currentItem();
-  if (state.phase === "read" && isRhymeSingAlongItem(item)) {
-    setMessage("Sing along…");
-    setState("listen");
-    try {
-      await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
-    } catch (err) {
-      console.error(err);
-    }
+/**
+ * Rhyme-time (L6–7): the listen clip on the *current* screen is the sing-along.
+ * Do not replay the previous line before advancing — that stacked previous + current
+ * audio when the next line appeared.
+ */
+function rhymeListenMessage(item, { again = false } = {}) {
+  if (isRhymeSingAlongItem(item)) {
+    return again
+      ? "Listen and sing along again, then read the line"
+      : "Listen and sing along…";
   }
-  next();
+  if (item && item.kind === "line") {
+    return again ? "Listen again, then read the line" : "Listen to the line…";
+  }
+  return again ? "Listen again, then read it" : "Listen…";
 }
 
 function needsAnotherRead(result) {
@@ -862,7 +874,7 @@ function handleAttempt(result) {
     setState("result-skip");
     state.closeAgainPending = false;
     clearReadAgain();
-    setTimeout(() => maybeSingAlongThen(advance), 1400);
+    setTimeout(() => advance(), 1400);
     return;
   }
   if (result.retry || result.result === "retry") {
@@ -908,7 +920,7 @@ function handleAttempt(result) {
     setState("result-correct");
     state.closeAgainPending = false;
     clearReadAgain();
-    setTimeout(() => maybeSingAlongThen(advance), 1200);
+    setTimeout(() => advance(), 1200);
     return;
   }
   // Locked close / miss — move on; never keep "one more" copy.
@@ -922,7 +934,7 @@ function handleAttempt(result) {
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
   clearReadAgain();
-  setTimeout(() => maybeSingAlongThen(advance), 1400);
+  setTimeout(() => advance(), 1400);
 }
 
 function advance() {
