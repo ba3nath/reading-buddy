@@ -299,7 +299,8 @@ def build_adaptive_queue(
         queue.append(row)
         seen.add(row["id"])
 
-    # Level exhausted: repeat least-practiced unmastered at this level.
+    # Level exhausted: repeat least-practiced *unmastered* at this level only.
+    # Never pad with mastered items (plan: mastered absent except ≤1 refresher).
     if len(queue) < length:
         repeats = conn.execute(
             """
@@ -311,20 +312,13 @@ def build_adaptive_queue(
             """,
             (level,),
         ).fetchall()
-        if not repeats:
-            repeats = list(
-                conn.execute(
-                    "SELECT * FROM items WHERE level = ? ORDER BY id ASC",
-                    (level,),
-                ).fetchall()
-            )
         if repeats:
             idx = 0
             while len(queue) < length:
                 queue.append(repeats[idx % len(repeats)])
                 idx += 1
 
-    # At most one mastered refresher.
+    # At most one mastered refresher when there is still room (shorter session OK).
     if len(queue) < length:
         mastered = conn.execute(
             """
@@ -338,12 +332,15 @@ def build_adaptive_queue(
             (level,),
         ).fetchall()
         for row in mastered:
+            if row["id"] in seen:
+                continue
             if sessions_since_item(conn, row["id"]) >= config.MASTERED_EVERY_N_SESSIONS:
                 queue.append(row)
                 break
 
     if not queue:
         raise ValueError(f"No content for level {level}")
+    # May be shorter than `length` when the level is exhausted of unmastered items.
     return queue[:length]
 
 

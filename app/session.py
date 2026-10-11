@@ -76,12 +76,13 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
     try:
         queue = build_adaptive_queue(conn, target_level, length)
     except ValueError as exc:
-        # Fall back to fixed cycle if adaptive cannot fill (empty level).
-        try:
-            queue = build_fixed_queue(conn, target_level, length)
-        except SessionError:
-            raise SessionError("unavailable", str(exc), 503) from exc
+        # No due / unmastered / eligible refresher — do not pad with mastered.
+        raise SessionError("unavailable", str(exc), 503) from exc
+    if not queue:
+        raise SessionError("unavailable", f"No content for level {target_level}", 503)
+    # Adaptive may return a shorter queue when the level is exhausted of unmastered.
     planned_ids = [row["id"] for row in queue]
+    length = len(planned_ids)
     for row in queue:
         ensure_mastery_row(conn, row["id"])
 
@@ -127,6 +128,18 @@ def set_play_ids(conn: sqlite3.Connection, session_id: int, ids: list[int]) -> N
         "UPDATE sessions SET play_item_ids = ? WHERE id = ?",
         (json.dumps(ids), session_id),
     )
+
+
+def is_ratio_slot(play: list[int], queue_index: int, item_id: int) -> bool:
+    """True when this slot is the planned (first) occurrence — not a same-session reinsert.
+
+    Session ratio (correct_count / planned_count) only counts the first locking
+    non-retry result on each planned queue item. Reinserts and replays do not.
+    """
+    try:
+        return play.index(item_id) == queue_index
+    except ValueError:
+        return False
 
 
 def word_audio_slug(conn: sqlite3.Connection, word: str, fallback_slug: str) -> str:
@@ -518,11 +531,13 @@ def apply_attempt(
         if prior_retries + 1 >= config.MAX_RETRIES_PER_ITEM:
             if has_provisional_close(conn, session_id, queue_index):
                 flip_prior_lock(conn, session_id, queue_index)
-            planned_count = max(0, planned_count - 1)
-            conn.execute(
-                "UPDATE sessions SET planned_count = ? WHERE id = ?",
-                (planned_count, session_id),
-            )
+            # Skip shrinks planned_count only for planned (first) slots — not reinserts.
+            if is_ratio_slot(play_ids(session), queue_index, item_id):
+                planned_count = max(0, planned_count - 1)
+                conn.execute(
+                    "UPDATE sessions SET planned_count = ? WHERE id = ?",
+                    (planned_count, session_id),
+                )
             _insert_attempt(
                 conn,
                 session_id,
@@ -627,8 +642,13 @@ def apply_attempt(
             if item["hard"] == 1 and result == "correct" and not replacing_close:
                 stars_awarded += 1
 
+            play = play_ids(session)
+            counts_for_ratio = is_ratio_slot(play, queue_index, item_id)
+
             if result == "correct":
-                correct_count += 1
+                # Ratio: only the planned slot's locking correct counts.
+                if counts_for_ratio:
+                    correct_count += 1
                 message = config.MSG_CORRECT
                 again = False
                 # Same-session correct after an earlier miss keeps +1 day review.
@@ -652,7 +672,6 @@ def apply_attempt(
                 again = False
                 if counts_for_session == 1:
                     apply_day_ladder(conn, item_id, "missed")
-                    play = play_ids(session)
                     new_play, reinsert_info = maybe_reinsert_miss(
                         conn, item_id, queue_index, play
                     )

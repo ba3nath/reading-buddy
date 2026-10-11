@@ -17,13 +17,14 @@ from app.matching import score_attempt
 from app.session import apply_attempt, complete_session, play_ids, start_session
 
 
-def _apply(conn, sid, item_id, match, *, qi, phase="read", word=""):
+def _apply(conn, sid, item_id, match, *, qi, phase="read", word="", silence=False):
     return apply_attempt(
         conn,
         sid,
         item_id,
         match,
         phase=phase,
+        is_silence_path=silence,
         queue_index=qi if phase == "read" else None,
         replay_word=word,
     )
@@ -197,6 +198,116 @@ def test_same_session_miss_reinsert(tmp_env):
     assert len(play2) == len(play)
 
 
+def test_reinsert_correct_does_not_increase_correct_count(tmp_env):
+    """B1: same-session reinsert correct must not change the session ratio."""
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    sid = data["session_id"]
+    item = data["items"][0]
+    planned = conn.execute(
+        "SELECT planned_count, correct_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert planned["correct_count"] == 0
+    planned_n = int(planned["planned_count"])
+
+    miss = _apply(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
+        qi=0,
+    )
+    assert miss["result"] == "missed"
+    assert miss["reinsert"] is not None
+    re_qi = miss["reinsert"]["queue_index"]
+
+    row = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert row["correct_count"] == 0
+    assert row["planned_count"] == planned_n
+
+    # Resolve intervening planned slots with corrects (no further reinserts).
+    for qi in range(1, re_qi):
+        it = data["items"][qi]
+        _apply(
+            conn,
+            sid,
+            it["id"],
+            score_attempt(it["text"], it["text"], [0.95], mode="beginner"),
+            qi=qi,
+        )
+
+    before = conn.execute(
+        "SELECT correct_count, planned_count, stars FROM sessions WHERE id = ?",
+        (sid,),
+    ).fetchone()
+    assert before["correct_count"] == re_qi - 1  # planned corrects only
+    assert before["planned_count"] == planned_n
+
+    again = _apply(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
+        qi=re_qi,
+    )
+    assert again["result"] == "correct"
+    assert again["stars_awarded"] >= 1  # stars / mastery still credit
+    assert again["stars_total"] == before["stars"] + again["stars_awarded"]
+
+    after = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert after["correct_count"] == before["correct_count"]  # reinsert did not bump
+    assert after["planned_count"] == planned_n
+
+
+def test_reinsert_skip_does_not_shrink_planned_count(tmp_env):
+    """B1: three-retry skip on a reinsert slot must not distort the ratio."""
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    sid = data["session_id"]
+    item = data["items"][0]
+    planned_n = int(
+        conn.execute(
+            "SELECT planned_count FROM sessions WHERE id = ?", (sid,)
+        ).fetchone()["planned_count"]
+    )
+    miss = _apply(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
+        qi=0,
+    )
+    re_qi = miss["reinsert"]["queue_index"]
+    for qi in range(1, re_qi):
+        it = data["items"][qi]
+        _apply(
+            conn,
+            sid,
+            it["id"],
+            score_attempt(it["text"], it["text"], [0.95], mode="beginner"),
+            qi=qi,
+        )
+    for _ in range(3):
+        resp = _apply(
+            conn,
+            sid,
+            item["id"],
+            score_attempt(item["text"], "", mode="beginner", force_retry=True),
+            qi=re_qi,
+            silence=True,
+        )
+    assert resp["result"] == "skipped"
+    row = conn.execute(
+        "SELECT planned_count, correct_count FROM sessions WHERE id = ?", (sid,)
+    ).fetchone()
+    assert row["planned_count"] == planned_n
+    assert row["correct_count"] == re_qi - 1  # only intervening planned corrects
+
+
 def test_day_ladder_and_mastery(tmp_env):
     conn = tmp_env["conn"]
     item_id = conn.execute("SELECT id FROM items WHERE slug='cat'").fetchone()["id"]
@@ -284,3 +395,47 @@ def test_strict_mode_on_session(tmp_env):
         assert match.result == "missed"
     resp = _apply(conn, data["session_id"], item["id"], match, qi=0)
     assert resp["result"] == match.result
+
+
+def test_all_mastered_queue_at_most_one_refresher(tmp_env):
+    """C1: 10/10 mastered must not return a full session of mastered items."""
+    conn = tmp_env["conn"]
+    level1 = conn.execute(
+        "SELECT id FROM items WHERE level = 1 ORDER BY id"
+    ).fetchall()
+    assert len(level1) >= 10
+    for row in level1:
+        conn.execute(
+            """
+            INSERT INTO mastery (
+              item_id, correct_count, days_json, miss_count, review_step,
+              next_review_on, mastered, mastered_on, last_seen_on
+            ) VALUES (?, 3, ?, 0, 0, NULL, 1, '2020-01-01', '2020-01-01')
+            ON CONFLICT(item_id) DO UPDATE SET
+              mastered=1, correct_count=3, next_review_on=NULL,
+              last_seen_on='2020-01-01', days_json=excluded.days_json
+            """,
+            (row["id"], json.dumps(["2020-01-01", "2020-01-02"])),
+        )
+    conn.commit()
+
+    queue = build_adaptive_queue(conn, level=1, length=10)
+    mastered_flags = []
+    for row in queue:
+        m = conn.execute(
+            "SELECT mastered FROM mastery WHERE item_id = ?", (row["id"],)
+        ).fetchone()
+        mastered_flags.append(int(m["mastered"]) if m else 0)
+    assert len(queue) <= 1
+    assert sum(mastered_flags) <= 1
+    assert all(f == 1 for f in mastered_flags)
+
+    # Session start must also stay short — not pad via fixed-queue fallback.
+    data = start_session(conn, level=1)
+    assert len(data["items"]) <= 1
+    row = conn.execute(
+        "SELECT planned_count FROM sessions WHERE id = ?",
+        (data["session_id"],),
+    ).fetchone()
+    assert row["planned_count"] == len(data["items"])
+    assert row["planned_count"] <= 1
