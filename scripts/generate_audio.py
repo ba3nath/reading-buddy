@@ -21,7 +21,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app import config  # noqa: E402
-from app.audio_files import postprocess_generated_wav, tts_render  # noqa: E402
+from app.audio_files import (  # noqa: E402
+    postprocess_generated_wav,
+    tts_render,
+    tts_voice,
+)
 from app.matching import normalize_text  # noqa: E402
 
 
@@ -118,15 +122,19 @@ def main() -> int:
             raw = tmp_dir / f"{slug}.raw.wav"
             dest = config.AUDIO_GENERATED / f"{slug}.wav"
             spoken, speed = tts_render(text)
+            voice_over, lang_over = tts_voice(text)
+            use_voice = voice_over or voice
+            use_lang = lang_over or config.KOKORO_LANG
             samples, sr = kokoro.create(
                 spoken,
-                voice=voice,
+                voice=use_voice,
                 speed=speed,
-                lang=config.KOKORO_LANG,
+                lang=use_lang,
             )
             sf.write(str(raw), samples, sr)
             postprocess_generated_wav(raw, dest)
-            print(f"  wrote {dest.relative_to(ROOT)}  ({spoken!r} @ {speed})")
+            extra = f" voice={use_voice}" if voice_over else ""
+            print(f"  wrote {dest.relative_to(ROOT)}  ({spoken!r} @ {speed}{extra})")
 
     print("Done.")
     return 0

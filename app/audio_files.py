@@ -128,6 +128,28 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "sit": ("sit!", 1.0),
 }
 
+# Per-word voice overrides: (voice_id, lang).
+# bf_isabella vowelizes the /p/ release on "top" → "topi"; alice keeps a clean stop.
+_TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
+    "top": ("bf_alice", "en-gb"),
+}
+
+
+def _single_word_core(text: str) -> str | None:
+    stripped = (text or "").strip()
+    words = stripped.split()
+    if len(words) == 1 and len(words[0]) <= 10:
+        return words[0].rstrip(".!?").lower()
+    return None
+
+
+def tts_voice(text: str) -> tuple[str | None, str | None]:
+    """Optional (voice_id, lang) override for one word; else (None, None)."""
+    core = _single_word_core(text)
+    if core and core in _TTS_VOICE_OVERRIDES:
+        return _TTS_VOICE_OVERRIDES[core]
+    return None, None
+
 
 def tts_render(text: str) -> tuple[str, float]:
     """Pick Kokoro text + speed so short words keep plosives and length.

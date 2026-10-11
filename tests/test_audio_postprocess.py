@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 
 from app import audio_files
-from app.audio_files import tts_render
+from app.audio_files import tts_render, tts_voice
 
 
 def test_postprocess_keeps_tail_plosives():
@@ -80,3 +80,15 @@ def test_tts_render_sit_keeps_unvoiced_s():
     spoken, speed = tts_render("sit")
     assert spoken == "sit!"
     assert speed >= 0.98
+
+
+def test_tts_voice_top_avoids_topi_release():
+    """bf_isabella vowelizes top's /p/ → topi; alice keeps a clean stop."""
+    voice, lang = tts_voice("top")
+    assert voice == "bf_alice"
+    assert lang == "en-gb"
+    # Default words stay on the session voice.
+    assert tts_voice("cup") == (None, None)
+    spoken, speed = tts_render("top")
+    assert spoken == "top."
+    assert speed <= 0.88
