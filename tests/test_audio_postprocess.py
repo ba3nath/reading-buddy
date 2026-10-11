@@ -25,9 +25,9 @@ def test_tts_render_lengthens_short_words():
     spoken_the, speed_the = tts_render("the")
     assert spoken_the == "the."
     assert speed_the <= 0.88
-    dog, dog_speed = tts_render("dog")
-    assert dog == "dog."
-    assert dog_speed <= 0.80  # voiced plosive ending
+    pig, pig_speed = tts_render("pig")
+    assert pig == "pig."
+    assert pig_speed <= 0.80  # voiced plosive ending
     line, line_speed = tts_render("the cat sat")
     assert line == "the cat sat."
     assert line_speed == 0.90
@@ -69,10 +69,12 @@ def test_tts_render_ng_is_not_treated_as_plosive_g():
     long, long_speed = tts_render("long")
     assert long == "long."
     assert long_speed >= 0.84
-    # Real plosive -g still slows.
-    dog, dog_speed = tts_render("dog")
-    assert dog == "dog."
-    assert dog_speed <= 0.80
+    # Real plosive -g still slows (unless a clarity override exists).
+    pig, pig_speed = tts_render("pig")
+    assert pig == "pig."
+    assert pig_speed <= 0.80
+    # dog uses a short carrier — bare Kokoro was misheard as "doggies".
+    assert tts_render("dog") == ("a dog", 0.95)
 
 
 def test_tts_render_sit_keeps_unvoiced_s():
