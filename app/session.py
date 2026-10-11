@@ -474,27 +474,23 @@ def apply_attempt(
     message = config.MSG_CORRECT
 
     if is_replay:
-        # Replay: stars + mastery; never change correct_count / planned_count.
-        if result == "close" and not _replay_has_close(conn, session_id, item_id):
-            again = True
-            stars_awarded = 0
+        # Replay: one non-retry take locks and advances. No close re-ask
+        # (again=false) — plan is "one more recording"; offering again=true
+        # then blocking the second POST via replay_already_done trapped the child.
+        stars_awarded = words_correct
+        if result == "correct":
+            message = config.MSG_CORRECT
+            credit_mastery_correct(conn, item_id)
+        elif result == "close":
             message = config.MSG_CLOSE
-            counts_for_session = 0
         else:
-            stars_awarded = words_correct
-            if result == "correct":
-                message = config.MSG_CORRECT
-                credit_mastery_correct(conn, item_id)
-            elif result == "close":
-                message = config.MSG_CLOSE
-            else:
-                message = config.MSG_MISS
-            again = False
-            stars_total += stars_awarded
-            conn.execute(
-                "UPDATE sessions SET stars = ? WHERE id = ?",
-                (stars_total, session_id),
-            )
+            message = config.MSG_MISS
+        again = False
+        stars_total += stars_awarded
+        conn.execute(
+            "UPDATE sessions SET stars = ? WHERE id = ?",
+            (stars_total, session_id),
+        )
     else:
         # Close second-take detection (read phase)
         replacing_close = has_provisional_close(conn, session_id, item_id)
@@ -560,18 +556,6 @@ def apply_attempt(
         "again": again,
         "skipped": False,
     }
-
-
-def _replay_has_close(conn: sqlite3.Connection, session_id: int, item_id: int) -> bool:
-    row = conn.execute(
-        """
-        SELECT 1 FROM attempts
-        WHERE session_id = ? AND item_id = ? AND is_replay = 1 AND result = 'close'
-        LIMIT 1
-        """,
-        (session_id, item_id),
-    ).fetchone()
-    return bool(row)
 
 
 def _insert_attempt(

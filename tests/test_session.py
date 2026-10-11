@@ -255,6 +255,60 @@ def test_complete_replay_empty_when_no_misses(tmp_env):
     assert "planned_count" in done
 
 
+def test_replay_close_locks_without_again(tmp_env):
+    """C1 regression: replay close must not offer again=true then 409 the second take."""
+    from app.session import SessionError
+
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    # Prefer an item whose text can score close via low confidence exact.
+    item = next((i for i in data["items"] if i["text"] == "cat"), data["items"][0])
+    sid = data["session_id"]
+    apply_attempt(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
+    )
+    done = complete_session(conn, sid)
+    assert done["replay"]
+    planned = done["planned_count"]
+    correct = done["correct_count"]
+
+    close = apply_attempt(
+        conn,
+        sid,
+        item["id"],
+        score_attempt(item["text"], item["text"], [0.40], mode="beginner"),
+        phase="replay",
+    )
+    assert close["result"] == "close"
+    assert close["again"] is False
+    assert close["retry"] is False
+    assert close["skipped"] is False
+    assert close["message"] == "Almost, one more go!"
+
+    session = conn.execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?",
+        (sid,),
+    ).fetchone()
+    assert session["correct_count"] == correct
+    assert session["planned_count"] == planned
+
+    try:
+        apply_attempt(
+            conn,
+            sid,
+            item["id"],
+            score_attempt(item["text"], item["text"], [0.95], mode="beginner"),
+            phase="replay",
+        )
+        raise AssertionError("second replay after locked close should 409")
+    except SessionError as exc:
+        assert exc.status == 409
+        assert exc.code == "bad_request"
+
+
 def test_replay_awards_stars_without_changing_ratio(tmp_env):
     conn = tmp_env["conn"]
     data = start_session(conn, level=1)

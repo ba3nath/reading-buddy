@@ -179,3 +179,55 @@ def test_health_includes_audio_flag(client):
     body = res.json()
     assert "audio" in body
     assert isinstance(body["audio"], bool)
+
+
+def test_replay_close_no_again_then_advance(
+    client, whisper_double, tone_wav, tmp_env, assert_error_envelope
+):
+    """C1 regression: replay close locks with again=false; second POST is 409, not a trap."""
+    start = client.post("/api/sessions", json={"level": 1}).json()
+    item = next((i for i in start["items"] if i["text"] == "cat"), start["items"][0])
+    sid = start["session_id"]
+
+    whisper_double.set_transcript(
+        AttemptTranscript(
+            transcript="zzzzzz",
+            words=[TranscriptWord(word="zzzzzz", probability=0.95)],
+            no_speech_prob=0.05,
+        )
+    )
+    _post_attempt(client, sid, item["id"], tone_wav.read_bytes())
+    done = client.post(f"/api/sessions/{sid}/complete").json()
+    assert done["replay"]
+    planned = done["planned_count"]
+    correct = done["correct_count"]
+
+    # Close via low-confidence exact match
+    whisper_double.set_transcript(
+        AttemptTranscript(
+            transcript=item["text"],
+            words=[TranscriptWord(word=item["text"], probability=0.40)],
+            no_speech_prob=0.05,
+        )
+    )
+    res = _post_attempt(
+        client, sid, item["id"], tone_wav.read_bytes(), phase="replay"
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["result"] == "close"
+    assert body["again"] is False
+    assert body["retry"] is False
+
+    row = tmp_env["conn"].execute(
+        "SELECT correct_count, planned_count FROM sessions WHERE id = ?",
+        (sid,),
+    ).fetchone()
+    assert row["correct_count"] == correct
+    assert row["planned_count"] == planned
+
+    second = _post_attempt(
+        client, sid, item["id"], tone_wav.read_bytes(), phase="replay"
+    )
+    assert second.status_code == 409
+    assert_error_envelope(second.json(), code="bad_request")
