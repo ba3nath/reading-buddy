@@ -60,12 +60,15 @@ DEFAULT_SETTINGS = {
     "level": 1,
     "session_length": DEFAULT_SESSION_LENGTH,
     "keep_audio": False,
-    "buddy": "cat",
+    "buddy": "cat",  # cat | krishna | mouse
     "auto_strict": True,
     "auto_strict_sessions": AUTO_STRICT_SESSIONS,
     "low_streak": 0,
     "move_up_streak": 0,
+    "garden_growth": 0,  # completed sessions; only increases
 }
+
+BUDDIES = ("cat", "krishna", "mouse")
 
 
 def ensure_dirs() -> None:

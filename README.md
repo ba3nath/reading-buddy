@@ -1,20 +1,35 @@
-# Reading Buddy (Milestones 1–3)
+# Reading Buddy
 
-Local reading game for a child: listen-then-say with Kokoro clips, microphone capture, `faster-whisper` `small.en` on CPU, Beginner/Strict matching, stars, adaptive queue, day ladder / mastery, and end-of-session replay of missed words only. Levels 1–7 (words, phrases, sentences, PD nursery-rhyme lines). No garden or full parent UI yet (M4).
+Local reading game for a child: listen-then-say with Kokoro clips, microphone capture, `faster-whisper` `small.en` on CPU, Beginner/Strict matching, stars, adaptive queue, day ladder / mastery, end-of-session replay, animated buddies, a growth-only garden, and a parent trend page with CSV export.
 
-Bind: `http://127.0.0.1:8765` (localhost only).
+Bind: [http://127.0.0.1:8765](http://127.0.0.1:8765) (localhost only). Parent: [http://127.0.0.1:8765/parent](http://127.0.0.1:8765/parent) (no PIN).
 
 ## Requirements
 
 - Python 3.11+ (3.12 recommended)
 - **ffmpeg** on `PATH` (`ffmpeg -version` must succeed)
-  - macOS: `brew install ffmpeg`
-  - Windows: `winget install Gyan.FFmpeg`
+  - macOS: `brew install ffmpeg` (or `scripts/setup_mac.sh`)
+  - Windows: `winget install Gyan.FFmpeg` (or `scripts/setup_windows.ps1`)
   - Linux: `sudo apt install ffmpeg`
-- **espeak-ng** (for Kokoro phonemizer): `sudo apt install espeak-ng` / `brew install espeak`
+- **espeak-ng** (Kokoro phonemizer): `sudo apt install espeak-ng` / `brew install espeak`
 - Chrome or Edge for the microphone (localhost is a secure context)
 
 ## Setup (once, while online)
+
+**macOS**
+
+```bash
+chmod +x scripts/setup_mac.sh
+./scripts/setup_mac.sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+.\scripts\setup_windows.ps1
+```
+
+**Manual**
 
 ```bash
 cd /workspace   # or your clone root
@@ -26,11 +41,9 @@ python scripts/tag_sounds.py --download   # optional: CMU dict → sound_tags
 python scripts/generate_audio.py     # wavs into audio/generated/
 ```
 
-Voice id is `bf_isabella` (British female, chosen from the install’s British voice list). Override with `python scripts/generate_audio.py --voice bf_emma` if you prefer.
+Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.
 
-Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip (same basename).
-
-## Run (offline OK)
+## Run (offline second run)
 
 After models and clips exist, play with the network off:
 
@@ -40,11 +53,17 @@ export HF_HUB_OFFLINE=1
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765).
+Windows PowerShell:
 
-`GET /api/health` reports `{ "whisper", "ffmpeg", "offline", "audio" }`. The child UI enables Start when Whisper, ffmpeg, and generated clips are ready.
+```powershell
+.\.venv\Scripts\Activate.ps1
+$env:HF_HUB_OFFLINE = "1"
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+```
 
-Parent settings (M3 partial, no PIN UI): `GET` / `PUT /api/parent/settings` for `mode`, `level`, `auto_strict`, `session_length`.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (cat / Krishna / mouse), garden growth on each completed session, rhyme-time sing-along on levels 6–7. Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
+
+`GET /api/health` reports `{ "whisper", "ffmpeg", "offline", "audio" }`.
 
 ## Tests (no mic)
 
@@ -53,21 +72,24 @@ source .venv/bin/activate
 pytest -q
 ```
 
-Matcher, session, adaptive, and API tests (M1–M3) use fixture transcripts and a Whisper double.
-
-## Layout
-
-- `app/` — FastAPI, matcher, session, adaptive queue, Whisper, audio helpers
-- `static/` — child game (plain HTML/JS)
-- `content/items.json` — levels 1–7
-- `content/rhymes-for-approval.md` — PD rhyme candidates / approved set
-- `audio/generated/` — Kokoro wavs (gitignored; rebuild with `generate_audio.py`)
-- `audio/human/` — optional parent overrides (gitignored)
-- `models/` — Whisper + Kokoro + optional CMU dict (gitignored)
-- `data/` — SQLite + settings (gitignored)
-- `tests/` — pytest suites and fixtures
+Matcher, session, adaptive, and API tests (M1–M4) use fixture transcripts and a Whisper double.
 
 ## Privacy
 
-Temp audio is always deleted in a `finally` block after scoring.
-`keep_audio` defaults to false in `data/settings.json`; moving clips to `data/kept/` is Milestone 4.
+- Temp audio is deleted in a `finally` block after scoring.
+- `keep_audio` defaults to false. When true, wavs are copied to `data/kept/{attempt_id}.wav` for the parent page; turning the setting off deletes those files.
+- SQLite stores transcripts and results, never audio bytes.
+- Server binds `127.0.0.1` only.
+
+## Kindness
+
+No visible timers, no lost stars or garden growth, no red fail screens, no buzzers. Silence is a retry. The mouse buddy is an original character (not Mickey Mouse).
+
+## Layout
+
+- `app/` — FastAPI, matcher, session, adaptive queue, parent aggregations, Whisper, audio helpers
+- `static/` — child game + parent page (plain HTML/JS), mascot SVGs
+- `content/items.json` — levels 1–7
+- `scripts/setup_mac.sh`, `scripts/setup_windows.ps1` — one-time online setup
+- `audio/generated/`, `audio/human/`, `models/`, `data/` — gitignored runtime assets
+- `tests/` — pytest suites

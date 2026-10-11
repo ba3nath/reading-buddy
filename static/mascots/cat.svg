@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Friendly cat buddy">
+  <style>
+    .ear, .tail, .whisker, .eye { transform-box: fill-box; transform-origin: center; }
+    .idle .tail { animation: sway 2.4s ease-in-out infinite; }
+    .idle .eye { animation: blink 4s step-end infinite; }
+    .listening .ear { animation: perk 0.7s ease-in-out infinite; }
+    .listening .whisker { animation: twitch 0.5s ease-in-out infinite; }
+    .cheer .body { animation: hop 0.55s ease; }
+    .cheer .tail { animation: sway 0.35s ease-in-out infinite; }
+    .encourage .body { animation: nod 1s ease-in-out infinite; }
+    @keyframes sway { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(10deg)} }
+    @keyframes blink { 0%,90%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.1)} }
+    @keyframes perk { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-8deg)} }
+    @keyframes twitch { 0%,100%{transform:rotate(0)} 50%{transform:rotate(6deg)} }
+    @keyframes hop { 0%{transform:translateY(0)} 40%{transform:translateY(-10px)} 100%{transform:translateY(0)} }
+    @keyframes nod { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
+  </style>
+  <g class="buddy-root idle">
+    <ellipse class="tail" cx="96" cy="78" rx="14" ry="7" fill="#e0a86a" transform="rotate(25 96 78)"/>
+    <g class="body">
+      <ellipse cx="58" cy="78" rx="34" ry="26" fill="#f2c48a"/>
+      <circle cx="58" cy="46" r="28" fill="#f2c48a"/>
+      <polygon class="ear" points="32,28 38,6 50,26" fill="#f2c48a"/>
+      <polygon class="ear" points="84,28 78,6 66,26" fill="#f2c48a"/>
+      <polygon points="35,24 39,12 46,24" fill="#f0a8a0"/>
+      <polygon points="81,24 77,12 70,24" fill="#f0a8a0"/>
+      <circle class="eye" cx="46" cy="46" r="4" fill="#3a2a1a"/>
+      <circle class="eye" cx="70" cy="46" r="4" fill="#3a2a1a"/>
+      <ellipse cx="58" cy="56" rx="5" ry="3.5" fill="#e0896a"/>
+      <path d="M50 62 Q58 68 66 62" stroke="#3a2a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <line class="whisker" x1="22" y1="52" x2="40" y2="54" stroke="#3a2a1a" stroke-width="1.5"/>
+      <line class="whisker" x1="22" y1="58" x2="40" y2="58" stroke="#3a2a1a" stroke-width="1.5"/>
+      <line class="whisker" x1="76" y1="54" x2="94" y2="52" stroke="#3a2a1a" stroke-width="1.5"/>
+      <line class="whisker" x1="76" y1="58" x2="94" y2="58" stroke="#3a2a1a" stroke-width="1.5"/>
+    </g>
+  </g>
+</svg>

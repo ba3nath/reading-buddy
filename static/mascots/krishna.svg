@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Krishna buddy with flute and peacock feather">
+  <style>
+    .feather, .flute, .body, .eye { transform-box: fill-box; transform-origin: center; }
+    .idle .feather { animation: drift 2.8s ease-in-out infinite; }
+    .idle .eye { animation: blink 4.2s step-end infinite; }
+    .listening .flute { animation: lift 0.8s ease-in-out infinite; }
+    .listening .feather { animation: drift 1.2s ease-in-out infinite; }
+    .cheer .body { animation: hop 0.55s ease; }
+    .cheer .feather { animation: spinsoft 0.6s ease; }
+    .encourage .body { animation: nod 1s ease-in-out infinite; }
+    @keyframes drift { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(8deg)} }
+    @keyframes blink { 0%,90%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.1)} }
+    @keyframes lift { 0%,100%{transform:translateY(0) rotate(-8deg)} 50%{transform:translateY(-3px) rotate(-14deg)} }
+    @keyframes hop { 0%{transform:translateY(0)} 40%{transform:translateY(-10px)} 100%{transform:translateY(0)} }
+    @keyframes spinsoft { 0%{transform:rotate(-6deg)} 50%{transform:rotate(18deg)} 100%{transform:rotate(-6deg)} }
+    @keyframes nod { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
+  </style>
+  <g class="buddy-root idle">
+    <g class="feather">
+      <ellipse cx="78" cy="18" rx="8" ry="18" fill="#2f8f6e" transform="rotate(18 78 18)"/>
+      <ellipse cx="78" cy="12" rx="3" ry="4" fill="#f0c94a"/>
+      <circle cx="78" cy="10" r="2" fill="#1f4d3a"/>
+    </g>
+    <g class="body">
+      <ellipse cx="58" cy="86" rx="28" ry="18" fill="#3d7cc9"/>
+      <circle cx="58" cy="48" r="26" fill="#5aa0e6"/>
+      <ellipse cx="58" cy="30" rx="22" ry="10" fill="#2c241c"/>
+      <path d="M48 28 Q58 18 68 28" fill="#2c241c"/>
+      <circle class="eye" cx="48" cy="48" r="3.5" fill="#2c241c"/>
+      <circle class="eye" cx="68" cy="48" r="3.5" fill="#2c241c"/>
+      <path d="M52 58 Q58 62 64 58" stroke="#2c241c" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="58" cy="22" r="3" fill="#e8c547"/>
+    </g>
+    <g class="flute" transform="rotate(-12 70 72)">
+      <rect x="40" y="68" width="52" height="7" rx="3.5" fill="#c4a35a"/>
+      <circle cx="50" cy="71.5" r="1.4" fill="#2c241c"/>
+      <circle cx="60" cy="71.5" r="1.4" fill="#2c241c"/>
+      <circle cx="70" cy="71.5" r="1.4" fill="#2c241c"/>
+      <circle cx="80" cy="71.5" r="1.4" fill="#2c241c"/>
+    </g>
+  </g>
+</svg>

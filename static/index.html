@@ -14,17 +14,8 @@
   </header>
 
   <main class="stage">
-    <div class="buddy" data-buddy-state="idle" aria-hidden="true">
-      <svg class="buddy-art" viewBox="0 0 120 120" role="img" aria-label="Friendly cat buddy">
-        <ellipse cx="60" cy="78" rx="36" ry="28" fill="#f2c48a"/>
-        <circle cx="60" cy="48" r="30" fill="#f2c48a"/>
-        <polygon points="32,30 40,8 52,28" fill="#f2c48a"/>
-        <polygon points="88,30 80,8 68,28" fill="#f2c48a"/>
-        <circle cx="48" cy="48" r="4" fill="#3a2a1a"/>
-        <circle cx="72" cy="48" r="4" fill="#3a2a1a"/>
-        <ellipse cx="60" cy="58" rx="5" ry="3.5" fill="#e0896a"/>
-        <path d="M52 64 Q60 70 68 64" stroke="#3a2a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
-      </svg>
+    <div class="buddy" data-buddy="cat" data-buddy-state="idle" aria-hidden="true">
+      <div class="buddy-slot" data-buddy-slot></div>
     </div>
     <p class="prompt" data-message>Getting ready…</p>
     <p class="word" data-word></p>
@@ -44,6 +35,18 @@
   <section class="view-home" data-view="home" hidden>
     <h1>Reading Buddy</h1>
     <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
+    <div class="buddy-pick" data-buddy-pick>
+      <p class="pick-label">Your buddy</p>
+      <div class="pick-row">
+        <button type="button" class="buddy-choice" data-buddy-choice="cat" aria-pressed="true">Cat</button>
+        <button type="button" class="buddy-choice" data-buddy-choice="krishna" aria-pressed="false">Krishna</button>
+        <button type="button" class="buddy-choice" data-buddy-choice="mouse" aria-pressed="false">Mouse</button>
+      </div>
+    </div>
+    <div class="garden-home" data-garden-home hidden>
+      <object class="garden-art" data="/static/mascots/garden.svg" type="image/svg+xml" aria-label="Garden"></object>
+      <p class="garden-caption" data-garden-caption></p>
+    </div>
     <div class="start-row">
       <button type="button" class="btn primary" data-start>Start</button>
       <button type="button" class="btn ghost" data-start data-level-pick="2">Level 2</button>
@@ -53,11 +56,16 @@
       <button type="button" class="btn ghost" data-start data-level-pick="6">Level 6</button>
       <button type="button" class="btn ghost" data-start data-level-pick="7">Level 7</button>
     </div>
+    <p class="parent-link"><a href="/parent">Parent page</a></p>
   </section>
 
   <section class="view-end" data-view="end" hidden>
     <h2>Nice reading!</h2>
     <p class="end-stars">You earned <span data-end-stars>0</span> stars</p>
+    <div class="garden-end" data-garden-end hidden>
+      <object class="garden-art" data="/static/mascots/garden.svg" type="image/svg+xml" aria-label="Garden grew"></object>
+      <p class="garden-caption" data-garden-end-caption></p>
+    </div>
     <p class="lede" data-end-hint hidden>A few words to try once more…</p>
     <button type="button" class="btn primary" data-play-again>Play again</button>
   </section>

@@ -1,4 +1,4 @@
-"""Reading Buddy FastAPI app — Milestones 1–3."""
+"""Reading Buddy FastAPI app — Milestones 1–4."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -25,8 +25,18 @@ from app.audio_files import (
     resolve_audio_slug,
     write_bytes,
 )
-from app.db import connect, init_schema, load_settings, save_settings, upsert_items_from_json
+from app.db import connect, init_schema, load_settings, upsert_items_from_json
 from app.matching import score_attempt
+from app.parent import (
+    accuracy_by_day,
+    apply_settings_update,
+    export_zip_bytes,
+    keep_attempt_wav,
+    list_kept_clips,
+    mastered_lists,
+    sound_heatmap,
+    tricky_words,
+)
 from app.session import (
     SessionError,
     apply_attempt,
@@ -194,6 +204,17 @@ def _score_target_text(
     return item_text
 
 
+def _finalize_attempt(
+    payload: dict[str, Any],
+    *,
+    keep_audio: bool,
+    wav_path,
+) -> dict[str, Any]:
+    if keep_audio and payload.get("attempt_id") is not None:
+        keep_attempt_wav(int(payload["attempt_id"]), wav_path)
+    return payload
+
+
 @app.post("/api/sessions/{session_id}/attempts")
 async def post_attempt(
     session_id: int,
@@ -264,7 +285,7 @@ async def post_attempt(
         if len(data) == 0:
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                return apply_attempt(
+                payload = apply_attempt(
                     conn,
                     session_id,
                     item_id,
@@ -279,6 +300,9 @@ async def post_attempt(
                     status_code=exc.status,
                     content=error_body(exc.code, exc.message),
                 )
+            return _finalize_attempt(
+                payload, keep_audio=keep_audio, wav_path=wav_path
+            )
 
         try:
             convert_to_wav(webm_path, wav_path)
@@ -291,7 +315,7 @@ async def post_attempt(
         if is_silence(wav_path):
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                return apply_attempt(
+                payload = apply_attempt(
                     conn,
                     session_id,
                     item_id,
@@ -306,6 +330,9 @@ async def post_attempt(
                     status_code=exc.status,
                     content=error_body(exc.code, exc.message),
                 )
+            return _finalize_attempt(
+                payload, keep_audio=keep_audio, wav_path=wav_path
+            )
 
         try:
             transcript = engine.transcribe(wav_path, initial_prompt=target_text)
@@ -322,7 +349,7 @@ async def post_attempt(
         ):
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                return apply_attempt(
+                payload = apply_attempt(
                     conn,
                     session_id,
                     item_id,
@@ -337,6 +364,9 @@ async def post_attempt(
                     status_code=exc.status,
                     content=error_body(exc.code, exc.message),
                 )
+            return _finalize_attempt(
+                payload, keep_audio=keep_audio, wav_path=wav_path
+            )
 
         confidences = [w.probability for w in transcript.words]
         match = score_attempt(
@@ -347,7 +377,7 @@ async def post_attempt(
         )
         if match.result == "retry":
             try:
-                return apply_attempt(
+                payload = apply_attempt(
                     conn,
                     session_id,
                     item_id,
@@ -362,9 +392,12 @@ async def post_attempt(
                     status_code=exc.status,
                     content=error_body(exc.code, exc.message),
                 )
+            return _finalize_attempt(
+                payload, keep_audio=keep_audio, wav_path=wav_path
+            )
 
         try:
-            return apply_attempt(
+            payload = apply_attempt(
                 conn,
                 session_id,
                 item_id,
@@ -378,10 +411,12 @@ async def post_attempt(
                 status_code=exc.status,
                 content=error_body(exc.code, exc.message),
             )
+        return _finalize_attempt(
+            payload, keep_audio=keep_audio, wav_path=wav_path
+        )
     finally:
-        # M1 always deletes temps; keep_audio move-to-kept is M4.
+        # Temps always deleted; keep_audio copies to data/kept/ first when on.
         delete_quiet(webm_path, wav_path)
-        _ = keep_audio
 
 
 @app.post("/api/sessions/{session_id}/complete")
@@ -403,7 +438,6 @@ def get_parent_settings():
 
 @app.put("/api/parent/settings")
 async def put_parent_settings(request: Request):
-    """M3 partial: mode, level, auto_strict, session_length (full parent UI is M4)."""
     try:
         payload = await request.json()
     except Exception:  # noqa: BLE001
@@ -416,53 +450,61 @@ async def put_parent_settings(request: Request):
             status_code=400,
             content=error_body("bad_request", "Body must be a JSON object"),
         )
-    settings = load_settings()
-    allowed = {
-        "mode",
-        "level",
-        "auto_strict",
-        "auto_strict_sessions",
-        "session_length",
-        "profile_name",
-        "buddy",
-        "keep_audio",
-    }
-    for key, value in payload.items():
-        if key not in allowed:
-            return JSONResponse(
-                status_code=400,
-                content=error_body("bad_request", f"Unknown settings field: {key}"),
-            )
-        settings[key] = value
-    if settings.get("mode") not in ("beginner", "strict"):
-        return JSONResponse(
-            status_code=400,
-            content=error_body("bad_request", "mode must be beginner or strict"),
-        )
     try:
-        level = int(settings["level"])
-    except (TypeError, ValueError):
+        return apply_settings_update(payload)
+    except ValueError as exc:
         return JSONResponse(
             status_code=400,
-            content=error_body("bad_request", "level must be an integer"),
+            content=error_body("bad_request", str(exc)),
         )
-    if level < 1 or level > 7:
+
+
+@app.get("/api/parent/accuracy")
+def parent_accuracy():
+    return accuracy_by_day(get_conn())
+
+
+@app.get("/api/parent/mastered")
+def parent_mastered():
+    return mastered_lists(get_conn())
+
+
+@app.get("/api/parent/tricky")
+def parent_tricky():
+    return tricky_words(get_conn())
+
+
+@app.get("/api/parent/sounds")
+def parent_sounds():
+    return sound_heatmap(get_conn())
+
+
+@app.get("/api/parent/kept")
+def parent_kept_list():
+    return list_kept_clips(get_conn())
+
+
+@app.get("/api/parent/kept/{attempt_id}")
+def parent_kept_clip(attempt_id: int):
+    path = config.KEPT_DIR / f"{attempt_id}.wav"
+    if not path.is_file():
         return JSONResponse(
-            status_code=400,
-            content=error_body("bad_request", "level must be between 1 and 7"),
+            status_code=404,
+            content=error_body("not_found", f"No kept audio for attempt {attempt_id}"),
         )
-    settings["level"] = level
-    try:
-        length = int(settings.get("session_length", config.DEFAULT_SESSION_LENGTH))
-    except (TypeError, ValueError):
-        return JSONResponse(
-            status_code=400,
-            content=error_body("bad_request", "session_length must be an integer"),
-        )
-    settings["session_length"] = max(5, min(20, length))
-    settings["auto_strict"] = bool(settings.get("auto_strict", True))
-    save_settings(settings)
-    return settings
+    return FileResponse(path, media_type="audio/wav", filename=f"{attempt_id}.wav")
+
+
+@app.get("/api/parent/export")
+def parent_export():
+    data = export_zip_bytes(get_conn())
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="reading-buddy.zip"',
+        },
+    )
 
 
 @app.get("/api/audio/{slug}")
@@ -479,6 +521,11 @@ def get_audio(slug: str):
 @app.get("/")
 def index():
     return FileResponse(config.STATIC_DIR / "index.html")
+
+
+@app.get("/parent")
+def parent_page():
+    return FileResponse(config.STATIC_DIR / "parent.html")
 
 
 app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")

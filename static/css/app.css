@@ -83,6 +83,80 @@ body.app {
   transition: transform 0.35s ease;
 }
 
+.buddy-slot,
+.buddy-slot svg {
+  width: 120px;
+  height: 120px;
+  display: block;
+}
+
+.buddy-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pick-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.buddy-choice {
+  border: 1px solid rgba(60, 40, 20, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink);
+  border-radius: 16px;
+  min-height: 44px;
+  padding: 0.45rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.buddy-choice.selected,
+.buddy-choice[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: #1f3d34;
+}
+
+.garden-home,
+.garden-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.garden-art {
+  width: min(220px, 70vw);
+  height: 120px;
+}
+
+.garden-caption {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.parent-link {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+}
+
+.parent-link a {
+  color: var(--accent);
+}
+
 body[data-state="recording"] .buddy,
 body[data-state="scoring"] .buddy {
   transform: translateY(-4px) scale(1.04);

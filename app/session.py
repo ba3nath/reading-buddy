@@ -111,6 +111,7 @@ def start_session(conn: sqlite3.Connection, level: int | None = None) -> dict[st
         "session_id": session_id,
         "level": target_level,
         "mode": mode,
+        "buddy": settings.get("buddy", "cat"),
         "items": [item_public(row) for row in queue],
     }
 
@@ -502,7 +503,7 @@ def apply_attempt(
                 conn, session_id, item_id, replay_word
             )
             if prior + 1 >= config.MAX_RETRIES_PER_ITEM:
-                _insert_attempt(
+                attempt_id = _insert_attempt(
                     conn,
                     session_id,
                     item_id,
@@ -529,8 +530,9 @@ def apply_attempt(
                     "retry": False,
                     "again": False,
                     "skipped": True,
+                    "attempt_id": attempt_id,
                 }
-            _insert_attempt(
+            attempt_id = _insert_attempt(
                 conn,
                 session_id,
                 item_id,
@@ -557,6 +559,7 @@ def apply_attempt(
                 "retry": True,
                 "again": True,
                 "skipped": False,
+                "attempt_id": attempt_id,
             }
 
         assert queue_index is not None
@@ -571,7 +574,7 @@ def apply_attempt(
                     "UPDATE sessions SET planned_count = ? WHERE id = ?",
                     (planned_count, session_id),
                 )
-            _insert_attempt(
+            attempt_id = _insert_attempt(
                 conn,
                 session_id,
                 item_id,
@@ -598,9 +601,10 @@ def apply_attempt(
                 "retry": False,
                 "again": False,
                 "skipped": True,
+                "attempt_id": attempt_id,
             }
 
-        _insert_attempt(
+        attempt_id = _insert_attempt(
             conn,
             session_id,
             item_id,
@@ -627,6 +631,7 @@ def apply_attempt(
             "retry": True,
             "again": True,
             "skipped": False,
+            "attempt_id": attempt_id,
         }
 
     result = match.result
@@ -724,7 +729,7 @@ def apply_attempt(
                 (stars_total, correct_count, session_id),
             )
 
-    _insert_attempt(
+    attempt_id = _insert_attempt(
         conn,
         session_id,
         item_id,
@@ -753,6 +758,7 @@ def apply_attempt(
         "again": again,
         "skipped": False,
         "reinsert": reinsert_info,
+        "attempt_id": attempt_id,
     }
     return payload
 
@@ -814,6 +820,9 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         settings=settings,
     )
     save_settings(new_settings)
+    from app.parent import bump_garden
+
+    garden = bump_garden(new_settings)
     conn.execute(
         """
         UPDATE sessions
@@ -833,4 +842,6 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "replay": replay,
         "level_after": level_after,
         "mode": new_settings.get("mode", session["mode"]),
+        "garden": garden,
+        "buddy": new_settings.get("buddy", "cat"),
     }

@@ -1,6 +1,7 @@
 import { RecordingSession } from "./record.js";
 
 const $ = (sel) => document.querySelector(sel);
+const BUDDIES = ["cat", "krishna", "mouse"];
 
 const state = {
   id: "boot",
@@ -9,12 +10,14 @@ const state = {
   index: 0,
   stars: 0,
   level: 1,
+  buddy: "cat",
   closeAgainPending: false,
   replay: [],
   replayIndex: 0,
   phase: "read", // "read" | "replay"
   recorder: new RecordingSession(),
   audioEl: null,
+  gardenGrowth: 0,
 };
 
 function setState(id) {
@@ -24,9 +27,58 @@ function setState(id) {
   const end = $('[data-view="end"]');
   const bootErr = $('[data-view="boot-error"]');
   home.hidden = id !== "home";
-  // Full-screen end only between rounds / after replay — not during listen/replay play.
   end.hidden = id !== "session-end";
   bootErr.hidden = id !== "boot-error";
+  syncBuddyAnim();
+}
+
+function buddyAnimForState(id) {
+  if (id === "recording" || id === "scoring" || id === "listen" || id === "session-replay") {
+    return "listening";
+  }
+  if (id === "result-correct") return "cheer";
+  if (
+    id === "result-miss" ||
+    id === "result-retry" ||
+    id === "result-skip" ||
+    id === "result-close"
+  ) {
+    return "encourage";
+  }
+  return "idle";
+}
+
+function syncBuddyAnim() {
+  const anim = buddyAnimForState(state.id);
+  const host = $("[data-buddy]");
+  if (host) host.dataset.buddyState = anim;
+  const root = host?.querySelector(".buddy-root");
+  if (root) {
+    root.classList.remove("idle", "listening", "cheer", "encourage");
+    root.classList.add(anim);
+  }
+}
+
+async function loadBuddySvg(name) {
+  const buddy = BUDDIES.includes(name) ? name : "cat";
+  state.buddy = buddy;
+  const host = $("[data-buddy]");
+  const slot = $("[data-buddy-slot]");
+  if (!host || !slot) return;
+  host.dataset.buddy = buddy;
+  try {
+    const res = await fetch(`/static/mascots/${buddy}.svg`);
+    const svg = await res.text();
+    slot.innerHTML = svg;
+    syncBuddyAnim();
+  } catch (err) {
+    console.error(err);
+  }
+  document.querySelectorAll("[data-buddy-choice]").forEach((btn) => {
+    const on = btn.dataset.buddyChoice === buddy;
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("selected", on);
+  });
 }
 
 function setMessage(text) {
@@ -63,7 +115,12 @@ function setProgress() {
     $("[data-progress]").textContent = "";
     return;
   }
-  $("[data-progress]").textContent = `Word ${Math.min(state.index + 1, state.items.length)} of ${state.items.length}`;
+  const item = currentItem();
+  const label =
+    item && item.kind === "line"
+      ? `Line ${Math.min(state.index + 1, state.items.length)} of ${state.items.length}`
+      : `Word ${Math.min(state.index + 1, state.items.length)} of ${state.items.length}`;
+  $("[data-progress]").textContent = label;
 }
 
 function setMicEnabled(on) {
@@ -113,6 +170,49 @@ async function api(path, options = {}) {
   return body;
 }
 
+function gardenStageName(growth) {
+  if (growth <= 0) return "seed";
+  if (growth <= 2) return "sprout";
+  if (growth <= 5) return "flower";
+  if (growth <= 9) return "creature";
+  return "sticker";
+}
+
+function applyGardenStage(root, growth) {
+  if (!root) return;
+  const stage = gardenStageName(growth);
+  const objects = root.querySelectorAll(".garden-art");
+  objects.forEach((obj) => {
+    const set = () => {
+      try {
+        const doc = obj.contentDocument;
+        const svg = doc && doc.querySelector("svg");
+        if (svg) svg.setAttribute("data-stage", stage);
+      } catch {
+        /* ignore */
+      }
+    };
+    if (obj.contentDocument && obj.contentDocument.querySelector("svg")) set();
+    else obj.addEventListener("load", set, { once: true });
+  });
+}
+
+function showGardenHome(growth) {
+  state.gardenGrowth = growth;
+  const wrap = $("[data-garden-home]");
+  const cap = $("[data-garden-caption]");
+  if (!wrap) return;
+  if (growth <= 0) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  if (cap) {
+    cap.textContent = `Garden: ${gardenStageName(growth)} (${growth} session${growth === 1 ? "" : "s"})`;
+  }
+  applyGardenStage(wrap, growth);
+}
+
 async function boot() {
   setState("boot");
   setMessage("Getting ready…");
@@ -125,13 +225,15 @@ async function boot() {
         "Reading Buddy needs Whisper and ffmpeg on this computer. Ask an adult to finish setup, then reload.";
       return;
     }
-    // M2: missing clips are a setup/health issue, not a broken child play screen.
     if (health.audio === false) {
       setState("boot-error");
       $("[data-boot-error]").textContent =
         "Voice clips are not ready yet. Ask an adult to run: python scripts/generate_audio.py";
       return;
     }
+    const settings = await api("/api/parent/settings");
+    await loadBuddySvg(settings.buddy || "cat");
+    showGardenHome(Number(settings.garden_growth) || 0);
     setState("home");
     setMessage("");
   } catch {
@@ -139,11 +241,23 @@ async function boot() {
   }
 }
 
+async function chooseBuddy(name) {
+  if (!BUDDIES.includes(name)) return;
+  await loadBuddySvg(name);
+  try {
+    await api("/api/parent/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ buddy: name }),
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function startSession(level) {
   setMessage("Starting…");
   setMicEnabled(false);
-  // Omit level → server uses settings.level (adaptive / level_after).
-  // Explicit Level 2–7 buttons pass an override for demo decks.
   const body =
     level != null && Number.isFinite(level)
       ? JSON.stringify({ level })
@@ -158,6 +272,7 @@ async function startSession(level) {
   state.index = 0;
   state.stars = 0;
   state.level = data.level;
+  if (data.buddy) await loadBuddySvg(data.buddy);
   state.closeAgainPending = false;
   state.replay = [];
   state.replayIndex = 0;
@@ -187,7 +302,7 @@ async function showListen() {
   }
   setState("listen");
   setWord(item.text);
-  setMessage("Listen…");
+  setMessage(item.kind === "line" ? "Listen to the line…" : "Listen…");
   setProgress();
   setMicEnabled(false);
   try {
@@ -200,7 +315,12 @@ async function showListen() {
 
 function enterIdle() {
   setState("idle");
-  setMessage("Your turn — tap and read the word");
+  const item = currentItem();
+  setMessage(
+    item && item.kind === "line"
+      ? "Your turn — tap and read the line"
+      : "Your turn — tap and read the word"
+  );
   setMicEnabled(true);
 }
 
@@ -282,8 +402,30 @@ function applyReinsert(result) {
     state.items.push(info.item);
     return;
   }
-  // Keep FE items aligned with server play_item_ids.
   state.items.splice(at, 0, info.item);
+}
+
+function isRhymeSingAlongItem(item) {
+  return (
+    item &&
+    item.kind === "line" &&
+    (state.level === 6 || state.level === 7) &&
+    item.slug
+  );
+}
+
+async function maybeSingAlongThen(next) {
+  const item = currentItem();
+  if (state.phase === "read" && isRhymeSingAlongItem(item)) {
+    setMessage("Sing along…");
+    setState("listen");
+    try {
+      await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  next();
 }
 
 function handleAttempt(result) {
@@ -296,7 +438,7 @@ function handleAttempt(result) {
   if (result.skipped || result.result === "skipped") {
     setState("result-skip");
     state.closeAgainPending = false;
-    setTimeout(() => advance(), 1400);
+    setTimeout(() => maybeSingAlongThen(advance), 1400);
     return;
   }
   if (result.retry || result.result === "retry") {
@@ -319,12 +461,12 @@ function handleAttempt(result) {
   if (result.result === "correct") {
     setState("result-correct");
     state.closeAgainPending = false;
-    setTimeout(() => advance(), 1200);
+    setTimeout(() => maybeSingAlongThen(advance), 1200);
     return;
   }
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
-  setTimeout(() => advance(), 1400);
+  setTimeout(() => maybeSingAlongThen(advance), 1400);
 }
 
 function advance() {
@@ -364,6 +506,19 @@ async function finishSession() {
     state.replayIndex = 0;
     const hint = $("[data-end-hint]");
     if (hint) hint.hidden = !state.replay.length;
+    if (data.garden) {
+      const wrap = $("[data-garden-end]");
+      const cap = $("[data-garden-end-caption]");
+      if (wrap) {
+        wrap.hidden = false;
+        if (cap) {
+          cap.textContent = `Your garden grew — ${data.garden.stage}!`;
+        }
+        applyGardenStage(wrap, data.garden.growth);
+      }
+      showGardenHome(data.garden.growth);
+    }
+    if (data.buddy) await loadBuddySvg(data.buddy);
     if (state.replay.length) {
       setTimeout(() => startReplay(), 900);
     }
@@ -431,6 +586,11 @@ function wire() {
       });
     });
   });
+  document.querySelectorAll("[data-buddy-choice]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      chooseBuddy(btn.dataset.buddyChoice).catch(console.error);
+    });
+  });
   $("[data-mic]").addEventListener("click", () => {
     onMicTap().catch(console.error);
   });
@@ -447,6 +607,8 @@ function wire() {
     setWord("");
     setMessage("");
     $("[data-level]").hidden = true;
+    const gardenEnd = $("[data-garden-end]");
+    if (gardenEnd) gardenEnd.hidden = true;
     setState("home");
   });
 }
