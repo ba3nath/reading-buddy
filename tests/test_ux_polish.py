@@ -21,6 +21,16 @@ def test_home_has_large_buddy_and_illustrated_tiles():
     assert "mickey" not in HTML.lower()
 
 
+def test_home_greeting_does_not_sit_in_fixed_square():
+    """Greeting must not share the mascot's fixed square height (was overlapping tiles)."""
+    assert "data-home-greeting" in HTML
+    assert "home-buddy-wave" in CSS
+    # Container grows with text; only the slot is the square mascot frame.
+    assert "height: auto" in CSS
+    assert ".home-buddy-slot" in CSS or ".home-buddy .buddy-slot" in CSS
+    assert "text-wrap: balance" in CSS or "line-height" in CSS
+
+
 def test_mic_hear_you_feedback_no_timer():
     assert "mic-particles" in HTML
     assert "I hear you" in JS
