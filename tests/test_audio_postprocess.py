@@ -29,8 +29,11 @@ def test_tts_render_lengthens_short_words():
     assert dog == "dog."
     assert dog_speed <= 0.80  # voiced plosive ending
     line, line_speed = tts_render("the cat sat")
-    assert line == "the cat sat"
-    assert line_speed <= 1.0
+    assert line == "the cat sat."
+    assert line_speed == 0.90
+    long_line, long_line_speed = tts_render("Jack and Jill went up the hill")
+    assert long_line == "Jack and Jill went up the hill"
+    assert long_line_speed == 0.95
 
 
 def test_tts_render_avoids_logee_netee_trailing_syllable():
@@ -43,3 +46,30 @@ def test_tts_render_avoids_logee_netee_trailing_syllable():
     assert net == "net"
     assert not net.endswith(".")
     assert net_speed >= 0.94
+
+
+def test_tts_render_avoids_a_and_bring_trailing_burst():
+    """Period on bare 'a' / 'bring' adds a second energy burst (ay-uh / bring-uh)."""
+    a, a_speed = tts_render("a")
+    assert a == "a"
+    assert not a.endswith(".")
+    assert 0.85 <= a_speed <= 0.92
+    bring, bring_speed = tts_render("bring")
+    assert bring == "bring"
+    assert not bring.endswith(".")
+    assert 0.85 <= bring_speed <= 0.92
+
+
+def test_tts_render_ng_is_not_treated_as_plosive_g():
+    """bring/long end in /ŋ/, not a /g/ burst — don't crawl to 0.78."""
+    # bring is bare (trailing-burst override); still must not use plosive 0.78.
+    bring, bring_speed = tts_render("bring")
+    assert bring == "bring"
+    assert bring_speed >= 0.84
+    long, long_speed = tts_render("long")
+    assert long == "long."
+    assert long_speed >= 0.84
+    # Real plosive -g still slows.
+    dog, dog_speed = tts_render("dog")
+    assert dog == "dog."
+    assert dog_speed <= 0.80
