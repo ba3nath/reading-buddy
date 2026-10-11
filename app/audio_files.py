@@ -122,15 +122,26 @@ def tts_render(text: str) -> tuple[str, float]:
 
     Bare "cup"/"map"/"the" come out clipped; a terminal period gives natural
     lengthening, and a slightly slower speed helps kids hear each sound.
+    Voiced plosive endings (dog/pig) need even more time or the burst dies.
     """
     stripped = (text or "").strip()
     if not stripped:
         return text, 1.0
     words = stripped.split()
-    if len(words) == 1 and len(words[0]) <= 6:
+    if len(words) == 1 and len(words[0]) <= 10:
         spoken = words[0]
+        core = spoken.rstrip(".!?").lower()
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
+        # Final b/d/g (and silent-e forms like "like"/"slide") fade at 0.88.
+        slow_plosive = core[-1:] in "bdg" or (
+            len(core) >= 2 and core.endswith("e") and core[-2] in "bdgkpt"
+        )
+        if slow_plosive:
+            return spoken, 0.78
+        # Tiny function words (sir/the/you) need a touch more time.
+        if len(core) <= 3:
+            return spoken, 0.84
         return spoken, 0.88
     return stripped, 0.95
 

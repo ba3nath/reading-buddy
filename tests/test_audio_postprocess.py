@@ -24,7 +24,10 @@ def test_tts_render_lengthens_short_words():
     assert speed < 1.0
     spoken_the, speed_the = tts_render("the")
     assert spoken_the == "the."
-    assert speed_the < 1.0
+    assert speed_the <= 0.88
+    dog, dog_speed = tts_render("dog")
+    assert dog == "dog."
+    assert dog_speed <= 0.80  # voiced plosive ending
     line, line_speed = tts_render("the cat sat")
     assert line == "the cat sat"
     assert line_speed <= 1.0
