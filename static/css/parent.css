@@ -83,6 +83,18 @@ body.parent-page {
   background: rgba(255, 255, 255, 0.85);
 }
 
+.buddy-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.buddy-thumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
 .settings-form label.check {
   display: flex;
   align-items: flex-start;

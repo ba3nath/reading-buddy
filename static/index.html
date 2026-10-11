@@ -22,44 +22,76 @@
     <p class="phrase-score" hidden>
       <span data-words-correct>0</span> of <span data-words-total>0</span> words
     </p>
-    <button class="mic" type="button" data-mic aria-label="Record" disabled>
-      <span class="mic-icon" aria-hidden="true">●</span>
-      <span class="mic-label">Tap to read</span>
-    </button>
+    <div class="mic-wrap">
+      <div class="mic-particles" data-mic-particles aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <button class="mic" type="button" data-mic aria-label="Record" disabled>
+        <span class="mic-icon" aria-hidden="true"></span>
+        <span class="mic-label">Tap to read</span>
+      </button>
+    </div>
+    <div class="star-burst" data-star-burst aria-hidden="true"></div>
   </main>
 
   <footer class="chrome">
+    <div class="progress-dots" data-progress-dots aria-hidden="true"></div>
     <div class="session-progress" data-progress></div>
   </footer>
 
   <section class="view-home" data-view="home" hidden>
-    <h1>Reading Buddy</h1>
+    <h1 class="home-brand">Reading Buddy</h1>
     <p class="lede">Read words aloud. Earn stars. No timers, no lost points.</p>
+
+    <div class="home-buddy" data-home-buddy data-buddy-state="idle">
+      <div class="buddy-slot home-buddy-slot" data-home-buddy-slot></div>
+      <p class="home-buddy-wave" data-home-greeting>Hi — pick me, then Start!</p>
+    </div>
+
     <div class="buddy-pick" data-buddy-pick>
       <p class="pick-label">Your buddy</p>
       <div class="pick-row">
-        <button type="button" class="buddy-choice" data-buddy-choice="cat" aria-pressed="true">Cat</button>
-        <button type="button" class="buddy-choice" data-buddy-choice="krishna" aria-pressed="false">Krishna</button>
-        <button type="button" class="buddy-choice" data-buddy-choice="mouse" aria-pressed="false">Mouse</button>
+        <button type="button" class="buddy-tile" data-buddy-choice="cat" aria-pressed="true">
+          <img class="buddy-tile-art" src="/static/mascots/cat.svg" alt="" width="72" height="72" />
+          <span class="buddy-tile-name">Cat</span>
+        </button>
+        <button type="button" class="buddy-tile" data-buddy-choice="krishna" aria-pressed="false">
+          <img class="buddy-tile-art" src="/static/mascots/krishna.svg" alt="" width="72" height="72" />
+          <span class="buddy-tile-name">Krishna</span>
+        </button>
+        <button type="button" class="buddy-tile" data-buddy-choice="mouse" aria-pressed="false">
+          <img class="buddy-tile-art" src="/static/mascots/mouse.svg" alt="" width="72" height="72" />
+          <span class="buddy-tile-name">Mouse</span>
+        </button>
       </div>
     </div>
+
     <div class="garden-home" data-garden-home hidden>
       <object class="garden-art" data="/static/mascots/garden.svg" type="image/svg+xml" aria-label="Garden"></object>
       <p class="garden-caption" data-garden-caption></p>
     </div>
+
     <div class="start-row">
       <button type="button" class="btn primary" data-start>Start</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="2">Level 2</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="3">Level 3</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="4">Level 4</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="5">Level 5</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="6">Level 6</button>
-      <button type="button" class="btn ghost" data-start data-level-pick="7">Level 7</button>
     </div>
+    <details class="more-levels">
+      <summary>More levels</summary>
+      <div class="start-row level-row">
+        <button type="button" class="btn ghost" data-start data-level-pick="2">Level 2</button>
+        <button type="button" class="btn ghost" data-start data-level-pick="3">Level 3</button>
+        <button type="button" class="btn ghost" data-start data-level-pick="4">Level 4</button>
+        <button type="button" class="btn ghost" data-start data-level-pick="5">Level 5</button>
+        <button type="button" class="btn ghost" data-start data-level-pick="6">Level 6</button>
+        <button type="button" class="btn ghost" data-start data-level-pick="7">Level 7</button>
+      </div>
+    </details>
     <p class="parent-link"><a href="/parent">Parent page</a></p>
   </section>
 
   <section class="view-end" data-view="end" hidden>
+    <div class="end-buddy" data-end-buddy data-buddy-state="cheer">
+      <div class="buddy-slot end-buddy-slot" data-end-buddy-slot></div>
+    </div>
     <h2>Nice reading!</h2>
     <p class="end-stars">You earned <span data-end-stars>0</span> stars</p>
     <div class="garden-end" data-garden-end hidden>

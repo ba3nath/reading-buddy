@@ -18,6 +18,7 @@ const state = {
   recorder: new RecordingSession(),
   audioEl: null,
   gardenGrowth: 0,
+  svgCache: {},
 };
 
 function setState(id) {
@@ -33,10 +34,15 @@ function setState(id) {
 }
 
 function buddyAnimForState(id) {
-  if (id === "recording" || id === "scoring" || id === "listen" || id === "session-replay") {
+  if (
+    id === "recording" ||
+    id === "scoring" ||
+    id === "listen" ||
+    id === "session-replay"
+  ) {
     return "listening";
   }
-  if (id === "result-correct") return "cheer";
+  if (id === "result-correct" || id === "session-end") return "cheer";
   if (
     id === "result-miss" ||
     id === "result-retry" ||
@@ -48,28 +54,55 @@ function buddyAnimForState(id) {
   return "idle";
 }
 
-function syncBuddyAnim() {
-  const anim = buddyAnimForState(state.id);
-  const host = $("[data-buddy]");
-  if (host) host.dataset.buddyState = anim;
-  const root = host?.querySelector(".buddy-root");
+function applyAnimToHost(host, anim) {
+  if (!host) return;
+  host.dataset.buddyState = anim;
+  const root = host.querySelector(".buddy-root");
   if (root) {
     root.classList.remove("idle", "listening", "cheer", "encourage");
     root.classList.add(anim);
   }
 }
 
+function syncBuddyAnim() {
+  const anim = buddyAnimForState(state.id);
+  applyAnimToHost($("[data-buddy]"), anim);
+  if (state.id === "home") {
+    applyAnimToHost($("[data-home-buddy]"), "idle");
+  }
+  if (state.id === "session-end") {
+    applyAnimToHost($("[data-end-buddy]"), "cheer");
+  }
+}
+
+async function fetchBuddySvg(name) {
+  if (state.svgCache[name]) return state.svgCache[name];
+  const res = await fetch(`/static/mascots/${name}.svg`);
+  const svg = await res.text();
+  state.svgCache[name] = svg;
+  return svg;
+}
+
 async function loadBuddySvg(name) {
   const buddy = BUDDIES.includes(name) ? name : "cat";
   state.buddy = buddy;
   const host = $("[data-buddy]");
-  const slot = $("[data-buddy-slot]");
-  if (!host || !slot) return;
-  host.dataset.buddy = buddy;
+  if (host) host.dataset.buddy = buddy;
   try {
-    const res = await fetch(`/static/mascots/${buddy}.svg`);
-    const svg = await res.text();
-    slot.innerHTML = svg;
+    const svg = await fetchBuddySvg(buddy);
+    for (const sel of [
+      "[data-buddy-slot]",
+      "[data-home-buddy-slot]",
+      "[data-end-buddy-slot]",
+    ]) {
+      const slot = $(sel);
+      if (slot) slot.innerHTML = svg;
+    }
+    const greet = $("[data-home-greeting]");
+    if (greet) {
+      const labels = { cat: "Cat", krishna: "Krishna", mouse: "Mouse" };
+      greet.textContent = `Hi — I'm ${labels[buddy]}! Ready when you are.`;
+    }
     syncBuddyAnim();
   } catch (err) {
     console.error(err);
@@ -91,36 +124,77 @@ function setWord(text, { highlight = false } = {}) {
   el.classList.toggle("highlight", Boolean(highlight));
 }
 
-function setStars(n) {
+function popStarBurst() {
+  const host = $("[data-star-burst]");
+  if (!host) return;
+  host.innerHTML = "";
+  host.classList.remove("pop");
+  void host.offsetWidth;
+  const angles = [-50, -20, 10, 40, -35, 25];
+  angles.forEach((deg, i) => {
+    const el = document.createElement("i");
+    el.textContent = "★";
+    const rad = (deg * Math.PI) / 180;
+    el.style.setProperty("--dx", `${Math.cos(rad) * (40 + i * 8)}px`);
+    el.style.setProperty("--dy", `${Math.sin(rad) * (28 + i * 6) - 36}px`);
+    el.style.left = `${40 + (i % 3) * 12}%`;
+    el.style.top = `${45 + (i % 2) * 10}%`;
+    host.appendChild(el);
+  });
+  host.classList.add("pop");
+  setTimeout(() => {
+    host.classList.remove("pop");
+    host.innerHTML = "";
+  }, 750);
+}
+
+function setStars(n, { celebrate = false } = {}) {
   const el = $("[data-stars]");
   const prev = Number(el.textContent) || 0;
   el.textContent = String(n);
-  if (n > prev) {
+  if (n > prev || celebrate) {
     el.parentElement.classList.remove("bump");
     void el.parentElement.offsetWidth;
     el.parentElement.classList.add("bump");
+    if (celebrate || n > prev) popStarBurst();
   }
 }
 
 function setProgress() {
+  const dots = $("[data-progress-dots]");
+  const labelEl = $("[data-progress]");
   if (state.phase === "replay") {
+    if (dots) dots.innerHTML = "";
     if (!state.replay.length) {
-      $("[data-progress]").textContent = "";
+      labelEl.textContent = "";
       return;
     }
-    $("[data-progress]").textContent = `Try again ${Math.min(state.replayIndex + 1, state.replay.length)} of ${state.replay.length}`;
+    labelEl.textContent = `Try again ${Math.min(state.replayIndex + 1, state.replay.length)} of ${state.replay.length}`;
     return;
   }
   if (!state.items.length) {
-    $("[data-progress]").textContent = "";
+    if (dots) dots.innerHTML = "";
+    labelEl.textContent = "";
     return;
   }
+  const cur = Math.min(state.index + 1, state.items.length);
+  const total = state.items.length;
   const item = currentItem();
-  const label =
+  labelEl.textContent =
     item && item.kind === "line"
-      ? `Line ${Math.min(state.index + 1, state.items.length)} of ${state.items.length}`
-      : `Word ${Math.min(state.index + 1, state.items.length)} of ${state.items.length}`;
-  $("[data-progress]").textContent = label;
+      ? `Line ${cur} of ${total}`
+      : `Word ${cur} of ${total}`;
+  if (dots) {
+    const maxDots = Math.min(total, 12);
+    dots.innerHTML = "";
+    for (let i = 0; i < maxDots; i++) {
+      const d = document.createElement("span");
+      d.className = "dot";
+      if (i < state.index) d.classList.add("done");
+      if (i === state.index) d.classList.add("on");
+      dots.appendChild(d);
+    }
+  }
 }
 
 function setMicEnabled(on) {
@@ -327,7 +401,7 @@ function enterIdle() {
 async function onMicTap() {
   if (state.id !== "idle") return;
   setState("recording");
-  setMessage("Listening…");
+  setMessage("I hear you…");
   setMicEnabled(false);
   await state.recorder.start({
     oncomplete: (blob) => onRecordComplete(blob),
@@ -430,18 +504,20 @@ async function maybeSingAlongThen(next) {
 
 function handleAttempt(result) {
   state.stars = result.stars_total;
-  setStars(result.stars_total);
-  setMessage(result.message || "");
   showPhraseScore(result);
   applyReinsert(result);
 
   if (result.skipped || result.result === "skipped") {
+    setStars(result.stars_total);
+    setMessage(result.message || "");
     setState("result-skip");
     state.closeAgainPending = false;
     setTimeout(() => maybeSingAlongThen(advance), 1400);
     return;
   }
   if (result.retry || result.result === "retry") {
+    setStars(result.stars_total);
+    setMessage(result.message || "");
     setState("result-retry");
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();
@@ -450,6 +526,8 @@ function handleAttempt(result) {
     return;
   }
   if (result.result === "close" && result.again) {
+    setStars(result.stars_total);
+    setMessage(result.message || "");
     setState("result-close");
     state.closeAgainPending = true;
     setTimeout(() => {
@@ -459,11 +537,15 @@ function handleAttempt(result) {
     return;
   }
   if (result.result === "correct") {
+    setStars(result.stars_total, { celebrate: true });
+    setMessage(result.message || "");
     setState("result-correct");
     state.closeAgainPending = false;
     setTimeout(() => maybeSingAlongThen(advance), 1200);
     return;
   }
+  setStars(result.stars_total);
+  setMessage(result.message || "");
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
   setTimeout(() => maybeSingAlongThen(advance), 1400);
@@ -496,12 +578,15 @@ async function finishSession() {
       headers: { "Content-Type": "application/json" },
       body: "{}",
     });
+    if (data.buddy) await loadBuddySvg(data.buddy);
     setState("session-end");
     $("[data-end-stars]").textContent = String(data.stars);
-    setStars(data.stars);
+    setStars(data.stars, { celebrate: true });
     setWord("");
     setMessage("");
     $("[data-progress]").textContent = "";
+    const dots = $("[data-progress-dots]");
+    if (dots) dots.innerHTML = "";
     state.replay = data.replay || [];
     state.replayIndex = 0;
     const hint = $("[data-end-hint]");
@@ -512,15 +597,19 @@ async function finishSession() {
       if (wrap) {
         wrap.hidden = false;
         if (cap) {
-          cap.textContent = `Your garden grew — ${data.garden.stage}!`;
+          const stage = data.garden.stage;
+          cap.textContent =
+            stage === "sticker"
+              ? "New garden sticker unlocked — it stays forever!"
+              : `Your garden grew — new ${stage}!`;
         }
         applyGardenStage(wrap, data.garden.growth);
       }
       showGardenHome(data.garden.growth);
     }
-    if (data.buddy) await loadBuddySvg(data.buddy);
+    syncBuddyAnim();
     if (state.replay.length) {
-      setTimeout(() => startReplay(), 900);
+      setTimeout(() => startReplay(), 1100);
     }
   } catch (err) {
     console.error(err);
@@ -571,6 +660,7 @@ function finishReplay() {
   const phrase = $(".phrase-score");
   if (phrase) phrase.hidden = true;
   setState("session-end");
+  syncBuddyAnim();
 }
 
 function wire() {
@@ -609,6 +699,8 @@ function wire() {
     $("[data-level]").hidden = true;
     const gardenEnd = $("[data-garden-end]");
     if (gardenEnd) gardenEnd.hidden = true;
+    const dots = $("[data-progress-dots]");
+    if (dots) dots.innerHTML = "";
     setState("home");
   });
 }

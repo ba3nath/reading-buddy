@@ -26,8 +26,12 @@
       <polygon points="81,24 77,12 70,24" fill="#f0a8a0"/>
       <circle class="eye" cx="46" cy="46" r="4" fill="#3a2a1a"/>
       <circle class="eye" cx="70" cy="46" r="4" fill="#3a2a1a"/>
+      <circle cx="40" cy="54" r="5" fill="#f0a8a0" opacity="0.55"/>
+      <circle cx="76" cy="54" r="5" fill="#f0a8a0" opacity="0.55"/>
       <ellipse cx="58" cy="56" rx="5" ry="3.5" fill="#e0896a"/>
       <path d="M50 62 Q58 68 66 62" stroke="#3a2a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="47.5" cy="46.5" r="1.2" fill="#fff" opacity="0.85"/>
+      <circle cx="71.5" cy="46.5" r="1.2" fill="#fff" opacity="0.85"/>
       <line class="whisker" x1="22" y1="52" x2="40" y2="54" stroke="#3a2a1a" stroke-width="1.5"/>
       <line class="whisker" x1="22" y1="58" x2="40" y2="58" stroke="#3a2a1a" stroke-width="1.5"/>
       <line class="whisker" x1="76" y1="54" x2="94" y2="52" stroke="#3a2a1a" stroke-width="1.5"/>

@@ -71,6 +71,13 @@ function renderSounds(payload) {
   }
 }
 
+function syncBuddyThumb(buddy) {
+  const thumb = $("[data-buddy-thumb]");
+  if (!thumb) return;
+  const name = ["cat", "krishna", "mouse"].includes(buddy) ? buddy : "cat";
+  thumb.src = `/static/mascots/${name}.svg`;
+}
+
 function fillSettings(settings) {
   const form = $("[data-settings]");
   if (!form) return;
@@ -81,6 +88,7 @@ function fillSettings(settings) {
   form.buddy.value = settings.buddy || "cat";
   form.keep_audio.checked = Boolean(settings.keep_audio);
   form.auto_strict.checked = settings.auto_strict !== false;
+  syncBuddyThumb(form.buddy.value);
 }
 
 async function loadKept(keepOn) {
@@ -143,6 +151,9 @@ async function refresh() {
 
 function wire() {
   const form = $("[data-settings]");
+  form.buddy.addEventListener("change", () => {
+    syncBuddyThumb(form.buddy.value);
+  });
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const status = $("[data-settings-status]");
