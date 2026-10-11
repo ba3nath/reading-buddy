@@ -1,9 +1,13 @@
 /** MediaRecorder + silence-stop. No UI strings. */
 
-const SILENCE_GAP_MS = 1200;
-const NO_SPEECH_MS = 4000;
+// Tuned for short kids words: do not cut final plosives (T in "cat").
+const SILENCE_GAP_MS = 1600;
+const NO_SPEECH_MS = 5000;
 const MAX_MS = 20000;
-const SILENCE_THRESHOLD = 0.02;
+const MIN_SPEECH_MS = 450;
+const SPEECH_START_THRESHOLD = 0.028;
+const SPEECH_HOLD_THRESHOLD = 0.012;
+const START_GRACE_MS = 180;
 
 export class RecordingSession {
   constructor() {
@@ -21,7 +25,13 @@ export class RecordingSession {
 
   async ensureStream() {
     if (this.stream) return this.stream;
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
     return this.stream;
   }
 
@@ -30,6 +40,10 @@ export class RecordingSession {
     this.chunks = [];
     try {
       const stream = await this.ensureStream();
+      // Resume AudioContext after a user gesture when needed.
+      if (this._audioCtx && this._audioCtx.state === "suspended") {
+        await this._audioCtx.resume().catch(() => {});
+      }
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : undefined;
@@ -48,6 +62,9 @@ export class RecordingSession {
       this.recorder.onerror = (ev) => onerror?.(ev.error || new Error("record failed"));
 
       this._audioCtx = new AudioContext();
+      if (this._audioCtx.state === "suspended") {
+        await this._audioCtx.resume().catch(() => {});
+      }
       const source = this._audioCtx.createMediaStreamSource(stream);
       this._analyser = this._audioCtx.createAnalyser();
       this._analyser.fftSize = 2048;
@@ -56,7 +73,8 @@ export class RecordingSession {
       this._startedAt = performance.now();
       this._speechStartedAt = 0;
       this._lastLoudAt = 0;
-      this.recorder.start(100);
+      // Smaller timeslice → less trailing audio lost when stop() fires.
+      this.recorder.start(50);
       this._tick();
     } catch (err) {
       onerror?.(err);
@@ -78,15 +96,23 @@ export class RecordingSession {
   _tick = () => {
     if (this._stopped) return;
     const now = performance.now();
+    const elapsed = now - this._startedAt;
     const level = this._level();
-    const loud = level >= SILENCE_THRESHOLD;
 
-    if (loud) {
-      if (!this._speechStartedAt) this._speechStartedAt = now;
-      this._lastLoudAt = now;
+    // Ignore mic settle noise for a short grace after tap.
+    if (elapsed >= START_GRACE_MS) {
+      const startThresh = SPEECH_START_THRESHOLD;
+      const holdThresh = SPEECH_HOLD_THRESHOLD;
+      const loudEnough = this._speechStartedAt
+        ? level >= holdThresh
+        : level >= startThresh;
+
+      if (loudEnough) {
+        if (!this._speechStartedAt) this._speechStartedAt = now;
+        this._lastLoudAt = now;
+      }
     }
 
-    const elapsed = now - this._startedAt;
     if (elapsed >= MAX_MS) {
       this.stop();
       return;
@@ -98,6 +124,7 @@ export class RecordingSession {
     if (
       this._speechStartedAt &&
       this._lastLoudAt &&
+      now - this._speechStartedAt >= MIN_SPEECH_MS &&
       now - this._lastLoudAt >= SILENCE_GAP_MS
     ) {
       this.stop();
@@ -111,6 +138,14 @@ export class RecordingSession {
     this._stopped = true;
     if (this._raf) cancelAnimationFrame(this._raf);
     if (this.recorder && this.recorder.state !== "inactive") {
+      try {
+        // Flush the current timeslice before stop so the tail isn't dropped.
+        if (typeof this.recorder.requestData === "function") {
+          this.recorder.requestData();
+        }
+      } catch {
+        /* ignore */
+      }
       this.recorder.stop();
     }
     if (this._audioCtx) {

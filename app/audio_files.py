@@ -118,8 +118,15 @@ def resolve_audio_slug(slug: str) -> Path | None:
 
 
 def postprocess_generated_wav(src: Path, dest: Path) -> None:
-    """Mono 16-bit PCM, trim silence, loudness-normalize (ffmpeg)."""
+    """Mono 16-bit PCM, gentle silence trim, loudness-normalize (ffmpeg).
+
+    Keep short padding around the word so plosives (C/T in "cat") are not
+    eaten by aggressive silenceremove. Pad after trim so playback does not
+    feel clipped at the edges.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
+    # -50dB + longer stop_silence: only strip near-true hush, not soft consonants.
+    # adelay/apad: ~120ms lead-in and trail so listen-then-say is not abrupt.
     cmd = [
         "ffmpeg",
         "-y",
@@ -132,8 +139,9 @@ def postprocess_generated_wav(src: Path, dest: Path) -> None:
         "-c:a",
         "pcm_s16le",
         "-af",
-        "silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:"
-        "stop_periods=1:stop_silence=0.08:stop_threshold=-40dB,"
+        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-50dB:"
+        "stop_periods=1:stop_duration=0.08:stop_threshold=-50dB:stop_silence=0.2,"
+        "adelay=120|120,apad=pad_dur=0.15,"
         "loudnorm=I=-16:TP=-1.5:LRA=11",
         str(dest),
     ]
