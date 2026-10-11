@@ -89,6 +89,42 @@ def test_jumped_jump_not_close_beginner():
     assert result.word_scores[0].result == "missed"
 
 
+def test_humpty_vs_dumpty_is_missed_beginner():
+    """Saying Dumpty for Humpty must not lock as a Beginner near-miss pass."""
+    assert levenshtein("humpty", "dumpty") == 1
+    assert metaphone_primary("humpty") != metaphone_primary("dumpty")
+    word = score_attempt("Humpty", "dumpty", [0.95], mode="beginner")
+    assert word.result == "missed"
+    assert word.word_scores[0].result == "missed"
+
+    line = score_attempt(
+        "Could not put Humpty together again",
+        "Could not put dumpty together again",
+        [0.95] * 6,
+        mode="beginner",
+    )
+    assert line.result == "missed"
+    by_word = {ws.word: ws for ws in line.word_scores}
+    assert by_word["humpty"].result == "missed"
+    assert by_word["humpty"].heard == "dumpty"
+    assert "humpty" in line.replay_words
+    assert line.words_correct == 5
+
+
+def test_short_first_letter_swap_still_close_beginner():
+    """Plan fixtures: cat/cot and box/dox stay Beginner close."""
+    assert score_attempt("cat", "cot", [0.90], mode="beginner").result == "close"
+    assert score_attempt("box", "dox", [0.88], mode="beginner").word_scores[0].result == (
+        "close"
+    )
+
+
+def test_jill_vs_hill_is_missed_beginner():
+    """Rhyme names that only share an edit must not count as close."""
+    result = score_attempt("Jill", "hill", [0.95], mode="beginner")
+    assert result.result == "missed"
+
+
 def test_fox_alignment_keeps_later_corrects():
     pairs = align_tokens(
         tokenize("Quick brown fox jumped over the box"),

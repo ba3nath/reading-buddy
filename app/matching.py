@@ -93,13 +93,37 @@ def metaphone_primary(word: str) -> str:
     return primary or ""
 
 
+def is_beginner_edit_close(target: str, heard: str) -> bool:
+    """True when a one-edit difference should count as Beginner close.
+
+    Plan cases like cat/cot and box/dox stay close. Longer tokens that change
+    the leading letter and sound different (humpty/dumpty) are not close —
+    that was accepting the wrong nursery-rhyme name as a pass.
+    """
+    if not target or not heard:
+        return False
+    dist = levenshtein(target, heard)
+    if dist == 0:
+        return True
+    if dist > 1:
+        return False
+    if metaphone_primary(target) == metaphone_primary(heard):
+        return True
+    if target[0] == heard[0]:
+        return True
+    # Short CVC-style tokens: first-letter swaps stay near (box/dox, fox/box).
+    if len(target) <= 3 and len(heard) <= 3:
+        return True
+    return False
+
+
 def is_beginner_near_match(target: str, heard: str) -> bool:
     if not target or not heard:
         return False
     if is_plural_pair(target, heard):
         return True
     dist = levenshtein(target, heard)
-    if dist <= 1:
+    if is_beginner_edit_close(target, heard):
         return True
     if metaphone_primary(target) == metaphone_primary(heard) and dist <= 2:
         return True
@@ -158,7 +182,7 @@ def score_word(
     dist = levenshtein(target, heard)
     if dist == 0:
         return "correct"
-    if dist <= 1:
+    if is_beginner_edit_close(target, heard):
         return "close"
     if metaphone_primary(target) == metaphone_primary(heard) and dist <= 2:
         return "close"
