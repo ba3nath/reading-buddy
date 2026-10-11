@@ -1,0 +1,16 @@
+{
+  "id": "jill-hill-beginner",
+  "mode": "beginner",
+  "target_text": "Jill",
+  "heard_text": "hill",
+  "word_confidences": [0.95],
+  "expect": {
+    "result": "missed",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "jill", "heard": "hill", "confidence": 0.95, "result": "missed" }
+    ],
+    "replay_words": ["jill"]
+  }
+}

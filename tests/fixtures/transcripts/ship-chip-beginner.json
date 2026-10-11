@@ -1,0 +1,16 @@
+{
+  "id": "ship-chip-beginner",
+  "mode": "beginner",
+  "target_text": "ship",
+  "heard_text": "chip",
+  "word_confidences": [0.91],
+  "expect": {
+    "result": "close",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "ship", "heard": "chip", "confidence": 0.91, "result": "close" }
+    ],
+    "replay_words": []
+  }
+}

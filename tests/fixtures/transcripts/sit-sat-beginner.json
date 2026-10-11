@@ -1,0 +1,16 @@
+{
+  "id": "sit-sat-beginner",
+  "mode": "beginner",
+  "target_text": "sit",
+  "heard_text": "sat",
+  "word_confidences": [0.92],
+  "expect": {
+    "result": "close",
+    "words_correct": 0,
+    "words_total": 1,
+    "word_scores": [
+      { "word": "sit", "heard": "sat", "confidence": 0.92, "result": "close" }
+    ],
+    "replay_words": []
+  }
+}

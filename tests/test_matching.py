@@ -9,6 +9,7 @@ import pytest
 
 from app.matching import (
     align_tokens,
+    is_beginner_edit_close,
     is_plural_pair,
     levenshtein,
     metaphone_primary,
@@ -18,6 +19,7 @@ from app.matching import (
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "transcripts"
+CONTENT = Path(__file__).resolve().parents[1] / "content" / "items.json"
 
 
 def _load(name: str) -> dict:
@@ -62,6 +64,10 @@ def _run_case(name: str):
         "big-red-bus",
         "fox-beginner",
         "fox-strict",
+        "humpty-dumpty-beginner",
+        "jill-hill-beginner",
+        "sit-sat-beginner",
+        "ship-chip-beginner",
     ],
 )
 def test_transcript_fixtures(name):
@@ -89,40 +95,82 @@ def test_jumped_jump_not_close_beginner():
     assert result.word_scores[0].result == "missed"
 
 
-def test_humpty_vs_dumpty_is_missed_beginner():
-    """Saying Dumpty for Humpty must not lock as a Beginner near-miss pass."""
-    assert levenshtein("humpty", "dumpty") == 1
-    assert metaphone_primary("humpty") != metaphone_primary("dumpty")
-    word = score_attempt("Humpty", "dumpty", [0.95], mode="beginner")
-    assert word.result == "missed"
-    assert word.word_scores[0].result == "missed"
+@pytest.mark.parametrize(
+    "target,heard,expect_close",
+    [
+        # Plan short-word cases — Beginner levels must stay forgiving.
+        ("cat", "cot", True),
+        ("box", "dox", True),
+        ("fox", "box", True),
+        ("sit", "sat", True),
+        ("top", "tap", True),
+        ("bus", "bas", True),
+        # Same onset / same sound — still close.
+        ("clock", "clok", True),
+        ("together", "togther", True),
+        ("again", "agin", True),
+        ("ship", "chip", True),
+        ("swim", "swam", True),
+        # Longer name / rhyme swaps that change onset + sound — miss.
+        ("humpty", "dumpty", False),
+        ("jill", "hill", False),
+        ("jack", "pack", False),
+        ("mouse", "house", False),
+    ],
+)
+def test_is_beginner_edit_close_matrix(target, heard, expect_close):
+    assert is_beginner_edit_close(target, heard) is expect_close
+    result = score_attempt(target, heard, [0.95], mode="beginner").word_scores[0].result
+    if expect_close:
+        assert result == "close"
+    else:
+        assert result == "missed"
 
-    line = score_attempt(
+
+def test_beginner_level1_short_words_keep_vowel_near_misses():
+    """Level-1 CVC words: one-letter vowel slips stay Beginner close."""
+    items = json.loads(CONTENT.read_text(encoding="utf-8"))
+    level1 = [i["text"].lower() for i in items if i["level"] == 1 and i["kind"] == "word"]
+    assert len(level1) >= 10
+    short = [w for w in level1 if len(w) == 3]
+    assert short, "expected 3-letter level-1 words"
+    # Middle-vowel swap: cVc → cXc with a different vowel when possible.
+    vowels = "aeiou"
+    checked = 0
+    for word in short:
+        if word[1] not in vowels:
+            continue
+        alt_vowel = "a" if word[1] != "a" else "i"
+        heard = word[0] + alt_vowel + word[2]
+        if heard == word:
+            continue
+        result = score_attempt(word, heard, [0.95], mode="beginner")
+        assert result.result == "close", f"{word}/{heard} should stay close"
+        checked += 1
+    assert checked >= 5
+
+
+def test_beginner_level3_onset_preserving_slips_stay_close():
+    """Level-3 blends: keep close when the first letter stays the same."""
+    items = json.loads(CONTENT.read_text(encoding="utf-8"))
+    level3 = [i["text"].lower() for i in items if i["level"] == 3 and i["kind"] == "word"]
+    assert "ship" in level3 or "frog" in level3
+    for target, heard in (("ship", "chip"), ("frog", "fog"), ("trap", "trip"), ("flag", "flak")):
+        if target not in level3:
+            continue
+        result = score_attempt(target, heard, [0.95], mode="beginner")
+        assert result.word_scores[0].result == "close", f"{target}/{heard}"
+
+
+def test_humpty_line_strict_also_misses_dumpty():
+    result = score_attempt(
         "Could not put Humpty together again",
         "Could not put dumpty together again",
         [0.95] * 6,
-        mode="beginner",
+        mode="strict",
     )
-    assert line.result == "missed"
-    by_word = {ws.word: ws for ws in line.word_scores}
-    assert by_word["humpty"].result == "missed"
-    assert by_word["humpty"].heard == "dumpty"
-    assert "humpty" in line.replay_words
-    assert line.words_correct == 5
-
-
-def test_short_first_letter_swap_still_close_beginner():
-    """Plan fixtures: cat/cot and box/dox stay Beginner close."""
-    assert score_attempt("cat", "cot", [0.90], mode="beginner").result == "close"
-    assert score_attempt("box", "dox", [0.88], mode="beginner").word_scores[0].result == (
-        "close"
-    )
-
-
-def test_jill_vs_hill_is_missed_beginner():
-    """Rhyme names that only share an edit must not count as close."""
-    result = score_attempt("Jill", "hill", [0.95], mode="beginner")
     assert result.result == "missed"
+    assert result.replay_words == ["humpty"]
 
 
 def test_fox_alignment_keeps_later_corrects():

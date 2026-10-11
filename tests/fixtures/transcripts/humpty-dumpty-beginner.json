@@ -1,0 +1,21 @@
+{
+  "id": "humpty-dumpty-beginner",
+  "mode": "beginner",
+  "target_text": "Could not put Humpty together again",
+  "heard_text": "Could not put dumpty together again",
+  "word_confidences": [0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
+  "expect": {
+    "result": "missed",
+    "words_correct": 5,
+    "words_total": 6,
+    "word_scores": [
+      { "word": "could", "heard": "could", "confidence": 0.95, "result": "correct" },
+      { "word": "not", "heard": "not", "confidence": 0.95, "result": "correct" },
+      { "word": "put", "heard": "put", "confidence": 0.95, "result": "correct" },
+      { "word": "humpty", "heard": "dumpty", "confidence": 0.95, "result": "missed" },
+      { "word": "together", "heard": "together", "confidence": 0.95, "result": "correct" },
+      { "word": "again", "heard": "again", "confidence": 0.95, "result": "correct" }
+    ],
+    "replay_words": ["humpty"]
+  }
+}

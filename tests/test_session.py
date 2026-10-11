@@ -102,6 +102,40 @@ def test_beginner_near_miss_close_no_second_try(tmp_env):
     assert "one more" not in first["message"].lower()
 
 
+def test_beginner_humpty_dumpty_session_is_miss_not_close(tmp_env):
+    """Level-7 line: Dumpty for Humpty must miss (replay), not lock as close."""
+    conn = tmp_env["conn"]
+    target = "Could not put Humpty together again"
+    row = conn.execute(
+        "SELECT id, text FROM items WHERE text = ? AND level = 7",
+        (target,),
+    ).fetchone()
+    assert row is not None
+
+    data = start_session(conn, level=7)
+    sid = data["session_id"]
+    # Pin the Humpty line at slot 0 so adaptive order cannot skip the case.
+    play = [row["id"]] + [i["id"] for i in data["items"] if i["id"] != row["id"]]
+    play = play[: len(data["items"])]
+    set_play_and_ratio_flags(conn, sid, play, [True] * len(play))
+    conn.execute(
+        "UPDATE sessions SET planned_item_ids = ?, planned_count = ? WHERE id = ?",
+        (json.dumps(play), len(play), sid),
+    )
+    conn.commit()
+
+    heard = "Could not put dumpty together again"
+    match = score_attempt(target, heard, [0.95] * 6, mode="beginner")
+    assert match.result == "missed"
+    assert match.replay_words == ["humpty"]
+
+    resp = _apply(conn, sid, row["id"], match, qi=0)
+    assert resp["result"] == "missed"
+    assert resp["again"] is False
+    assert resp["read_again"] is False
+    assert "nice try" not in resp["message"].lower()
+
+
 def test_strict_close_second_take_no_hard_bonus(tmp_env):
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
