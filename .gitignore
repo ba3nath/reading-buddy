@@ -19,3 +19,4 @@ audio/human/*
 .env
 .coverage
 htmlcov/
+.coverage
