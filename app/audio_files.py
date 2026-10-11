@@ -117,12 +117,24 @@ def resolve_audio_slug(slug: str) -> Path | None:
     return None
 
 
+# Kokoro en-gb + a terminal period (or too-slow speed) can add a vowelized
+# release that kids hear as an extra syllable — "logee", "netee".
+# Speak these bare, a touch faster, so the word ends cleanly.
+_BARE_NO_TRAIL_SYLLABLE: dict[str, float] = {
+    "log": 0.88,
+    "net": 0.96,
+}
+
+
 def tts_render(text: str) -> tuple[str, float]:
     """Pick Kokoro text + speed so short words keep plosives and length.
 
     Bare "cup"/"map"/"the" come out clipped; a terminal period gives natural
     lengthening, and a slightly slower speed helps kids hear each sound.
     Voiced plosive endings (dog/pig) need even more time or the burst dies.
+
+    Some short words (log/net) must stay bare — period + slow speed adds a
+    trailing "ee" syllable with the British Kokoro voice.
     """
     stripped = (text or "").strip()
     if not stripped:
@@ -131,6 +143,8 @@ def tts_render(text: str) -> tuple[str, float]:
     if len(words) == 1 and len(words[0]) <= 10:
         spoken = words[0]
         core = spoken.rstrip(".!?").lower()
+        if core in _BARE_NO_TRAIL_SYLLABLE:
+            return core, _BARE_NO_TRAIL_SYLLABLE[core]
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
         # Final b/d/g (and silent-e forms like "like"/"slide") fade at 0.88.

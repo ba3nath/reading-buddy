@@ -31,3 +31,15 @@ def test_tts_render_lengthens_short_words():
     line, line_speed = tts_render("the cat sat")
     assert line == "the cat sat"
     assert line_speed <= 1.0
+
+
+def test_tts_render_avoids_logee_netee_trailing_syllable():
+    """Period + slow Kokoro en-gb turns log/net into logee/netee."""
+    log, log_speed = tts_render("log")
+    assert log == "log"
+    assert not log.endswith(".")
+    assert 0.85 <= log_speed <= 0.95
+    net, net_speed = tts_render("net")
+    assert net == "net"
+    assert not net.endswith(".")
+    assert net_speed >= 0.94
