@@ -123,3 +123,30 @@ def test_level7_does_not_stack_previous_and_current_audio():
     assert "stopClip()" in show
     assert "playClip(`/api/audio/${encodeURIComponent(item.slug)}`)" in show
     assert show.index("stopClip()") < show.index("setWord(")
+    assert show.count("playClip(") == 1
+
+    # After a scored take, handleAttempt must not play any clip before advancing.
+    handle = JS.split("function handleAttempt(result)")[1].split("\nfunction advance(")[0]
+    assert "playClip(" not in handle
+    assert "advance()" in handle
+    assert "Sing along…" not in handle
+
+
+def test_level7_session_lines_have_unique_audio_slugs(tmp_env, client):
+    """Each level-7 line on screen maps to its own slug wav — not a shared/group clip."""
+    from app.session import start_session
+
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=7)
+    assert data["level"] == 7
+    items = data["items"]
+    assert len(items) >= 2
+    assert all(i.get("kind") == "line" for i in items)
+    slugs = [i["slug"] for i in items]
+    assert len(slugs) == len(set(slugs))
+    # Advancing must request a different clip URL than the line just left.
+    assert slugs[0] != slugs[1]
+    for slug in slugs[:3]:
+        res = client.get(f"/api/audio/{slug}")
+        assert res.status_code == 200, slug
+        assert res.headers["content-type"].startswith("audio/")
