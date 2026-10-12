@@ -140,6 +140,7 @@ function setState(id) {
   bootErr.hidden = id !== "boot-error";
   syncBuddyAnim();
   syncHomeControls();
+  syncHearAgain();
 }
 
 function buddyAnimForState(id) {
@@ -901,6 +902,53 @@ function enterIdle() {
     setMicLabel("Tap to read");
   }
   setMicEnabled(true);
+  syncHearAgain();
+}
+
+function currentListenUrl() {
+  if (state.phase === "replay") {
+    const entry = currentReplay();
+    if (!entry) return null;
+    return entry.audio_url || `/api/audio/${encodeURIComponent(entry.text)}`;
+  }
+  const item = currentItem();
+  if (!item?.slug) return null;
+  return `/api/audio/${encodeURIComponent(item.slug)}`;
+}
+
+function syncHearAgain() {
+  const btn = $("[data-hear-again]");
+  if (!btn) return;
+  const hasClip = Boolean(currentListenUrl());
+  const canShow =
+    hasClip &&
+    (state.id === "idle" ||
+      state.id === "listen" ||
+      state.id === "session-replay");
+  btn.hidden = !canShow;
+  // Only tappable once the auto-play has finished (idle).
+  btn.disabled = state.id !== "idle";
+}
+
+async function hearAgain() {
+  const url = currentListenUrl();
+  if (!url || state.id !== "idle") return;
+  // Don't steal a live take — only replay while waiting for the mic.
+  if (state.recorder?.isRecording) return;
+  const btn = $("[data-hear-again]");
+  if (btn) btn.disabled = true;
+  setMicEnabled(false);
+  try {
+    await playClip(url);
+  } catch (err) {
+    console.error(err);
+  }
+  if (state.id === "idle" || state.id === "listen" || state.id === "session-replay") {
+    // Stay on the same word; re-arm mic + Hear again.
+    if (state.id !== "idle") setState("idle");
+    setMicEnabled(true);
+    syncHearAgain();
+  }
 }
 
 function hideReadAgainBanner() {
@@ -1251,6 +1299,7 @@ async function showReplayItem() {
       setMicLabel("Tap to read");
     }
     setMicEnabled(true);
+    syncHearAgain();
   }
 }
 
@@ -1306,6 +1355,12 @@ function wire() {
   $("[data-mic]").addEventListener("click", () => {
     onMicTap().catch(console.error);
   });
+  const hearAgainBtn = $("[data-hear-again]");
+  if (hearAgainBtn) {
+    hearAgainBtn.addEventListener("click", () => {
+      hearAgain().catch(console.error);
+    });
+  }
   $("[data-play-again]").addEventListener("click", () => {
     stopClip();
     state.sessionId = null;

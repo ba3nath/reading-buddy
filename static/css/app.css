@@ -512,6 +512,32 @@ body[data-state="session-replay"] .word-art {
   justify-content: center;
 }
 
+.hear-again {
+  margin-top: 0.55rem;
+  min-height: 44px;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  border: 1px solid rgba(60, 40, 20, 0.12);
+  box-shadow: none;
+}
+
+.hear-again:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body[data-state="boot"] .hear-again,
+body[data-state="home"] .hear-again,
+body[data-state="session-end"] .hear-again,
+body[data-state="boot-error"] .hear-again,
+body[data-state="recording"] .hear-again,
+body[data-state="scoring"] .hear-again {
+  display: none;
+}
+
 .mic {
   position: relative;
   z-index: 1;

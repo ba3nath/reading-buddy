@@ -44,6 +44,7 @@ SCREEN_FLOWS = (
     "home_difficulty",
     "home_pause_continue",
     "listen_idle_mic",
+    "hear_again",
     "recording_done",
     "result_advance",
     "read_again",
@@ -196,9 +197,40 @@ def test_flow_listen_idle_mic():
     assert 'setState("idle")' in idle
     assert "Tap to read" in idle
     assert "setMicEnabled(true)" in idle
+    assert "syncHearAgain()" in idle
 
     assert 'data-mic' in HTML
     assert 'data-mic-mode="ready"' in HTML
+
+
+def test_flow_hear_again():
+    """Idle shows Hear again; tap replays the same clip without advancing."""
+    assert "Hear again" in HTML
+    assert "data-hear-again" in HTML
+    assert ".hear-again" in CSS
+
+    sync = _fn("syncHearAgain")
+    assert 'state.id === "idle"' in sync
+    assert "btn.disabled" in sync
+    assert "currentListenUrl" in sync
+
+    hear = _fn("hearAgain")
+    assert "currentListenUrl()" in hear
+    assert "playClip(url)" in hear
+    assert 'state.id !== "idle"' in hear
+    assert "setMicEnabled(false)" in hear
+    assert "syncHearAgain()" in hear
+
+    url = _fn("currentListenUrl")
+    assert "item.slug" in url
+    assert "/api/audio/" in url
+
+    wire = _fn("wire")
+    assert "data-hear-again" in wire
+    assert "hearAgain()" in wire
+
+    set_state = _fn("setState")
+    assert "syncHearAgain()" in set_state
 
 
 def test_flow_recording_done():
