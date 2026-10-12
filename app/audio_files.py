@@ -118,46 +118,49 @@ def resolve_audio_slug(slug: str) -> Path | None:
 
 
 # Per-word Kokoro en-gb overrides: (spoken_text, speed).
-# Tuned by Whisper A/B so the target word is heard in the clip (carriers OK).
-# Short bare words often collapse; a short phrase that includes the word wins.
+#
+# IMPORTANT: spoken_text must be ONLY the on-screen word (optional . ! ?).
+# Never add carrier words ("fat cat", "a dog", "please sit") — the child
+# hears the TTS while reading the single word on screen.
+#
+# Clarity levers: punctuation, speed, and voice — not extra words.
 _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "a": ("a", 0.88),
-    "bring": ("please bring", 0.95),
-    "log": ("wooden log", 0.95),
-    "net": ("the net", 0.95),
-    "sit": ("please sit", 0.95),
-    "can": ("we can", 0.95),
-    "were": ("they were", 0.95),
-    "top": ("on top", 0.95),
-    "thin": ("thin ice", 0.95),
-    "sheep": ("a sheep", 0.95),
-    "truck": ("a truck", 0.95),
-    "pen": ("the pen", 0.95),
-    "dog": ("a dog", 0.95),
-    "when": ("say when", 0.95),
-    "cup": ("the cup", 0.95),
-    "cat": ("fat cat", 0.95),
-    "map": ("a map", 0.95),
+    "bring": ("bring", 0.92),
+    "log": ("log", 0.92),
+    "net": ("net!", 1.0),
+    "sit": ("sit!", 1.0),
+    "can": ("can", 0.96),
+    "were": ("were", 1.0),
+    "top": ("top.", 0.90),
+    "thin": ("thin!", 1.0),
+    "sheep": ("sheep.", 0.88),
+    "truck": ("truck.", 0.85),
+    "pen": ("pen.", 0.88),
+    "dog": ("dog.", 0.88),
+    "when": ("when.", 0.92),
+    "cup": ("cup.", 0.88),
+    "cat": ("cat!", 1.0),
     "the": ("the.", 0.84),
 }
 
 # Per-word voice overrides: (voice_id, lang).
 _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "top": ("bf_emma", "en-gb"),
-    "sit": ("bf_emma", "en-gb"),
+    "sit": ("bf_alice", "en-gb"),
     "were": ("bm_lewis", "en-gb"),
-    "thin": ("bf_alice", "en-gb"),
+    "thin": ("bf_emma", "en-gb"),
     "truck": ("bf_emma", "en-gb"),
     "pen": ("bf_emma", "en-gb"),
-    "when": ("bf_alice", "en-gb"),
-    "bring": ("bf_alice", "en-gb"),
-    "net": ("bf_emma", "en-gb"),
+    "when": ("bf_emma", "en-gb"),
+    "bring": ("bf_emma", "en-gb"),
+    "net": ("bf_alice", "en-gb"),
     "cup": ("bf_emma", "en-gb"),
-    "cat": ("bf_alice", "en-gb"),
-    "map": ("bf_alice", "en-gb"),
+    "cat": ("bf_emma", "en-gb"),
     "log": ("bf_emma", "en-gb"),
     "can": ("bf_alice", "en-gb"),
     "sheep": ("bf_emma", "en-gb"),
+    "dog": ("bf_emma", "en-gb"),
 }
 
 
@@ -167,6 +170,17 @@ def _single_word_core(text: str) -> str | None:
     if len(words) == 1 and len(words[0]) <= 10:
         return words[0].rstrip(".!?").lower()
     return None
+
+
+def spoken_matches_target(target: str, spoken: str) -> bool:
+    """True when spoken is only ``target`` plus optional trailing punctuation."""
+    core = _single_word_core(target)
+    if not core:
+        return True
+    tokens = (spoken or "").strip().split()
+    if len(tokens) != 1:
+        return False
+    return tokens[0].rstrip(".!?").lower() == core
 
 
 def tts_voice(text: str) -> tuple[str | None, str | None]:
@@ -184,7 +198,8 @@ def tts_render(text: str) -> tuple[str, float]:
     lengthening, and a slightly slower speed helps kids hear each sound.
     Voiced plosive endings (dog/pig) need even more time or the burst dies.
 
-    Some words need explicit overrides (see _TTS_WORD_OVERRIDES).
+    Some words need explicit overrides (see _TTS_WORD_OVERRIDES). Overrides
+    must never invent extra words — the child hears exactly the on-screen token.
     """
     stripped = (text or "").strip()
     if not stripped:
@@ -194,7 +209,13 @@ def tts_render(text: str) -> tuple[str, float]:
         spoken = words[0]
         core = spoken.rstrip(".!?").lower()
         if core in _TTS_WORD_OVERRIDES:
-            return _TTS_WORD_OVERRIDES[core]
+            override_spoken, override_speed = _TTS_WORD_OVERRIDES[core]
+            if not spoken_matches_target(core, override_spoken):
+                # Safety net: never play a multi-word carrier for a single word.
+                override_spoken = core + (
+                    override_spoken[-1] if override_spoken[-1:] in ".!?" else ""
+                )
+            return override_spoken, override_speed
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
         # Final b/d/g plosives (and silent-e forms like "like"/"slide") fade
