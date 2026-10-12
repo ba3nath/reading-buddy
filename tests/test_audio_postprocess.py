@@ -53,10 +53,10 @@ def test_tts_render_lengthens_short_words():
     assert speed == 1.0
     spoken_the, speed_the = tts_render("the")
     assert spoken_the == "the."
-    assert speed_the <= 0.88
+    assert speed_the == 0.88
     pig, pig_speed = tts_render("pig")
     assert pig == "pig."
-    assert pig_speed == 0.82
+    assert pig_speed == 0.78
     line, line_speed = tts_render("the cat sat")
     assert line == "the cat sat."
     assert line_speed == 0.90
@@ -66,15 +66,15 @@ def test_tts_render_lengthens_short_words():
 
 
 def test_tts_render_log_and_net_whisper_winners():
-    """Batch A/B: log. @0.88 emma; net! @1.0 emma — still single tokens."""
+    """Batch A/B: log. @0.78 emma; net. @0.82 isabella — still single tokens."""
     log, log_speed = tts_render("log")
     assert log == "log."
-    assert log_speed == 0.88
+    assert log_speed == 0.78
     assert tts_voice("log") == ("bf_emma", "en-gb")
     net, net_speed = tts_render("net")
-    assert net == "net!"
-    assert net_speed >= 0.98
-    assert tts_voice("net") == ("bf_emma", "en-gb")
+    assert net == "net."
+    assert net_speed == 0.82
+    assert tts_voice("net") == (None, None)
 
 
 def test_tts_render_avoids_a_and_bring_trailing_burst():
@@ -100,7 +100,7 @@ def test_tts_render_ng_is_not_treated_as_plosive_g():
     assert long_speed >= 0.84
     pig, pig_speed = tts_render("pig")
     assert pig == "pig."
-    assert pig_speed == 0.82
+    assert pig_speed == 0.78
     dog, dog_speed = tts_render("dog")
     assert dog == "dog."
     assert spoken_matches_target("dog", dog)
@@ -116,22 +116,22 @@ def test_tts_render_sit_keeps_unvoiced_s():
 
 
 def test_tts_voice_top_avoids_topi_release():
-    """emma + bang — batch winner still only says 'top'."""
+    """bm_lewis + period — batch winner still only says 'top'."""
     voice, lang = tts_voice("top")
-    assert voice == "bf_emma"
+    assert voice == "bm_lewis"
     assert lang == "en-gb"
     spoken, speed = tts_render("top")
-    assert spoken == "top!"
+    assert spoken == "top."
     assert spoken_matches_target("top", spoken)
-    assert speed == 1.0
+    assert speed == 0.88
 
 
 def test_tts_render_can_whisper_winner():
-    """Batch A/B: 'can.' @0.88 emma — still only the on-screen word."""
+    """Batch A/B: 'can.' @0.82 emma — still only the on-screen word."""
     spoken, speed = tts_render("can")
     assert spoken == "can."
     assert spoken_matches_target("can", spoken)
-    assert speed == 0.88
+    assert speed == 0.82
     assert tts_voice("can") == ("bf_emma", "en-gb")
 
 
@@ -140,24 +140,24 @@ def test_tts_render_were_stays_single_word():
     spoken, speed = tts_render("were")
     assert spoken == "were."
     assert spoken_matches_target("were", spoken)
-    assert speed == 0.88
+    assert speed == 0.78
     assert tts_voice("were") == ("bf_emma", "en-gb")
 
 
 def test_tts_render_cat_is_only_cat():
     """Regression: never play 'fat cat' when the screen says cat."""
     spoken, speed = tts_render("cat")
-    assert spoken == "cat!"
+    assert spoken == "cat."
     assert spoken_matches_target("cat", spoken)
-    assert speed >= 0.98
+    assert speed == 0.94
     assert tts_voice("cat") == ("bf_emma", "en-gb")
 
 
 def test_tts_overrides_for_whisper_clear_words():
     """Spot-check single-word overrides from the batch Whisper A/B winners."""
     assert tts_render("sheep") == ("sheep.", 0.88)
-    assert tts_render("truck") == ("truck", 0.94)
-    assert tts_voice("truck") == ("bf_emma", "en-gb")
+    assert tts_render("truck") == ("truck.", 0.78)
+    assert tts_voice("truck") == ("bm_lewis", "en-gb")
     assert tts_render("thin") == ("thin!", 1.0)
     assert tts_voice("thin") == ("bf_emma", "en-gb")
     assert tts_render("pen") == ("pen.", 0.82)
@@ -166,13 +166,23 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_voice("when") == ("bm_lewis", "en-gb")
     assert tts_render("cup") == ("cup!", 1.0)
     assert tts_voice("cup") == ("bf_emma", "en-gb")
-    assert tts_render("net") == ("net!", 1.0)
+    assert tts_render("net") == ("net.", 0.82)
     assert tts_render("bed") == ("bed.", 0.88)
     assert tts_render("clock") == ("clock!", 1.0)
     assert tts_render("jam") == ("jam.", 0.82)
     assert tts_render("trap") == ("trap", 0.94)
+    assert tts_render("bus") == ("bus", 1.0)
+    assert tts_voice("bus") == ("bf_emma", "en-gb")
+    assert tts_render("spoon") == ("spoon?", 0.92)
+    assert tts_render("they") == ("they.", 0.82)
+    assert tts_render("what") == ("what.", 0.78)
+    assert tts_render("your") == ("your!", 0.95)
     # Default session voice (no override) for isabella winners.
     assert tts_voice("bed") == (None, None)
     assert tts_voice("clock") == (None, None)
     assert tts_voice("jam") == (None, None)
     assert tts_voice("trap") == (None, None)
+    assert tts_voice("net") == (None, None)
+    assert tts_voice("rat") == (None, None)
+    assert tts_voice("the") == (None, None)
+    assert tts_voice("your") == (None, None)
