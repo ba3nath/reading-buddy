@@ -227,9 +227,12 @@ def tts_render(text: str) -> tuple[str, float]:
         )
         if slow_plosive:
             return spoken, 0.78
-        # Tiny function words (sir/the/you) need a touch more time.
+        # Tiny function words (sir/the/you) and CVC kid words need more time
+        # so the body is not a clipped blip — still only the one on-screen word.
         if len(core) <= 3:
-            return spoken, 0.84
+            return spoken, 0.82
+        if len(core) <= 4:
+            return spoken, 0.86
         return spoken, 0.88
     # Short kid phrases ("a long train"): period + slight slowdown for clarity.
     if 2 <= len(words) <= 3:
@@ -238,16 +241,31 @@ def tts_render(text: str) -> tuple[str, float]:
     return stripped, 0.95
 
 
+# Short listen words need generous silence around the speech so onsets/plosives
+# are not cut off by players, Bluetooth buffering, or aggressive loudnorm.
+_LISTEN_LEAD_MS = 350
+_LISTEN_TRAIL_SEC = 0.50
+
+
 def postprocess_generated_wav(src: Path, dest: Path) -> None:
-    """Mono 16-bit PCM, gentle lead trim, loudness-normalize (ffmpeg).
+    """Mono 16-bit PCM, gentle lead trim, loudness-normalize, then pad.
 
     Never strip trailing silence — final plosives in cup/map/cat are quiet and
-    get eaten by stop-period silenceremove. Pad both ends so listen-then-say
-    is not abrupt.
+    get eaten by stop-period silenceremove.
+
+    Order matters: normalize the speech first, *then* add lead/trail pads.
+    Padding before loudnorm lets silence dominate the measure and can crush
+    quiet plosive tails (sounds "clipped" even though samples remain).
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     # Lead trim only (start_periods). No stop_periods — keeps /p/ /t/ /k/.
-    # adelay/apad: ~200ms lead + 280ms trail for short kid words.
+    # Gentler start_threshold so soft onsets (map/cup) are not bitten.
+    af = (
+        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-50dB,"
+        "loudnorm=I=-18:TP=-2.0:LRA=11,"
+        f"adelay={_LISTEN_LEAD_MS}|{_LISTEN_LEAD_MS},"
+        f"apad=pad_dur={_LISTEN_TRAIL_SEC}"
+    )
     cmd = [
         "ffmpeg",
         "-y",
@@ -260,9 +278,7 @@ def postprocess_generated_wav(src: Path, dest: Path) -> None:
         "-c:a",
         "pcm_s16le",
         "-af",
-        "silenceremove=start_periods=1:start_duration=0.05:start_threshold=-45dB,"
-        "adelay=200|200,apad=pad_dur=0.28,"
-        "loudnorm=I=-16:TP=-1.5:LRA=11",
+        af,
         str(dest),
     ]
     try:

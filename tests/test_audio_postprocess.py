@@ -20,7 +20,22 @@ def test_postprocess_keeps_tail_plosives():
     assert "stop_periods=" not in src
     assert "apad" in src
     assert "adelay" in src
-    assert "pad_dur=0.28" in src or "0.28" in src
+    # Pads after loudnorm so silence doesn't crush quiet plosive tails.
+    assert src.index("loudnorm=") < src.index("adelay=")
+    assert src.index("loudnorm=") < src.index("apad=")
+    assert "pad_dur={_LISTEN_TRAIL_SEC}" in src or "pad_dur=0.5" in src
+    assert "_LISTEN_LEAD_MS" in src
+    assert audio_files._LISTEN_LEAD_MS >= 300
+    assert audio_files._LISTEN_TRAIL_SEC >= 0.45
+
+
+def test_postprocess_pads_after_loudnorm_not_before():
+    """Regression: pad-before-loudnorm made short words sound clipped."""
+    src = inspect.getsource(audio_files.postprocess_generated_wav)
+    loud = src.index("loudnorm=")
+    delay = src.index("adelay=")
+    pad = src.index("apad=")
+    assert loud < delay < pad
 
 
 def test_tts_overrides_never_add_extra_words():
