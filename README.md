@@ -49,7 +49,25 @@ python scripts/generate_illustrations.py   # word/line pictograms → static/ill
 
 Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.
 
-## Run (offline second run)
+## Run (day-to-day)
+
+From the repo root (venv optional — `runner.py` prefers `.venv`):
+
+```bash
+python runner.py
+```
+
+What it does:
+
+1. `git pull --ff-only` on the current branch (skipped if the tree is dirty)
+2. Regenerates `audio/generated/` when audio inputs changed (`app/audio_files.py`, `scripts/generate_audio.py`, `content/items.json`, `app/config.py`) or clips are missing
+3. Starts the server:
+   - **macOS:** LaunchAgent via `launchctl` (`com.readingbuddy.server`, survives reboot)
+   - **elsewhere:** uvicorn in the foreground on `127.0.0.1:8765`
+
+Useful flags: `--stop`, `--foreground`, `--background`, `--no-pull`, `--force-audio`, `--launchd`.
+
+### Manual uvicorn (offline second run)
 
 After models and clips exist, play with the network off:
 

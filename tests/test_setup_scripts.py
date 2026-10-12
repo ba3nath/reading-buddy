@@ -33,3 +33,9 @@ def test_readme_documents_windows_espeak():
     assert "eSpeak-NG.eSpeak-NG" in README
     assert "setup_windows.ps1" in README
     assert "espeak" in README.lower()
+
+
+def test_readme_documents_runner():
+    assert "python runner.py" in README
+    assert "launchctl" in README
+    assert "--force-audio" in README
