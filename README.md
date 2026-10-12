@@ -45,9 +45,17 @@ python scripts/generate_audio.py     # wavs into audio/generated/
 # After TTS/postprocess changes (or if clips sound clipped): 
 #   python scripts/generate_audio.py --force
 python scripts/generate_illustrations.py   # word/line pictograms → static/illustrations/
+# Whisper audit / single-token A/B retune (see audio-clip-review/):
+#   python scripts/review_audio_clips.py audit --out /tmp/audio_audit.json
 ```
 
 Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.
+
+### Listen-clip review agent
+
+`audio-clip-review/` is a BDK agent that wraps `scripts/review_audio_clips.py`
+(Whisper ndarray audit → single-token A/B → apply overrides → regen). See
+`audio-clip-review/README.md`.
 
 ## Run (day-to-day)
 
