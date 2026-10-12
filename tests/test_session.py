@@ -140,9 +140,12 @@ def test_beginner_humpty_dumpty_session_is_miss_not_close(tmp_env):
 
     resp = _apply(conn, sid, row["id"], match, qi=0)
     assert resp["result"] == "missed"
-    assert resp["again"] is False
-    assert resp["read_again"] is False
+    assert resp["again"] is True
+    assert resp["read_again"] is True
     assert "nice try" not in resp["message"].lower()
+    second = _apply(conn, sid, row["id"], match, qi=0)
+    assert second["again"] is False
+    assert second["read_again"] is False
 
 
 def test_strict_close_second_take_no_hard_bonus(tmp_env):
@@ -199,8 +202,12 @@ def test_stars_on_missed_item_partial_words(tmp_env):
     assert match.words_correct == 3
     resp = _apply(conn, data["session_id"], item["id"], match, qi=0)
     assert resp["result"] == "missed"
-    assert resp["stars_awarded"] == 3
-    assert resp["stars_total"] == 3
+    assert resp["read_again"] is True
+    assert resp["stars_awarded"] == 0
+    locked = _apply(conn, data["session_id"], item["id"], match, qi=0)
+    assert locked["read_again"] is False
+    assert locked["stars_awarded"] == 3
+    assert locked["stars_total"] == 3
 
 
 def test_replay_words_only_missed():
@@ -405,13 +412,10 @@ def test_replay_close_locks_without_again(tmp_env):
     data = start_session(conn, level=1)
     item = next((i for i in data["items"] if i["text"] == "cat"), data["items"][0])
     sid = data["session_id"]
-    _apply(
-        conn,
-        sid,
-        item["id"],
-        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
-        qi=data["items"].index(item),
-    )
+    miss = score_attempt(item["text"], "zzzz", [0.95], mode="beginner")
+    qi = data["items"].index(item)
+    _apply(conn, sid, item["id"], miss, qi=qi)
+    _apply(conn, sid, item["id"], miss, qi=qi)
     done = complete_session(conn, sid)
     assert done["replay"]
     word = done["replay"][0]["text"]
@@ -464,13 +468,9 @@ def test_replay_awards_stars_without_changing_ratio(tmp_env):
     data = start_session(conn, level=1)
     item = data["items"][0]
     sid = data["session_id"]
-    _apply(
-        conn,
-        sid,
-        item["id"],
-        score_attempt(item["text"], "zzzz", [0.95], mode="beginner"),
-        qi=0,
-    )
+    miss = score_attempt(item["text"], "zzzz", [0.95], mode="beginner")
+    _apply(conn, sid, item["id"], miss, qi=0)
+    _apply(conn, sid, item["id"], miss, qi=0)
     done = complete_session(conn, sid)
     assert done["correct_count"] == 0
     planned = done["planned_count"]
@@ -561,6 +561,7 @@ def test_word_level_replay_multi_word_item(tmp_env):
     assert match.result == "missed"
     assert "bus" in match.replay_words
     _apply(conn, sid, phrase["id"], match, qi=0)
+    _apply(conn, sid, phrase["id"], match, qi=0)
     done = complete_session(conn, sid)
     assert len(done["replay"]) == 1
     entry = done["replay"][0]
@@ -624,6 +625,7 @@ def test_multi_word_replay_keys_independent(tmp_env):
         mode="beginner",
     )
     assert match.replay_words == ["brown", "jumped"]
+    _apply(conn, sid, item["id"], match, qi=0)
     _apply(conn, sid, item["id"], match, qi=0)
     done = complete_session(conn, sid)
     texts = [e["text"] for e in done["replay"]]

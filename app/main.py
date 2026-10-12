@@ -23,6 +23,7 @@ from app.audio_files import (
     is_silence,
     new_temp_paths,
     resolve_audio_slug,
+    wav_duration_and_rms,
     write_bytes,
 )
 from app.db import connect, init_schema, load_settings, upsert_items_from_json
@@ -40,7 +41,10 @@ from app.parent import (
 from app.session import (
     SessionError,
     apply_attempt,
+    apply_passage,
     complete_session,
+    open_session_view,
+    passage_target_text,
     start_session,
     validate_attempt_access,
 )
@@ -144,6 +148,11 @@ def health() -> dict[str, bool]:
     }
 
 
+@app.get("/api/sessions/open")
+def get_open_session():
+    return open_session_view(get_conn())
+
+
 @app.post("/api/sessions")
 async def create_session(request: Request):
     level = None
@@ -224,6 +233,76 @@ def _finalize_attempt(
     return payload
 
 
+async def _post_passage(session_id: int, audio: UploadFile, mode: str):
+    """One fluent read of a poem or story. Duration stays off this response."""
+    conn = get_conn()
+    try:
+        target_text = passage_target_text(conn, session_id)
+    except SessionError as exc:
+        return JSONResponse(
+            status_code=exc.status,
+            content=error_body(exc.code, exc.message),
+        )
+    webm_path, wav_path = new_temp_paths(".webm")
+    try:
+        data = await audio.read()
+        if data is None:
+            data = b""
+        write_bytes(webm_path, data)
+        duration = None
+        if len(data) == 0:
+            match = score_attempt(target_text, "", mode=mode, force_retry=True)
+        else:
+            try:
+                convert_to_wav(webm_path, wav_path)
+            except AudioError as exc:
+                return JSONResponse(
+                    status_code=503,
+                    content=error_body("unavailable", exc.message),
+                )
+            try:
+                duration, _rms = wav_duration_and_rms(wav_path)
+            except Exception:  # noqa: BLE001
+                duration = None
+            if is_silence(wav_path):
+                match = score_attempt(target_text, "", mode=mode, force_retry=True)
+            else:
+                try:
+                    transcript = engine.transcribe(wav_path, initial_prompt=target_text)
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception("Whisper failed")
+                    return JSONResponse(
+                        status_code=503,
+                        content=error_body("unavailable", f"Whisper failed: {exc}"),
+                    )
+                if (
+                    transcript.no_speech_prob >= config.NO_SPEECH_PROB_MAX
+                    or not (transcript.transcript or "").strip()
+                ):
+                    match = score_attempt(target_text, "", mode=mode, force_retry=True)
+                else:
+                    confidences = [w.probability for w in transcript.words]
+                    match = score_attempt(
+                        target_text,
+                        transcript.transcript,
+                        confidences if confidences else None,
+                        mode=mode,
+                    )
+        try:
+            payload = apply_passage(
+                conn, session_id, match, duration_seconds=duration
+            )
+        except SessionError as exc:
+            return JSONResponse(
+                status_code=exc.status,
+                content=error_body(exc.code, exc.message),
+            )
+        payload.pop("duration_seconds", None)
+        return payload
+    finally:
+        delete_quiet(webm_path, wav_path)
+
+
 @app.post("/api/sessions/{session_id}/attempts")
 async def post_attempt(
     session_id: int,
@@ -233,12 +312,12 @@ async def post_attempt(
     queue_index: int | None = Form(None),
     word: str = Form(""),
 ):
-    if phase not in ("read", "replay"):
+    if phase not in ("read", "replay", "passage"):
         return JSONResponse(
             status_code=400,
             content=error_body(
                 "bad_request",
-                "phase must be read or replay",
+                "phase must be read, replay, or passage",
             ),
         )
 
@@ -263,6 +342,9 @@ async def post_attempt(
             status_code=503,
             content=error_body("unavailable", "Whisper or ffmpeg unavailable"),
         )
+
+    if phase == "passage":
+        return await _post_passage(session_id, audio, mode)
 
     # Queue / session / resolved-slot checks before ffmpeg or Whisper.
     try:
@@ -442,10 +524,11 @@ async def post_complete(session_id: int):
 
 @app.get("/api/parent/settings")
 def get_parent_settings():
-    from app.parent import play_summary
+    from app.parent import play_summary, tomorrow_note
 
     settings = load_settings()
     settings["play"] = play_summary(settings)
+    settings["tomorrow"] = tomorrow_note(get_conn(), settings)
     return settings
 
 

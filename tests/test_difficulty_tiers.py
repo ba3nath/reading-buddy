@@ -56,13 +56,17 @@ def test_snap_uniform_length_never_six_to_nine():
 
 def test_queue_length_always_five_or_ten_when_pool_allows(tmp_env):
     conn = tmp_env["conn"]
-    for difficulty in (1, 2, 3, 4):
+    for difficulty in (1, 2):
         for length in (5, 10):
             queue = build_adaptive_queue(conn, level=difficulty, length=length)
             assert len(queue) == length
             assert len({row["id"] for row in queue}) == length
             levels = {int(row["level"]) for row in queue}
             assert levels <= set(content_levels_for_difficulty(difficulty))
+    rhyme = build_adaptive_queue(conn, level=3, length=10, stage=1)
+    assert len({row["rhyme_group"] for row in rhyme}) == 1
+    story = build_adaptive_queue(conn, level=4, length=10, stage=1)
+    assert len({row["story_id"] for row in story}) == 1
 
 
 def test_settings_migrate_legacy_level_once(tmp_env):
@@ -125,12 +129,10 @@ def test_home_ui_exposes_four_difficulties():
     from pathlib import Path
 
     html = Path("static/index.html").read_text(encoding="utf-8")
+    parent = Path("static/parent.html").read_text(encoding="utf-8")
     js = Path("static/js/game.js").read_text(encoding="utf-8")
-    assert "Pick a difficulty" in html
-    for label, n in (("Words", 1), ("Phrases", 2), ("Rhymes", 3), ("Stories", 4)):
-        assert f'data-difficulty="{n}"' in html
-        assert f">{label}</p>" in html
-        for stage in range(1, 9):
-            assert f'data-level-pick="{n}" data-stage-pick="{stage}"' in html
+    assert "data-stage-pick" not in html
+    for label in ("Words", "Phrases", "Rhymes", "Stories"):
+        assert label in parent
     assert "difficulty_label" in js
     assert "difficultyLabel" in js

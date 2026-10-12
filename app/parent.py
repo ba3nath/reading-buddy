@@ -237,9 +237,65 @@ def _csv_table(zf: zipfile.ZipFile, name: str, conn, sql: str) -> None:
     zf.writestr(name, out.getvalue())
 
 
+def last_read_through(conn) -> dict[str, Any] | None:
+    row = conn.execute(
+        """
+        SELECT duration_seconds, word_scores
+        FROM attempts
+        WHERE passage = 1
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    if row is None:
+        return None
+    scores = json.loads(row["word_scores"] or "[]")
+    correct = sum(1 for ws in scores if ws.get("result") == "correct")
+    total = len(scores)
+    seconds = row["duration_seconds"]
+    return {
+        "seconds": None if seconds is None else round(float(seconds), 1),
+        "words_correct": correct,
+        "words_total": total,
+    }
+
+
+def tomorrow_note(conn, settings: dict[str, Any]) -> dict[str, Any]:
+    """Parent-only next step. Pace is not shown to the child."""
+    rows = conn.execute(
+        """
+        SELECT correct_count, planned_count
+        FROM sessions
+        WHERE completed = 1
+        ORDER BY id DESC
+        LIMIT 2
+        """
+    ).fetchall()
+    under = False
+    if rows:
+        last = rows[0]
+        planned = int(last["planned_count"] or 0)
+        under = planned > 0 and int(last["correct_count"]) * 2 < planned
+    level = config.normalize_difficulty(settings.get("level", 1))
+    stage = config.normalize_stage(settings.get("stage", 1))
+    label = config.stage_label(level, stage)
+    tricky = [item["text"] for item in tricky_words(conn)["items"][:3]]
+    if under:
+        stay = f"Stay on {label}."
+    else:
+        stay = f"Keep going on {label}."
+    return {
+        "stay": stay,
+        "tricky": tricky,
+        "mode_change": str(settings.get("last_mode_change") or ""),
+        "read_through": last_read_through(conn),
+    }
+
+
 def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     settings = load_settings()
     prev_keep = bool(settings.get("keep_audio", False))
+    prev_mode = str(settings.get("mode") or "beginner")
     allowed = {
         "mode",
         "level",
@@ -258,6 +314,9 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
 
     if settings.get("mode") not in ("beginner", "strict"):
         raise ValueError("mode must be beginner or strict")
+    if str(settings.get("mode")) != prev_mode:
+        settings["mode_source"] = "parent"
+        settings["last_mode_change"] = ""
     level = config.normalize_difficulty(settings.get("level", 1))
     settings["level"] = level
     settings["difficulty_migrated"] = True
@@ -391,7 +450,10 @@ def bump_play_stats(
         "lifetime_stars": int(settings["lifetime_stars"]),
         "day_streak": int(settings["day_streak"]),
         "quest_complete": True,
-        "quest_label": "Finish today's reading",
+        "quest_label": config.stage_label(
+            config.normalize_difficulty(settings.get("level", 1)),
+            config.normalize_stage(settings.get("stage", 1)),
+        ),
         "badges": all_badges,
         "new_badges": new_badges,
         "last_play_date": today,
@@ -404,6 +466,8 @@ def play_summary(settings: dict[str, Any] | None = None) -> dict[str, Any]:
     today = local_today()
     last = str(settings.get("last_play_date") or "")
     quest_complete = last == today
+    level = config.normalize_difficulty(settings.get("level", 1))
+    stage = config.normalize_stage(settings.get("stage", 1))
     badges = compute_badges(settings)
     # Persist derived badge ids if settings lag behind (e.g. after upgrade).
     earned_ids = [b["id"] for b in badges]
@@ -414,7 +478,7 @@ def play_summary(settings: dict[str, Any] | None = None) -> dict[str, Any]:
         "lifetime_stars": int(settings.get("lifetime_stars", 0) or 0),
         "day_streak": int(settings.get("day_streak", 0) or 0),
         "quest_complete": quest_complete,
-        "quest_label": "Finish today's reading",
+        "quest_label": config.stage_label(level, stage),
         "badges": badges,
         "last_play_date": last,
     }

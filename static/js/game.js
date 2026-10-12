@@ -20,6 +20,7 @@ const ILLUSTRATION_STOPWORDS = new Set([
   "for",
   "as",
   "by",
+  "me",
   "be",
   "we",
   "he",
@@ -93,12 +94,14 @@ const state = {
   stageByDifficulty: { 1: 1, 2: 1, 3: 1, 4: 1 },
   difficultyLabel: "",
   buddy: "krishna",
+  profileName: "",
   closeAgainPending: false,
   /** When set, another read is required for the current word. */
   readAgain: null, // { tryNumber, triesMax, reason } | null
   replay: [],
   replayIndex: 0,
-  phase: "read", // "read" | "replay"
+  phase: "read", // "read" | "replay" | "passage"
+  passageDone: false,
   recorder: new RecordingSession(),
   audioEl: null,
   clipGen: 0,
@@ -214,7 +217,10 @@ async function loadBuddySvg(name) {
     const greet = $("[data-home-greeting]");
     if (greet) {
       const labels = { krishna: "Krishna", unicorn: "Unicorn" };
-      greet.textContent = `Hi — I'm ${labels[buddy]}! Ready when you are.`;
+      const name = String(state.profileName || "").trim();
+      greet.textContent = name
+        ? `Hi ${name} — pick me, then Start!`
+        : `Hi — I'm ${labels[buddy]}! Ready when you are.`;
     }
     syncBuddyAnim();
   } catch (err) {
@@ -302,6 +308,7 @@ function setWordArt(text, { kind = "word" } = {}) {
     img.removeAttribute("src");
     return;
   }
+  wrap.classList.toggle("is-word", kind === "word");
   const key = resolveIllustrationKey(text, { kind });
   if (!key) {
     wrap.hidden = true;
@@ -317,9 +324,34 @@ function setWordArt(text, { kind = "word" } = {}) {
   wrap.hidden = false;
 }
 
-function setWord(text, { highlight = false, kind = "word" } = {}) {
+function setHeard(transcript) {
+  const el = $("[data-heard]");
+  if (!el) return;
+  const text = String(transcript || "").trim();
+  if (!text) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.textContent = `I heard "${text}"`;
+}
+
+function setWord(text, { highlight = false, kind = "word", scores = null } = {}) {
   const el = $("[data-word]");
-  el.textContent = text || "";
+  const multi = Array.isArray(scores) && scores.length > 1;
+  if (multi) {
+    el.textContent = "";
+    scores.forEach((ws, i) => {
+      if (i) el.appendChild(document.createTextNode(" "));
+      const span = document.createElement("span");
+      if (ws.result === "missed") span.className = "word-soft";
+      span.textContent = ws.word || "";
+      el.appendChild(span);
+    });
+  } else {
+    el.textContent = text || "";
+  }
   el.classList.toggle("highlight", Boolean(highlight));
   setWordArt(text, { kind });
 }
@@ -691,14 +723,26 @@ async function boot() {
     const settings = await api("/api/parent/settings");
     await loadBuddySvg(settings.buddy || "krishna");
     showGardenHome(Number(settings.garden_growth) || 0);
+    const name = String(settings.profile_name || "").trim();
+    state.profileName = name;
+    const greet = $("[data-home-greeting]");
+    if (greet) {
+      greet.textContent = name
+        ? `Hi ${name} — pick me, then Start!`
+        : "Hi — pick me, then Start!";
+    }
     renderPlayHud(settings.play || {
       lifetime_stars: settings.lifetime_stars || 0,
       day_streak: settings.day_streak || 0,
       quest_complete: false,
-      quest_label: "Finish today's reading",
+      quest_label: "Words · Set 1/8",
       badges: [],
     });
     markCurrentSets(settings);
+    const open = await api("/api/sessions/open");
+    if (open && open.open) {
+      applyOpenSession(open);
+    }
     setState("home");
     setMessage("");
   } catch {
@@ -728,6 +772,27 @@ function markCurrentSets(settings) {
     const current = Number(state.stageByDifficulty[diff]) || 1;
     btn.classList.toggle("is-current", stage === current);
   });
+}
+
+const OPEN_KEY = "reading-buddy-session";
+
+function applyOpenSession(open) {
+  state.sessionId = open.session_id;
+  state.items = open.items || [];
+  state.index = Number(open.index) || 0;
+  state.plannedCount = Number(open.planned_count) || state.items.length;
+  state.stars = Number(open.stars) || 0;
+  state.level = open.level;
+  state.stage = Number(open.stage) || 1;
+  state.difficultyLabel = open.stage_label || "";
+  state.paused = true;
+  state.phase = "read";
+  try {
+    sessionStorage.setItem(OPEN_KEY, String(open.session_id));
+  } catch {
+    /* private mode */
+  }
+  syncHomeControls();
 }
 
 async function chooseBuddy(name) {
@@ -785,6 +850,10 @@ async function continueSession() {
   setStars(state.stars);
   setProgress();
   syncHomeControls();
+  if (state.index >= state.items.length && needsReadThrough()) {
+    await startReadThrough();
+    return;
+  }
   await showListen();
 }
 
@@ -808,12 +877,12 @@ async function startSession(level, stage) {
   state.items = data.items || [];
   state.index = 0;
   const planned = Number(data.planned_count);
-  state.plannedCount =
-    planned === 5 || planned === 10
-      ? planned
-      : state.items.length === 5 || state.items.length === 10
-        ? state.items.length
-        : 10;
+  state.plannedCount = planned > 0 ? planned : state.items.length;
+  try {
+    sessionStorage.setItem(OPEN_KEY, String(data.session_id));
+  } catch {
+    /* private mode */
+  }
   // Never keep a longer play list than the planned session size.
   if (state.items.length > state.plannedCount) {
     state.items = state.items.slice(0, state.plannedCount);
@@ -865,8 +934,9 @@ async function showListen() {
   // Always stop any prior clip before swapping the on-screen line + audio.
   stopClip();
   clearPhraseScore();
+  setHeard("");
   setState("listen");
-  setWord(item.text, { kind: item.kind === "line" ? "line" : "word" });
+  setWord(item.text, { kind: item.kind || "word" });
   if (state.readAgain) {
     setMessage(rhymeListenMessage(item, { again: true }));
     setMicLabel("Tap to read again");
@@ -1007,7 +1077,9 @@ async function onRecordComplete(blob) {
   const form = new FormData();
   form.append("phase", state.phase);
   form.append("audio", blob, "take.webm");
-  if (state.phase === "replay") {
+  if (state.phase === "passage") {
+    form.append("item_id", String(state.items[0].id));
+  } else if (state.phase === "replay") {
     const entry = currentReplay();
     form.append("item_id", String(entry.item_id));
     form.append("word", entry.word || entry.text);
@@ -1101,10 +1173,31 @@ function needsAnotherRead(result) {
   return Boolean(result.read_again) || Boolean(result.retry) || Boolean(result.again);
 }
 
+function needsReadThrough() {
+  return state.items.some((item) => item && (item.rhyme_group || item.story_id));
+}
+
 function handleAttempt(result) {
   state.stars = result.stars_total;
   showPhraseScore(result);
   applyReinsert(result);
+  setHeard(result.transcript);
+  const item = state.phase === "replay" ? null : currentItem();
+  if (item && result.word_scores && result.word_scores.length > 1) {
+    setWord(item.text, { kind: item.kind || "word", scores: result.word_scores });
+  }
+  if (state.phase === "passage") {
+    if (result.retry || result.result === "retry") {
+      setMessage(result.message || "Please read it again");
+      setState("idle");
+      setMicEnabled(true);
+      setMicLabel("Tap to read");
+      return;
+    }
+    state.passageDone = true;
+    finishSession();
+    return;
+  }
 
   if (result.skipped || result.result === "skipped") {
     setCombo(0);
@@ -1132,7 +1225,10 @@ function handleAttempt(result) {
     return;
   }
   // Close second-chance only when again/read_again is true — never on locked close.
-  if (result.result === "close" && needsAnotherRead(result)) {
+  if (
+    (result.result === "close" || result.result === "missed") &&
+    needsAnotherRead(result)
+  ) {
     setCombo(0);
     setStars(result.stars_total);
     setReadAgain({
@@ -1188,10 +1284,46 @@ function advance() {
   }
   state.index += 1;
   if (state.index >= state.items.length) {
-    finishSession();
+    if (needsReadThrough() && !state.passageDone) {
+      startReadThrough();
+    } else {
+      finishSession();
+    }
   } else {
     showListen();
   }
+}
+
+async function startReadThrough() {
+  if (!state.items.length) {
+    finishSession();
+    return;
+  }
+  state.phase = "passage";
+  state.passageDone = false;
+  setHeard("");
+  clearPhraseScore();
+  stopClip();
+  const text = state.items.map((item) => item.text).join("\n");
+  setWord(text, { kind: "line" });
+  setState("listen");
+  setMessage("Listen to the whole thing…");
+  setMicEnabled(false);
+  setMicLabel("Tap to read");
+  for (const item of state.items) {
+    if (state.phase !== "passage") return;
+    try {
+      await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  if (state.phase !== "passage") return;
+  setState("idle");
+  setMessage("Your turn — read it all");
+  setMicLabel("Tap to read");
+  setMicEnabled(true);
+  syncHearAgain();
 }
 
 async function finishSession() {
@@ -1217,6 +1349,16 @@ async function finishSession() {
     state.replayIndex = 0;
     const hint = $("[data-end-hint]");
     if (hint) hint.hidden = !state.replay.length;
+    const tryAgain = $("[data-try-again]");
+    if (tryAgain) tryAgain.hidden = !state.replay.length;
+    const mastered = $("[data-end-mastered]");
+    if (mastered) {
+      const words = data.mastered_words || [];
+      mastered.hidden = !words.length;
+      mastered.textContent = words.length
+        ? `You can read ${words.join(", ")}`
+        : "";
+    }
     if (data.garden) {
       const wrap = $("[data-garden-end]");
       const cap = $("[data-garden-end-caption]");
@@ -1224,10 +1366,13 @@ async function finishSession() {
         wrap.hidden = false;
         if (cap) {
           const stage = data.garden.stage;
+          const learned = (data.mastered_words || [])[0];
           cap.textContent =
             stage === "sticker"
               ? "New garden sticker unlocked — it stays forever!"
-              : `Your garden grew — new ${stage}!`;
+              : learned
+                ? `Your garden grew — new ${stage}! ${learned}`
+                : `Your garden grew — new ${stage}!`;
         }
         applyGardenStage(wrap, data.garden.growth);
       }
@@ -1249,9 +1394,6 @@ async function finishSession() {
       });
     }
     syncBuddyAnim();
-    if (state.replay.length) {
-      setTimeout(() => startReplay(), 1100);
-    }
   } catch (err) {
     console.error(err);
     setState("session-end");
@@ -1362,6 +1504,10 @@ function wire() {
       hearAgain().catch(console.error);
     });
   }
+  const tryAgain = $("[data-try-again]");
+  if (tryAgain) {
+    tryAgain.addEventListener("click", () => startReplay());
+  }
   $("[data-play-again]").addEventListener("click", () => {
     stopClip();
     state.sessionId = null;
@@ -1373,6 +1519,12 @@ function wire() {
     state.replay = [];
     state.replayIndex = 0;
     state.phase = "read";
+    state.passageDone = false;
+    try {
+      sessionStorage.removeItem(OPEN_KEY);
+    } catch {
+      /* private mode */
+    }
     setStars(0);
     setWord("");
     setMessage("");
@@ -1383,15 +1535,6 @@ function wire() {
     if (dots) dots.innerHTML = "";
     setState("home");
   });
-  // Keep Words/Phrases/Rhymes/Stories on screen when the picker opens.
-  const more = $("details.more-levels");
-  if (more) {
-    more.addEventListener("toggle", () => {
-      if (more.open) {
-        more.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      }
-    });
-  }
 }
 
 wire();

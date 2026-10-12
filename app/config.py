@@ -159,6 +159,7 @@ MSG_CLOSE = "Almost — read it one more time!"
 # Locked close (second take done) — must NOT ask for another read.
 MSG_CLOSE_OK = "Nice try — on to the next!"
 MSG_MISS = "That one's tricky, we'll visit it again."
+MSG_MISS_AGAIN = "Let's read it one more time."
 MSG_SKIP = "We'll try that one another time."
 MSG_CORRECT = "You got it!"
 
@@ -190,6 +191,8 @@ DEFAULT_SETTINGS = {
     "buddy": "krishna",  # krishna | unicorn
     "auto_strict": True,
     "auto_strict_sessions": AUTO_STRICT_SESSIONS,
+    "mode_source": "parent",  # parent | auto — only auto strict steps back
+    "last_mode_change": "",
     "low_streak": 0,
     "move_up_streak": 0,
     "garden_growth": 0,  # completed sessions; only increases

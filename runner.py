@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Pull updates, regenerate listen clips when audio inputs change, start the app.
+"""Regenerate listen clips when audio inputs change, then start the app.
 
 Typical use (from the repo root, after one-time setup):
 
-    python runner.py              # pull → maybe regen audio → start
+    python runner.py              # maybe regen audio → start
     python runner.py --stop       # stop launchd job or local uvicorn
     python runner.py --foreground # uvicorn in this terminal (any OS)
-    python runner.py --no-pull    # skip git pull
     python runner.py --force-audio
 
 On macOS, the default start path installs/loads a LaunchAgent via ``launchctl``
@@ -74,65 +73,6 @@ def _run(
         text=True,
         env=env,
     )
-
-
-def git_pull(*, remote: str = "origin") -> None:
-    """Fetch and fast-forward the current branch when possible."""
-    if not (ROOT / ".git").exists():
-        print("No .git directory — skipping pull.", flush=True)
-        return
-    # Keep local WIP safe: only pull if working tree is clean enough for ff.
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=str(ROOT),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    dirty = bool(status.stdout.strip())
-    if dirty:
-        print(
-            "Working tree has local changes — skipping git pull "
-            "(commit/stash first, or pass --no-pull).",
-            flush=True,
-        )
-        return
-    branch = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        cwd=str(ROOT),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    _run(["git", "fetch", remote])
-    # Prefer merge --ff-only so we never create surprise merge commits.
-    result = subprocess.run(
-        ["git", "merge", "--ff-only", f"{remote}/{branch}"],
-        cwd=str(ROOT),
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    if result.returncode != 0:
-        # Branch may be local-only or already up to date under another name.
-        alt = subprocess.run(
-            ["git", "pull", "--ff-only", remote, branch],
-            cwd=str(ROOT),
-            check=False,
-            text=True,
-            capture_output=True,
-        )
-        if alt.returncode != 0:
-            print(
-                "git pull could not fast-forward "
-                f"(branch={branch}). Continuing with local tree.\n"
-                f"{(result.stderr or alt.stderr or '').strip()}",
-                flush=True,
-            )
-            return
-        print((alt.stdout or "").strip() or "Already up to date.", flush=True)
-        return
-    print((result.stdout or "").strip() or "Already up to date.", flush=True)
 
 
 def file_digest(path: Path) -> str:
@@ -208,7 +148,7 @@ def maybe_regenerate_audio(*, force: bool = False) -> bool:
     cmd = [py, str(ROOT / "scripts" / "generate_audio.py")]
     if force or inputs_changed:
         cmd.append("--force")
-        reason = "forced" if force else "audio inputs changed after pull/update"
+        reason = "forced" if force else "audio inputs changed"
     else:
         reason = "clips missing or incomplete"
     print(f"Regenerating audio ({reason})…", flush=True)
@@ -437,9 +377,8 @@ def stop_all() -> None:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Pull Reading Buddy, refresh audio if needed, start the server."
+        description="Refresh audio if needed, then start the Reading Buddy server."
     )
-    p.add_argument("--no-pull", action="store_true", help="Skip git fetch/pull")
     p.add_argument("--no-audio", action="store_true", help="Skip audio stamp / regenerate")
     p.add_argument(
         "--force-audio",
@@ -478,9 +417,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.stop:
         stop_all()
         return 0
-
-    if not args.no_pull:
-        git_pull()
 
     if not args.no_audio:
         maybe_regenerate_audio(force=args.force_audio)

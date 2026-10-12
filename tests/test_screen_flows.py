@@ -108,32 +108,17 @@ def test_flow_home_start():
 
 
 def test_flow_home_difficulty():
-    """Pick a difficulty exposes Words / Phrases / Rhymes / Stories with Set 1–8."""
-    assert "Pick a difficulty" in HTML
-    for n, label in (
-        (1, "Words"),
-        (2, "Phrases"),
-        (3, "Rhymes"),
-        (4, "Stories"),
-    ):
-        assert f'data-difficulty="{n}"' in HTML
-        assert f">{label}</p>" in HTML or f">{label}</" in HTML
-        for stage in range(1, 9):
-            assert (
-                f'data-level-pick="{n}" data-stage-pick="{stage}"' in HTML
-            ), f"missing {label} Set {stage}"
-    # Wire passes difficulty + set into startSession.
+    """The child home has one Start. Sets live on the parent page."""
+    assert "Pick a difficulty" not in HTML
+    assert "data-stage-pick" not in HTML
+    assert 'class="btn primary" data-start>Start</button>' in HTML
+    parent = Path("static/parent.html").read_text(encoding="utf-8")
+    assert "Words" in parent and "Stories" in parent
+    assert 'name="stage"' in parent
     wire = _fn("wire")
-    assert "dataset.levelPick" in wire
-    assert "dataset.stagePick" in wire
     assert "startSession(level, stage)" in wire
     start = _fn("startSession")
-    assert "payload.stage" in start
-    assert "markCurrentSets" in JS
-    # Eight set buttons per difficulty in a 4-wide grid (two rows).
-    assert "grid-template-columns: repeat(4, minmax(0, 1fr))" in CSS
-    assert "details.more-levels" in wire
-    assert "scrollIntoView" in wire
+    assert "sessionStorage" in start
 
 
 def test_flow_home_pause_continue():
@@ -402,7 +387,8 @@ def test_home_page_serves_flow_hooks(client):
         "data-start",
         "data-mic",
         "data-play-again",
-        "Pick a difficulty",
+        "data-try-again",
+        "data-heard",
         "/static/js/game.js",
     ):
         assert hook in page

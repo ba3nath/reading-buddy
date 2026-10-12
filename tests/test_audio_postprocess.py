@@ -65,6 +65,15 @@ def test_tts_render_lengthens_short_words():
     assert long_line_speed == 0.95
 
 
+def test_hot_sun_phrase_uses_alice_so_sun_stays_sun():
+    """Isabella renders final sun as sunge/sandy. Alice keeps the word."""
+    for text in ("The hot sun", "A hot sun", "a hot sun"):
+        spoken, speed = tts_render(text)
+        assert spoken.rstrip(".!?").lower() == text.lower()
+        assert speed == 0.90
+        assert tts_voice(text) == ("bf_alice", "en-gb")
+
+
 def test_tts_render_log_and_net_whisper_winners():
     """Batch A/B: log. @0.78 emma; net. @0.82 isabella — still single tokens."""
     log, log_speed = tts_render("log")

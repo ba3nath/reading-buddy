@@ -19,6 +19,10 @@ audio/human/*
 .env
 .coverage
 htmlcov/
-audio-clip-review/node_modules/
-audio-clip-review/.agent-serve/
+node_modules/
+.agent-serve/
 audio-clip-review/memory/
+code-review/memory/
+design-consistency/memory/
+test-coverage/memory/
+ux-consistency/memory/

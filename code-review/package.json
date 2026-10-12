@@ -1,0 +1,19 @@
+{
+  "name": "code-review",
+  "private": true,
+  "type": "module",
+  "description": "agent project: code-review",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "dev": "bdk dev",
+    "gate": "python3 check.py --phase 1"
+  },
+  "dependencies": {
+    "@cursor/bdk": "^0.2.23",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "6.0.3"
+  }
+}

@@ -22,6 +22,7 @@ from app.db import (
     list_items_for_level,
     load_settings,
     local_now_iso,
+    local_today,
     save_settings,
     touch_mastery,
 )
@@ -256,6 +257,22 @@ def consecutive_retries(
     return count
 
 
+def has_provisional_miss(
+    conn: sqlite3.Connection, session_id: int, queue_index: int
+) -> bool:
+    """True when the first miss is waiting for one more read."""
+    row = conn.execute(
+        """
+        SELECT result, counts_for_session FROM attempts
+        WHERE session_id = ? AND queue_index = ? AND is_replay = 0
+          AND result = 'missed'
+        ORDER BY id DESC LIMIT 1
+        """,
+        (session_id, queue_index),
+    ).fetchone()
+    return bool(row and row["counts_for_session"] == 0)
+
+
 def has_provisional_close(
     conn: sqlite3.Connection, session_id: int, queue_index: int
 ) -> bool:
@@ -315,7 +332,11 @@ def slot_already_resolved(
     if len(scored) >= 2:
         return True
     only = scored[0]
-    if only["result"] in ("correct", "missed"):
+    if only["result"] == "correct":
+        return True
+    if only["result"] == "missed" and only["counts_for_session"] == 0:
+        return False
+    if only["result"] == "missed":
         return True
     if only["result"] == "close" and only["counts_for_session"] == 1:
         return False
@@ -723,6 +744,7 @@ def apply_attempt(
     else:
         assert queue_index is not None
         replacing_close = has_provisional_close(conn, session_id, queue_index)
+        replacing_miss = has_provisional_miss(conn, session_id, queue_index)
         session_mode = str(session["mode"] or "beginner").lower()
         # Strict keeps a close second-chance. Beginner does not — kids were
         # forced into a second try whenever Whisper marked a near-miss.
@@ -731,11 +753,21 @@ def apply_attempt(
             and not replacing_close
             and session_mode == "strict"
         )
+        ask_miss_again = (
+            result == "missed"
+            and not replacing_miss
+            and not replacing_close
+        )
         if ask_close_again:
             again = True
             stars_awarded = 0
             message = config.MSG_CLOSE
             counts_for_session = 1
+        elif ask_miss_again:
+            again = True
+            stars_awarded = 0
+            message = config.MSG_MISS_AGAIN
+            counts_for_session = 0
         else:
             if replacing_close:
                 flip_prior_lock(conn, session_id, queue_index)
@@ -877,6 +909,151 @@ def _insert_attempt(
     return int(cur.lastrowid)
 
 
+def open_session_view(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Return the unfinished session so a refresh can offer Continue."""
+    session = conn.execute(
+        """
+        SELECT * FROM sessions
+        WHERE ended_at IS NULL AND completed = 0
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    if session is None:
+        return {"open": False}
+    ids = play_ids(session)
+    items = []
+    for item_id in ids:
+        row = get_item(conn, int(item_id))
+        if row is not None:
+            items.append(item_public(row))
+    index = len(ids)
+    for i in range(len(ids)):
+        if not slot_already_resolved(conn, int(session["id"]), i):
+            index = i
+            break
+    settings = load_settings()
+    level = int(session["level"])
+    by_diff = settings.get("stage_by_difficulty") or {}
+    stage = config.normalize_stage(by_diff.get(str(level), settings.get("stage", 1)))
+    return {
+        "open": True,
+        "session_id": int(session["id"]),
+        "index": index,
+        "items": items,
+        "stars": int(session["stars"]),
+        "level": level,
+        "stage": stage,
+        "stage_label": config.stage_label(level, stage),
+        "planned_count": int(session["planned_count"]),
+        "mode": session["mode"],
+        "buddy": settings.get("buddy", "krishna"),
+    }
+
+
+def passage_target_text(conn: sqlite3.Connection, session_id: int) -> str:
+    session = get_session(conn, session_id)
+    if session is None:
+        raise SessionError("not_found", "Unknown session", 404)
+    if session["completed"] == 1 or session["ended_at"] is not None:
+        raise SessionError("session_closed", "Session already closed", 409)
+    parts: list[str] = []
+    grouped = False
+    for item_id in play_ids(session):
+        row = get_item(conn, int(item_id))
+        if row is None:
+            continue
+        if row["rhyme_group"] or ("story_id" in row.keys() and row["story_id"]):
+            grouped = True
+        parts.append(str(row["text"]))
+    if not grouped or not parts:
+        raise SessionError(
+            "bad_request",
+            "Read it through is only for a poem or a story",
+            400,
+        )
+    return " ".join(parts)
+
+
+def apply_passage(
+    conn: sqlite3.Connection,
+    session_id: int,
+    match: MatchResult,
+    *,
+    duration_seconds: float | None,
+) -> dict[str, Any]:
+    """Score one fluent pass. Does not finish the session or move the set."""
+    session = get_session(conn, session_id)
+    if session is None:
+        raise SessionError("not_found", "Unknown session", 404)
+    if session["completed"] == 1 or session["ended_at"] is not None:
+        raise SessionError("session_closed", "Session already closed", 409)
+    passage_target_text(conn, session_id)
+    item_id = play_ids(session)[0]
+    stars_awarded = match.words_correct
+    stars_total = int(session["stars"]) + stars_awarded
+    conn.execute(
+        "UPDATE sessions SET stars = ? WHERE id = ?",
+        (stars_total, session_id),
+    )
+    attempt_id = _insert_attempt(
+        conn,
+        session_id,
+        int(item_id),
+        heard=match.transcript,
+        confidence=None,
+        word_scores=[ws.to_dict() for ws in match.word_scores],
+        result=match.result,
+        counts_for_session=0,
+        is_replay=0,
+        queue_index=None,
+        replay_word="",
+    )
+    conn.execute(
+        """
+        UPDATE attempts
+        SET passage = 1, duration_seconds = ?
+        WHERE id = ?
+        """,
+        (duration_seconds, attempt_id),
+    )
+    conn.commit()
+    return {
+        "result": match.result,
+        "transcript": match.transcript,
+        "word_scores": [ws.to_dict() for ws in match.word_scores],
+        "words_correct": match.words_correct,
+        "words_total": match.words_total,
+        "stars_awarded": stars_awarded,
+        "stars_total": stars_total,
+        "message": config.MSG_CORRECT if match.result == "correct" else config.MSG_MISS_AGAIN,
+        "retry": False,
+        "again": False,
+        "read_again": False,
+        "try_number": None,
+        "tries_max": None,
+        "skipped": False,
+        "passage": True,
+        "attempt_id": attempt_id,
+    }
+
+
+def words_mastered_this_session(conn: sqlite3.Connection, session_id: int) -> list[str]:
+    rows = conn.execute(
+        """
+        SELECT DISTINCT i.text
+        FROM attempts a
+        JOIN items i ON i.id = a.item_id
+        JOIN mastery m ON m.item_id = a.item_id
+        WHERE a.session_id = ? AND a.result = 'correct' AND a.counts_for_session = 1
+          AND m.mastered = 1 AND m.correct_count = 3 AND m.mastered_on = ?
+        ORDER BY i.id ASC
+        """,
+        (session_id, local_today()),
+    ).fetchall()
+    return [str(row["text"]) for row in rows]
+
+
 def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any]:
     session = get_session(conn, session_id)
     if session is None:
@@ -930,4 +1107,5 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "buddy": final.get("buddy", "krishna"),
         "play": play,
         "home": play_summary(),
+        "mastered_words": words_mastered_this_session(conn, session_id),
     }

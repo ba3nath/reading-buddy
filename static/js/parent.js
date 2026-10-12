@@ -28,6 +28,33 @@ function fillList(el, items, mapFn) {
   }
 }
 
+function renderTomorrow(note) {
+  const stay = $("[data-tomorrow-stay]");
+  const mode = $("[data-tomorrow-mode]");
+  const through = $("[data-tomorrow-through]");
+  if (stay) stay.textContent = note?.stay || "";
+  if (mode) {
+    mode.hidden = !note?.mode_change;
+    mode.textContent = note?.mode_change || "";
+  }
+  if (through) {
+    const rt = note?.read_through;
+    if (rt && rt.words_total) {
+      const seconds = rt.seconds == null ? "" : `${rt.seconds} seconds, `;
+      through.hidden = false;
+      through.textContent = `Last read-through: ${seconds}${rt.words_correct} of ${rt.words_total} words`;
+    } else {
+      through.hidden = true;
+      through.textContent = "";
+    }
+  }
+  fillList(
+    $("[data-tomorrow-tricky]"),
+    note?.tricky || [],
+    (text) => text
+  );
+}
+
 function renderAccuracy(days) {
   const host = $("[data-accuracy]");
   if (!host) return;
@@ -138,6 +165,7 @@ async function refresh() {
     api("/api/parent/sounds"),
   ]);
   fillSettings(settings);
+  renderTomorrow(settings.tomorrow);
   renderAccuracy(accuracy.days || []);
   fillList(
     $("[data-mastered-week]"),

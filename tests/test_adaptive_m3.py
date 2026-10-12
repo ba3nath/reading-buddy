@@ -458,7 +458,10 @@ def test_start_session_four_difficulty_tiers(tmp_env):
         assert data["level"] == difficulty
         assert data["difficulty"] == difficulty
         assert data["difficulty_label"] == meta["label"]
-        assert len(data["items"]) in (5, 10)
+        if difficulty in (1, 2):
+            assert len(data["items"]) in (5, 10)
+        else:
+            assert len(data["items"]) >= 2
         assert len(data["items"]) == len({i["id"] for i in data["items"]})
         kinds = {i["kind"] for i in data["items"]}
         assert kinds <= meta["kinds"]

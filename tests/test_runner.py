@@ -100,7 +100,6 @@ def test_maybe_regenerate_forces_when_inputs_change(monkeypatch, tmp_path):
 
 
 def test_parse_args_stop_and_flags():
-    args = runner.parse_args(["--stop", "--no-pull", "--force-audio"])
+    args = runner.parse_args(["--stop", "--force-audio"])
     assert args.stop
-    assert args.no_pull
     assert args.force_audio

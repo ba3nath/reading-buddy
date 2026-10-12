@@ -83,6 +83,9 @@ def test_complete_replay_missed_only(client, whisper_double, tone_wav):
     assert _post_attempt(client, sid, items[1]["id"], tone_wav.read_bytes(), qi=1).json()[
         "result"
     ] == "missed"
+    assert _post_attempt(client, sid, items[1]["id"], tone_wav.read_bytes(), qi=1).json()[
+        "read_again"
+    ] is False
 
     # Near-miss close (beginner locks on first take — no second try).
     near = "cot" if items[2]["text"] == "cat" else items[2]["text"][:-1] + "x"
@@ -118,6 +121,7 @@ def test_replay_attempt_stars_without_ratio_change(
             no_speech_prob=0.05,
         )
     )
+    _post_attempt(client, sid, item["id"], tone_wav.read_bytes(), qi=0)
     _post_attempt(client, sid, item["id"], tone_wav.read_bytes(), qi=0)
     done = client.post(f"/api/sessions/{sid}/complete").json()
     assert done["correct_count"] == 0
@@ -194,6 +198,7 @@ def test_replay_close_no_again_then_advance(
             no_speech_prob=0.05,
         )
     )
+    _post_attempt(client, sid, item["id"], tone_wav.read_bytes(), qi=qi)
     _post_attempt(client, sid, item["id"], tone_wav.read_bytes(), qi=qi)
     done = client.post(f"/api/sessions/{sid}/complete").json()
     assert done["replay"]
@@ -279,6 +284,9 @@ def test_api_word_level_replay_scores_word_not_phrase(
     res = _post_attempt(client, sid, phrase["id"], tone_wav.read_bytes(), qi=0)
     assert res.status_code == 200
     assert res.json()["result"] == "missed"
+    res = _post_attempt(client, sid, phrase["id"], tone_wav.read_bytes(), qi=0)
+    assert res.status_code == 200
+    assert res.json()["read_again"] is False
 
     done = client.post(f"/api/sessions/{sid}/complete").json()
     assert len(done["replay"]) == 1

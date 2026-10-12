@@ -118,6 +118,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_attempts_queue ON attempts (session_id, queue_index)"
     )
+    _ensure_column(conn, "items", "story_id", "TEXT")
+    _ensure_column(conn, "attempts", "passage", "INTEGER NOT NULL DEFAULT 0")
+    _ensure_column(conn, "attempts", "duration_seconds", "REAL")
     # Backfill play_item_ids from planned when empty.
     conn.execute(
         """
@@ -219,6 +222,7 @@ def save_settings(settings: dict[str, Any], path: Path | None = None) -> None:
 
 
 def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = None) -> int:
+    _ensure_column(conn, "items", "story_id", "TEXT")
     path = items_path or config.CONTENT_ITEMS
     with path.open("r", encoding="utf-8") as f:
         payload = json.load(f)
@@ -234,6 +238,7 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
         sounds_locked = 1 if raw.get("sounds_locked") else 0
         rhyme_group = raw.get("rhyme_group")
         line_index = raw.get("line_index")
+        story_id = raw.get("story_id")
         source = raw.get("source", "cvc")
         pd_status = raw.get("pd_status", "n/a")
         hard = 1 if raw.get("hard", level >= 3) else 0
@@ -241,8 +246,8 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
             """
             INSERT INTO items (
               slug, text, normalized, kind, level, sound_tags, sounds_locked,
-              rhyme_group, line_index, source, pd_status, hard
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              rhyme_group, line_index, source, pd_status, hard, story_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(slug) DO UPDATE SET
               text=excluded.text,
               normalized=excluded.normalized,
@@ -254,7 +259,8 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
               line_index=excluded.line_index,
               source=excluded.source,
               pd_status=excluded.pd_status,
-              hard=excluded.hard
+              hard=excluded.hard,
+              story_id=excluded.story_id
             """,
             (
                 slug,
@@ -269,9 +275,25 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
                 source,
                 pd_status,
                 hard,
+                story_id,
             ),
         )
         count += 1
+    keep = [raw["slug"] for raw in items]
+    placeholders = ",".join("?" * len(keep)) if keep else "''"
+    stale = conn.execute(
+        f"SELECT id, slug FROM items WHERE slug NOT IN ({placeholders})",
+        keep,
+    ).fetchall()
+    for row in stale:
+        used = conn.execute(
+            "SELECT 1 FROM attempts WHERE item_id = ? LIMIT 1",
+            (row["id"],),
+        ).fetchone()
+        if used:
+            continue
+        conn.execute("DELETE FROM mastery WHERE item_id = ?", (row["id"],))
+        conn.execute("DELETE FROM items WHERE id = ?", (row["id"],))
     conn.commit()
     return count
 
@@ -342,4 +364,5 @@ def item_public(row: sqlite3.Row) -> dict[str, Any]:
         "kind": row["kind"],
         "rhyme_group": row["rhyme_group"],
         "line_index": row["line_index"],
+        "story_id": row["story_id"] if "story_id" in row.keys() else None,
     }

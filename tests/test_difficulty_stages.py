@@ -109,9 +109,8 @@ def test_ui_exposes_eight_sets_copy():
     html = Path("static/index.html").read_text(encoding="utf-8")
     js = Path("static/js/game.js").read_text(encoding="utf-8")
     parent = Path("static/parent.html").read_text(encoding="utf-8")
-    assert "Tap a set (1–8)" in html or "Tap a set (1-8)" in html
-    assert "data-stage-pick" in html
-    assert html.count('data-stage-pick="') == 32  # 4 difficulties × 8 sets
+    assert "data-stage-pick" not in html
+    assert parent.count("Set ") >= 8
     assert "stage_label" in js
     assert "markCurrentSets" in js
     assert 'name="stage"' in parent

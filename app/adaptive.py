@@ -100,11 +100,28 @@ def apply_level_and_auto_strict(
     settings["stage_by_difficulty"] = by_diff
     settings["difficulty_migrated"] = True
 
+    if under_half(correct_count, planned_count) and int(settings.get("low_streak", 0)) == 0:
+        # low_streak was just reset after the second rough session.
+        if (
+            settings.get("mode") == "strict"
+            and settings.get("mode_source") == "auto"
+            and not move_up_score(correct_count, planned_count)
+        ):
+            settings["mode"] = "beginner"
+            settings["last_mode_change"] = (
+                "Moved back to beginner after a rough stretch."
+            )
     if settings.get("auto_strict", True):
         streak_need = int(
             settings.get("auto_strict_sessions", config.AUTO_STRICT_SESSIONS)
         )
-        if move_up_streak >= streak_need:
+        if move_up_streak >= streak_need and settings.get("mode") != "strict":
+            settings["mode"] = "strict"
+            settings["mode_source"] = "auto"
+            settings["last_mode_change"] = (
+                "Moved to strict after strong sessions."
+            )
+        elif move_up_streak >= streak_need and settings.get("mode_source") == "auto":
             settings["mode"] = "strict"
 
     return level_after, settings
@@ -320,6 +337,38 @@ def _ordered_tier_items(
     ).fetchall()
 
 
+def _one_group_queue(
+    conn: sqlite3.Connection, stage: int, *, column: str
+) -> list[sqlite3.Row]:
+    """One rhyme or one story for this set. Never mix the next group in."""
+    if column not in ("rhyme_group", "story_id"):
+        raise ValueError(column)
+    names = [
+        row[0]
+        for row in conn.execute(
+            f"""
+            SELECT {column}
+            FROM items
+            WHERE {column} IS NOT NULL AND {column} != ''
+            GROUP BY {column}
+            ORDER BY MIN(level) ASC, MIN(id) ASC
+            """
+        ).fetchall()
+    ]
+    if not names:
+        return []
+    idx = min(config.normalize_stage(stage), len(names)) - 1
+    chosen = names[idx]
+    return conn.execute(
+        f"""
+        SELECT * FROM items
+        WHERE {column} = ?
+        ORDER BY line_index ASC, id ASC
+        """,
+        (chosen,),
+    ).fetchall()
+
+
 def items_for_stage(
     rows: list[sqlite3.Row], stage: int
 ) -> list[sqlite3.Row]:
@@ -349,6 +398,14 @@ def build_adaptive_queue(
     stage = config.normalize_stage(
         stage if stage is not None else 1
     )
+    if difficulty == 3:
+        poem = _one_group_queue(conn, stage, column="rhyme_group")
+        if poem:
+            return poem
+    if difficulty == 4:
+        story = _one_group_queue(conn, stage, column="story_id")
+        if story:
+            return story
     content_levels = config.content_levels_for_difficulty(difficulty)
     ph = _placeholders(len(content_levels))
     today = local_today()

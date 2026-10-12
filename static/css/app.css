@@ -425,6 +425,23 @@ body[data-state="result-close"] .prompt {
   font-weight: 600;
 }
 
+.word-art.is-word {
+  width: min(220px, 52vw);
+  height: min(220px, 52vw);
+}
+
+.word-soft {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+}
+
+.heard {
+  margin: 0.25rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
 .word-art {
   margin: 0;
   width: min(132px, 34vw);

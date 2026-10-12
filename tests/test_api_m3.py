@@ -88,6 +88,14 @@ def test_multiword_item_ratio_and_replay_words_only(
     assert res.status_code == 200
     body = res.json()
     assert body["result"] == "missed"
+    assert body["read_again"] is True
+    res = post_attempt(
+        client, sid, row["id"], tone_wav.read_bytes(), queue_index=0
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["result"] == "missed"
+    assert body["read_again"] is False
     assert body["words_total"] == len(tokens)
     assert body["words_correct"] == len(tokens) - 1
     # Item-level ratio: one planned item, not correct
@@ -139,7 +147,10 @@ def test_difficulty_tiers_session_start(client):
         body = res.json()
         assert body["level"] == difficulty
         assert body["difficulty_label"] == label
-        assert len(body["items"]) in (5, 10)
+        if difficulty in (1, 2):
+            assert len(body["items"]) in (5, 10)
+        else:
+            assert len(body["items"]) >= 2
 
 
 def test_start_omits_level_uses_settings(client):
@@ -222,5 +233,6 @@ def test_start_button_omits_level_pick():
     html = Path("static/index.html").read_text(encoding="utf-8")
     assert 'class="btn primary" data-start>Start</button>' in html
     assert 'class="btn primary" data-start data-level-pick' not in html
-    assert 'data-level-pick="2" data-stage-pick="1"' in html
-    assert "Phrases" in html
+    assert "data-stage-pick" not in html
+    parent = Path("static/parent.html").read_text(encoding="utf-8")
+    assert "Phrases" in parent

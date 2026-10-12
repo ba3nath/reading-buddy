@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.config import MSG_CLOSE_OK, MSG_MISS, MSG_SKIP, msg_retry
+from app.config import MSG_CLOSE_OK, MSG_MISS_AGAIN, MSG_SKIP, msg_retry
 from app.whisper_engine import AttemptTranscript, TranscriptWord
 from tests.helpers import post_attempt
 
@@ -114,7 +114,8 @@ def test_attempt_miss(client, whisper_double, tone_wav, assert_attempt_shape):
     assert res.status_code == 200
     body = res.json()
     assert body["result"] == "missed"
-    assert body["message"] == MSG_MISS
+    assert body["message"] == MSG_MISS_AGAIN
+    assert body["read_again"] is True
     assert body["stars_awarded"] == 0
 
 

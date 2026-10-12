@@ -270,6 +270,12 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     # Default bf_isabella when absent (batch Whisper winners).
 }
 
+# Isabella turns a final "sun" into "sunge" / "sandy". Alice keeps the /n/.
+_TTS_PHRASE_VOICES: dict[str, tuple[str, str]] = {
+    "the hot sun": ("bf_alice", "en-gb"),
+    "a hot sun": ("bf_alice", "en-gb"),
+}
+
 
 def _single_word_core(text: str) -> str | None:
     stripped = (text or "").strip()
@@ -290,11 +296,19 @@ def spoken_matches_target(target: str, spoken: str) -> bool:
     return tokens[0].rstrip(".!?").lower() == core
 
 
+def _phrase_key(text: str) -> str:
+    stripped = (text or "").strip().rstrip(".!?")
+    return " ".join(stripped.lower().split())
+
+
 def tts_voice(text: str) -> tuple[str | None, str | None]:
-    """Optional (voice_id, lang) override for one word; else (None, None)."""
+    """Optional (voice_id, lang) override for one word or a known phrase."""
     core = _single_word_core(text)
     if core and core in _TTS_VOICE_OVERRIDES:
         return _TTS_VOICE_OVERRIDES[core]
+    phrase = _TTS_PHRASE_VOICES.get(_phrase_key(text))
+    if phrase:
+        return phrase
     return None, None
 
 

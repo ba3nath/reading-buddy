@@ -480,6 +480,20 @@ DRAWINGS: dict[str, str] = {
       <rect x="42" y="48" width="36" height="30" rx="8" fill="#ffb0c8"/>
       <text x="60" y="68" text-anchor="middle" font-size="12" font-weight="800" fill="#7a2e16" font-family="Trebuchet MS,sans-serif">tiny</text>
     """,
+    "fat": """
+      <ellipse cx="60" cy="64" rx="40" ry="32" fill="#f4c27a"/>
+      <circle cx="48" cy="58" r="3" fill="#2c241c"/>
+      <circle cx="72" cy="58" r="3" fill="#2c241c"/>
+    """,
+    "small": """
+      <circle cx="60" cy="66" r="16" fill="#7ec8e8"/>
+    """,
+    "tall": """
+      <rect x="48" y="16" width="24" height="88" rx="8" fill="#7bc47f"/>
+    """,
+    "quick": """
+      <polygon points="18,64 70,28 62,58 102,52 46,96 56,66" fill="#ffd56a"/>
+    """,
     "mouse": """
       <ellipse cx="62" cy="70" rx="30" ry="20" fill="#cfd5de"/>
       <circle cx="42" cy="52" r="14" fill="#cfd5de"/>

@@ -927,984 +927,6 @@
     "hard": 0
   },
   {
-    "slug": "the-cat-sat-on-the-mat",
-    "text": "The cat sat on the mat.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "the cat sat on the mat",
-    "hard": 0
-  },
-  {
-    "slug": "i-can-see-a-red-bus",
-    "text": "I can see a red bus.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "i can see a red bus",
-    "hard": 0
-  },
-  {
-    "slug": "the-dog-ran-to-the-park",
-    "text": "The dog ran to the park.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the dog ran to the park",
-    "hard": 0
-  },
-  {
-    "slug": "she-has-a-big-green-book",
-    "text": "She has a big green book.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "sh",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "she has a big green book",
-    "hard": 0
-  },
-  {
-    "slug": "we-like-to-play-with-blocks",
-    "text": "We like to play with blocks.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "we like to play with blocks",
-    "hard": 0
-  },
-  {
-    "slug": "the-sun-is-hot-and-bright",
-    "text": "The sun is hot and bright.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the sun is hot and bright",
-    "hard": 0
-  },
-  {
-    "slug": "he-put-the-pen-in-his-bag",
-    "text": "He put the pen in his bag.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "he put the pen in his bag",
-    "hard": 0
-  },
-  {
-    "slug": "my-mum-made-a-nice-cake",
-    "text": "My mum made a nice cake.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "my mum made a nice cake",
-    "hard": 0
-  },
-  {
-    "slug": "the-frog-jumps-in-the-pond",
-    "text": "The frog jumps in the pond.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "r",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "the frog jumps in the pond",
-    "hard": 0
-  },
-  {
-    "slug": "they-went-up-the-steep-hill",
-    "text": "They went up the steep hill.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "they went up the steep hill",
-    "hard": 0
-  },
-  {
-    "slug": "i-read-a-book-every-night",
-    "text": "I read a book every night.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "i read a book every night",
-    "hard": 0
-  },
-  {
-    "slug": "the-ship-sails-on-the-sea",
-    "text": "The ship sails on the sea.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "sh",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "the ship sails on the sea",
-    "hard": 0
-  },
-  {
-    "slug": "can-you-find-the-blue-hat",
-    "text": "Can you find the blue hat?",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "can you find the blue hat",
-    "hard": 0
-  },
-  {
-    "slug": "we-sit-and-drink-hot-milk",
-    "text": "We sit and drink hot milk.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "we sit and drink hot milk",
-    "hard": 0
-  },
-  {
-    "slug": "the-bird-sings-in-the-tree",
-    "text": "The bird sings in the tree.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "r",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "the bird sings in the tree",
-    "hard": 0
-  },
-  {
-    "slug": "dad-will-fix-the-old-bike",
-    "text": "Dad will fix the old bike.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "dad will fix the old bike",
-    "hard": 0
-  },
-  {
-    "slug": "look-at-the-bright-full-moon",
-    "text": "Look at the bright full moon.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "look at the bright full moon",
-    "hard": 0
-  },
-  {
-    "slug": "she-drew-a-star-with-chalk",
-    "text": "She drew a star with chalk.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "sh",
-      "r",
-      "s",
-      "th",
-      "ch"
-    ],
-    "sounds_locked": false,
-    "normalized": "she drew a star with chalk",
-    "hard": 0
-  },
-  {
-    "slug": "the-train-stops-at-the-station",
-    "text": "The train stops at the station.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th",
-      "r",
-      "s",
-      "sh"
-    ],
-    "sounds_locked": false,
-    "normalized": "the train stops at the station",
-    "hard": 0
-  },
-  {
-    "slug": "i-help-my-friend-with-reading",
-    "text": "I help my friend with reading.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "i help my friend with reading",
-    "hard": 0
-  },
-  {
-    "slug": "jack-jill-l1",
-    "text": "Jack and Jill went up the hill",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "jack and jill went up the hill",
-    "hard": 0,
-    "rhyme_group": "jack-and-jill",
-    "line_index": 0
-  },
-  {
-    "slug": "jack-jill-l2",
-    "text": "To fetch a pail of water",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "ch",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "to fetch a pail of water",
-    "hard": 0,
-    "rhyme_group": "jack-and-jill",
-    "line_index": 1
-  },
-  {
-    "slug": "humpty-l1",
-    "text": "Humpty Dumpty sat on a wall",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "humpty dumpty sat on a wall",
-    "hard": 0,
-    "rhyme_group": "humpty-dumpty",
-    "line_index": 0
-  },
-  {
-    "slug": "humpty-l2",
-    "text": "Humpty Dumpty had a great fall",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "humpty dumpty had a great fall",
-    "hard": 0,
-    "rhyme_group": "humpty-dumpty",
-    "line_index": 1
-  },
-  {
-    "slug": "twinkle-l1",
-    "text": "Twinkle twinkle little star",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "twinkle twinkle little star",
-    "hard": 0,
-    "rhyme_group": "twinkle-star",
-    "line_index": 0
-  },
-  {
-    "slug": "twinkle-l2",
-    "text": "How I wonder what you are",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "how i wonder what you are",
-    "hard": 0,
-    "rhyme_group": "twinkle-star",
-    "line_index": 1
-  },
-  {
-    "slug": "baa-l1",
-    "text": "Baa baa black sheep have you any wool",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "sh"
-    ],
-    "sounds_locked": false,
-    "normalized": "baa baa black sheep have you any wool",
-    "hard": 0,
-    "rhyme_group": "baa-baa",
-    "line_index": 0
-  },
-  {
-    "slug": "baa-l2",
-    "text": "Yes sir yes sir three bags full",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s",
-      "r",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "yes sir yes sir three bags full",
-    "hard": 0,
-    "rhyme_group": "baa-baa",
-    "line_index": 1
-  },
-  {
-    "slug": "hickory-l1",
-    "text": "Hickory dickory dock",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "hickory dickory dock",
-    "hard": 0,
-    "rhyme_group": "hickory-dickory",
-    "line_index": 0
-  },
-  {
-    "slug": "hickory-l2",
-    "text": "The mouse ran up the clock",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the mouse ran up the clock",
-    "hard": 0,
-    "rhyme_group": "hickory-dickory",
-    "line_index": 1
-  },
-  {
-    "slug": "hickory-l3",
-    "text": "The clock struck one",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the clock struck one",
-    "hard": 0,
-    "rhyme_group": "hickory-dickory",
-    "line_index": 2
-  },
-  {
-    "slug": "hickory-l4",
-    "text": "The mouse ran down",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the mouse ran down",
-    "hard": 0,
-    "rhyme_group": "hickory-dickory",
-    "line_index": 3
-  },
-  {
-    "slug": "mary-l1",
-    "text": "Mary had a little lamb",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "mary had a little lamb",
-    "hard": 0,
-    "rhyme_group": "mary-lamb",
-    "line_index": 0
-  },
-  {
-    "slug": "mary-l2",
-    "text": "Its fleece was white as snow",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "its fleece was white as snow",
-    "hard": 0,
-    "rhyme_group": "mary-lamb",
-    "line_index": 1
-  },
-  {
-    "slug": "mary-l3",
-    "text": "And everywhere that Mary went",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "and everywhere that mary went",
-    "hard": 0,
-    "rhyme_group": "mary-lamb",
-    "line_index": 2
-  },
-  {
-    "slug": "mary-l4",
-    "text": "The lamb was sure to go",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "sh",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the lamb was sure to go",
-    "hard": 0,
-    "rhyme_group": "mary-lamb",
-    "line_index": 3
-  },
-  {
-    "slug": "rain-l1",
-    "text": "Rain rain go away",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "rain rain go away",
-    "hard": 0,
-    "rhyme_group": "rain-rain",
-    "line_index": 0
-  },
-  {
-    "slug": "rain-l2",
-    "text": "Come again another day",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "come again another day",
-    "hard": 0,
-    "rhyme_group": "rain-rain",
-    "line_index": 1
-  },
-  {
-    "slug": "boy-blue-l1",
-    "text": "Little Boy Blue come blow your horn",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "little boy blue come blow your horn",
-    "hard": 0,
-    "rhyme_group": "boy-blue",
-    "line_index": 0
-  },
-  {
-    "slug": "boy-blue-l2",
-    "text": "The sheep are in the meadow",
-    "kind": "line",
-    "level": 6,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "sh",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the sheep are in the meadow",
-    "hard": 0,
-    "rhyme_group": "boy-blue",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-jack-1",
-    "text": "Jack and Jill went up the hill",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "jack and jill went up the hill",
-    "hard": 0,
-    "rhyme_group": "l7-jack-jill",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-jack-2",
-    "text": "To fetch a pail of water",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "ch",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "to fetch a pail of water",
-    "hard": 0,
-    "rhyme_group": "l7-jack-jill",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-jack-3",
-    "text": "Jack fell down and broke his crown",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "jack fell down and broke his crown",
-    "hard": 0,
-    "rhyme_group": "l7-jack-jill",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-jack-4",
-    "text": "And Jill came tumbling after",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "and jill came tumbling after",
-    "hard": 0,
-    "rhyme_group": "l7-jack-jill",
-    "line_index": 3
-  },
-  {
-    "slug": "l7-humpty-1",
-    "text": "Humpty Dumpty sat on a wall",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "humpty dumpty sat on a wall",
-    "hard": 0,
-    "rhyme_group": "l7-humpty",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-humpty-2",
-    "text": "Humpty Dumpty had a great fall",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "humpty dumpty had a great fall",
-    "hard": 0,
-    "rhyme_group": "l7-humpty",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-humpty-3",
-    "text": "All the king's horses and all the king's men",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "r",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "all the kings horses and all the kings men",
-    "hard": 0,
-    "rhyme_group": "l7-humpty",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-humpty-4",
-    "text": "Could not put Humpty together again",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "could not put humpty together again",
-    "hard": 0,
-    "rhyme_group": "l7-humpty",
-    "line_index": 3
-  },
-  {
-    "slug": "l7-twinkle-1",
-    "text": "Twinkle twinkle little star",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "twinkle twinkle little star",
-    "hard": 0,
-    "rhyme_group": "l7-twinkle",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-twinkle-2",
-    "text": "How I wonder what you are",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "how i wonder what you are",
-    "hard": 0,
-    "rhyme_group": "l7-twinkle",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-twinkle-3",
-    "text": "Up above the world so high",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "r",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "up above the world so high",
-    "hard": 0,
-    "rhyme_group": "l7-twinkle",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-twinkle-4",
-    "text": "Like a diamond in the sky",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "like a diamond in the sky",
-    "hard": 0,
-    "rhyme_group": "l7-twinkle",
-    "line_index": 3
-  },
-  {
-    "slug": "l7-baa-1",
-    "text": "Baa baa black sheep have you any wool",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "sh"
-    ],
-    "sounds_locked": false,
-    "normalized": "baa baa black sheep have you any wool",
-    "hard": 0,
-    "rhyme_group": "l7-baa",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-baa-2",
-    "text": "Yes sir yes sir three bags full",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "s",
-      "r",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "yes sir yes sir three bags full",
-    "hard": 0,
-    "rhyme_group": "l7-baa",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-baa-3",
-    "text": "One for the master and one for the dame",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r",
-      "th",
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "one for the master and one for the dame",
-    "hard": 0,
-    "rhyme_group": "l7-baa",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-baa-4",
-    "text": "And one for the little boy who lives down the lane",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r",
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "and one for the little boy who lives down the lane",
-    "hard": 0,
-    "rhyme_group": "l7-baa",
-    "line_index": 3
-  },
-  {
-    "slug": "l7-hickory-1",
-    "text": "Hickory dickory dock",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "hickory dickory dock",
-    "hard": 0,
-    "rhyme_group": "l7-hickory",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-hickory-2",
-    "text": "The mouse ran up the clock",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the mouse ran up the clock",
-    "hard": 0,
-    "rhyme_group": "l7-hickory",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-hickory-3",
-    "text": "The clock struck one the mouse ran down",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "th",
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "the clock struck one the mouse ran down",
-    "hard": 0,
-    "rhyme_group": "l7-hickory",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-hickory-4",
-    "text": "Hickory dickory dock",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "hickory dickory dock",
-    "hard": 0,
-    "rhyme_group": "l7-hickory",
-    "line_index": 3
-  },
-  {
     "slug": "mop",
     "text": "mop",
     "kind": "word",
@@ -2337,280 +1359,410 @@
     "sound_tags": []
   },
   {
-    "slug": "the-pig-sat-in-the-mud",
-    "text": "The pig sat in the mud.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "i-can-hop-on-one-leg",
-    "text": "I can hop on one leg.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-bug-ran-up-the-wall",
-    "text": "The bug ran up the wall.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "she-put-the-cup-on-top",
-    "text": "She put the cup on top.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "we-jump-and-clap-and-run",
-    "text": "We jump and clap and run.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-fish-swim-in-the-pond",
-    "text": "The fish swim in the pond.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "he-will-look-at-the-book",
-    "text": "He will look at the book.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "my-dad-has-a-red-van",
-    "text": "My dad has a red van.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-duck-is-on-the-path",
-    "text": "The duck is on the path.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "can-you-see-the-tall-tree",
-    "text": "Can you see the tall tree?",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "we-play-with-a-soft-ball",
-    "text": "We play with a soft ball.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "i-like-to-read-with-mum",
-    "text": "I like to read with mum.",
-    "kind": "sentence",
-    "level": 5,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "row-boat-l1",
-    "text": "Row row row your boat",
+    "slug": "l7-jack-1",
+    "text": "Jack and Jill went up the hill",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "th"
+    ],
     "sounds_locked": false,
-    "normalized": "row row row your boat",
+    "normalized": "jack and jill went up the hill",
     "hard": 0,
-    "rhyme_group": "row-boat",
+    "rhyme_group": "jack-and-jill",
     "line_index": 0
   },
   {
-    "slug": "row-boat-l2",
-    "text": "Gently down the stream",
+    "slug": "l7-jack-2",
+    "text": "To fetch a pail of water",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "ch",
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "gently down the stream",
+    "normalized": "to fetch a pail of water",
     "hard": 0,
-    "rhyme_group": "row-boat",
+    "rhyme_group": "jack-and-jill",
     "line_index": 1
   },
   {
-    "slug": "hey-diddle-l1",
-    "text": "Hey diddle diddle",
+    "slug": "l7-jack-3",
+    "text": "Jack fell down and broke his crown",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "hey diddle diddle",
+    "normalized": "jack fell down and broke his crown",
     "hard": 0,
-    "rhyme_group": "hey-diddle",
+    "rhyme_group": "jack-and-jill",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-jack-4",
+    "text": "And Jill came tumbling after",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "and jill came tumbling after",
+    "hard": 0,
+    "rhyme_group": "jack-and-jill",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-humpty-1",
+    "text": "Humpty Dumpty sat on a wall",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "humpty dumpty sat on a wall",
+    "hard": 0,
+    "rhyme_group": "humpty-dumpty",
     "line_index": 0
   },
   {
-    "slug": "hey-diddle-l2",
-    "text": "The cat and the fiddle",
+    "slug": "l7-humpty-2",
+    "text": "Humpty Dumpty had a great fall",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "the cat and the fiddle",
+    "normalized": "humpty dumpty had a great fall",
     "hard": 0,
-    "rhyme_group": "hey-diddle",
+    "rhyme_group": "humpty-dumpty",
     "line_index": 1
   },
   {
-    "slug": "miss-muffet-l1",
-    "text": "Little Miss Muffet sat on a tuffet",
+    "slug": "l7-humpty-3",
+    "text": "All the king's horses and all the king's men",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
     "sounds_locked": false,
-    "normalized": "little miss muffet sat on a tuffet",
+    "normalized": "all the kings horses and all the kings men",
     "hard": 0,
-    "rhyme_group": "miss-muffet",
+    "rhyme_group": "humpty-dumpty",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-humpty-4",
+    "text": "Could not put Humpty together again",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "could not put humpty together again",
+    "hard": 0,
+    "rhyme_group": "humpty-dumpty",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-twinkle-1",
+    "text": "Twinkle twinkle little star",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "twinkle twinkle little star",
+    "hard": 0,
+    "rhyme_group": "twinkle-star",
     "line_index": 0
   },
   {
-    "slug": "miss-muffet-l2",
-    "text": "Eating her curds and whey",
+    "slug": "l7-twinkle-2",
+    "text": "How I wonder what you are",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "eating her curds and whey",
+    "normalized": "how i wonder what you are",
     "hard": 0,
-    "rhyme_group": "miss-muffet",
+    "rhyme_group": "twinkle-star",
     "line_index": 1
   },
   {
-    "slug": "old-king-cole-l1",
-    "text": "Old King Cole was a merry old soul",
+    "slug": "l7-twinkle-3",
+    "text": "Up above the world so high",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "th",
+      "r",
+      "s"
+    ],
     "sounds_locked": false,
-    "normalized": "old king cole was a merry old soul",
+    "normalized": "up above the world so high",
     "hard": 0,
-    "rhyme_group": "old-king-cole",
+    "rhyme_group": "twinkle-star",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-twinkle-4",
+    "text": "Like a diamond in the sky",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "like a diamond in the sky",
+    "hard": 0,
+    "rhyme_group": "twinkle-star",
+    "line_index": 3
+  },
+  {
+    "slug": "l7-baa-1",
+    "text": "Baa baa black sheep have you any wool",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "sh"
+    ],
+    "sounds_locked": false,
+    "normalized": "baa baa black sheep have you any wool",
+    "hard": 0,
+    "rhyme_group": "baa-baa",
     "line_index": 0
   },
   {
-    "slug": "old-king-cole-l2",
-    "text": "And a merry old soul was he",
+    "slug": "l7-baa-2",
+    "text": "Yes sir yes sir three bags full",
     "kind": "line",
-    "level": 6,
+    "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "s",
+      "r",
+      "th"
+    ],
     "sounds_locked": false,
-    "normalized": "and a merry old soul was he",
+    "normalized": "yes sir yes sir three bags full",
     "hard": 0,
-    "rhyme_group": "old-king-cole",
+    "rhyme_group": "baa-baa",
     "line_index": 1
   },
   {
-    "slug": "pat-a-cake-l1",
-    "text": "Pat a cake pat a cake baker man",
+    "slug": "l7-baa-3",
+    "text": "One for the master and one for the dame",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th",
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "one for the master and one for the dame",
+    "hard": 0,
+    "rhyme_group": "baa-baa",
+    "line_index": 2
+  },
+  {
+    "slug": "l7-baa-4",
+    "text": "And one for the little boy who lives down the lane",
+    "kind": "line",
+    "level": 7,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "and one for the little boy who lives down the lane",
+    "hard": 0,
+    "rhyme_group": "baa-baa",
+    "line_index": 3
+  },
+  {
+    "slug": "hickory-l1",
+    "text": "Hickory dickory dock",
     "kind": "line",
     "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "pat a cake pat a cake baker man",
+    "normalized": "hickory dickory dock",
     "hard": 0,
-    "rhyme_group": "pat-a-cake",
+    "rhyme_group": "hickory-dickory",
     "line_index": 0
   },
   {
-    "slug": "pat-a-cake-l2",
-    "text": "Bake me a cake as fast as you can",
+    "slug": "hickory-l2",
+    "text": "The mouse ran up the clock",
     "kind": "line",
     "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "bake me a cake as fast as you can",
+    "normalized": "the mouse ran up the clock",
     "hard": 0,
-    "rhyme_group": "pat-a-cake",
+    "rhyme_group": "hickory-dickory",
     "line_index": 1
   },
   {
-    "slug": "ring-roses-l1",
-    "text": "Ring a ring of roses",
+    "slug": "hickory-l3",
+    "text": "The clock struck one",
     "kind": "line",
     "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
     "sounds_locked": false,
-    "normalized": "ring a ring of roses",
+    "normalized": "the clock struck one",
     "hard": 0,
-    "rhyme_group": "ring-roses",
+    "rhyme_group": "hickory-dickory",
+    "line_index": 2
+  },
+  {
+    "slug": "hickory-l4",
+    "text": "The mouse ran down",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the mouse ran down",
+    "hard": 0,
+    "rhyme_group": "hickory-dickory",
+    "line_index": 3
+  },
+  {
+    "slug": "mary-l1",
+    "text": "Mary had a little lamb",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "mary had a little lamb",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
     "line_index": 0
   },
   {
-    "slug": "ring-roses-l2",
-    "text": "A pocket full of posies",
+    "slug": "mary-l2",
+    "text": "Its fleece was white as snow",
     "kind": "line",
     "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
-    "sound_tags": [],
+    "sound_tags": [
+      "s"
+    ],
     "sounds_locked": false,
-    "normalized": "a pocket full of posies",
+    "normalized": "its fleece was white as snow",
     "hard": 0,
-    "rhyme_group": "ring-roses",
+    "rhyme_group": "mary-lamb",
     "line_index": 1
+  },
+  {
+    "slug": "mary-l3",
+    "text": "And everywhere that Mary went",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "r",
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "and everywhere that mary went",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 2
+  },
+  {
+    "slug": "mary-l4",
+    "text": "The lamb was sure to go",
+    "kind": "line",
+    "level": 6,
+    "source": "mother-goose",
+    "pd_status": "approved",
+    "sound_tags": [
+      "th",
+      "sh",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the lamb was sure to go",
+    "hard": 0,
+    "rhyme_group": "mary-lamb",
+    "line_index": 3
   },
   {
     "slug": "l7-row-boat-1",
@@ -2623,7 +1775,7 @@
     "sounds_locked": false,
     "normalized": "row row row your boat",
     "hard": 0,
-    "rhyme_group": "l7-row-boat",
+    "rhyme_group": "row-boat",
     "line_index": 0
   },
   {
@@ -2637,7 +1789,7 @@
     "sounds_locked": false,
     "normalized": "gently down the stream",
     "hard": 0,
-    "rhyme_group": "l7-row-boat",
+    "rhyme_group": "row-boat",
     "line_index": 1
   },
   {
@@ -2651,7 +1803,7 @@
     "sounds_locked": false,
     "normalized": "merrily merrily merrily merrily",
     "hard": 0,
-    "rhyme_group": "l7-row-boat",
+    "rhyme_group": "row-boat",
     "line_index": 2
   },
   {
@@ -2665,63 +1817,7 @@
     "sounds_locked": false,
     "normalized": "life is but a dream",
     "hard": 0,
-    "rhyme_group": "l7-row-boat",
-    "line_index": 3
-  },
-  {
-    "slug": "l7-hey-diddle-1",
-    "text": "Hey diddle diddle",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "hey diddle diddle",
-    "hard": 0,
-    "rhyme_group": "l7-hey-diddle",
-    "line_index": 0
-  },
-  {
-    "slug": "l7-hey-diddle-2",
-    "text": "The cat and the fiddle",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "the cat and the fiddle",
-    "hard": 0,
-    "rhyme_group": "l7-hey-diddle",
-    "line_index": 1
-  },
-  {
-    "slug": "l7-hey-diddle-3",
-    "text": "The cow jumped over the moon",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "the cow jumped over the moon",
-    "hard": 0,
-    "rhyme_group": "l7-hey-diddle",
-    "line_index": 2
-  },
-  {
-    "slug": "l7-hey-diddle-4",
-    "text": "The little dog laughed to see such sport",
-    "kind": "line",
-    "level": 7,
-    "source": "mother-goose",
-    "pd_status": "approved",
-    "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "the little dog laughed to see such sport",
-    "hard": 0,
-    "rhyme_group": "l7-hey-diddle",
+    "rhyme_group": "row-boat",
     "line_index": 3
   },
   {
@@ -2735,7 +1831,7 @@
     "sounds_locked": false,
     "normalized": "the itsy bitsy spider climbed up the water spout",
     "hard": 0,
-    "rhyme_group": "l7-itsy-spider",
+    "rhyme_group": "itsy-spider",
     "line_index": 0
   },
   {
@@ -2749,7 +1845,7 @@
     "sounds_locked": false,
     "normalized": "down came the rain and washed the spider out",
     "hard": 0,
-    "rhyme_group": "l7-itsy-spider",
+    "rhyme_group": "itsy-spider",
     "line_index": 1
   },
   {
@@ -2763,7 +1859,7 @@
     "sounds_locked": false,
     "normalized": "out came the sun and dried up all the rain",
     "hard": 0,
-    "rhyme_group": "l7-itsy-spider",
+    "rhyme_group": "itsy-spider",
     "line_index": 2
   },
   {
@@ -2777,7 +1873,447 @@
     "sounds_locked": false,
     "normalized": "and the itsy bitsy spider climbed up the spout again",
     "hard": 0,
-    "rhyme_group": "l7-itsy-spider",
+    "rhyme_group": "itsy-spider",
     "line_index": 3
+  },
+  {
+    "slug": "dog-and-cat-1",
+    "text": "The big dog",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "dog-and-cat",
+    "line_index": 0
+  },
+  {
+    "slug": "dog-and-cat-2",
+    "text": "Run to the cat",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "dog-and-cat",
+    "line_index": 1
+  },
+  {
+    "slug": "dog-and-cat-3",
+    "text": "The fat cat",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "dog-and-cat",
+    "line_index": 2
+  },
+  {
+    "slug": "dog-and-cat-4",
+    "text": "Sit on the bed",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "dog-and-cat",
+    "line_index": 3
+  },
+  {
+    "slug": "dog-and-cat-5",
+    "text": "The hot sun",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "dog-and-cat",
+    "line_index": 4
+  },
+  {
+    "slug": "red-bus-1",
+    "text": "A red bus",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "red-bus",
+    "line_index": 0
+  },
+  {
+    "slug": "red-bus-2",
+    "text": "The big bus",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "red-bus",
+    "line_index": 1
+  },
+  {
+    "slug": "red-bus-3",
+    "text": "Sit on the bus",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "red-bus",
+    "line_index": 2
+  },
+  {
+    "slug": "red-bus-4",
+    "text": "The red hat",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "red-bus",
+    "line_index": 3
+  },
+  {
+    "slug": "red-bus-5",
+    "text": "A hot sun",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "red-bus",
+    "line_index": 4
+  },
+  {
+    "slug": "wet-day-1",
+    "text": "The wet log",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "wet-day",
+    "line_index": 0
+  },
+  {
+    "slug": "wet-day-2",
+    "text": "A soft mop",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "wet-day",
+    "line_index": 1
+  },
+  {
+    "slug": "wet-day-3",
+    "text": "Hop to the path",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "wet-day",
+    "line_index": 2
+  },
+  {
+    "slug": "wet-day-4",
+    "text": "The rain",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "wet-day",
+    "line_index": 3
+  },
+  {
+    "slug": "wet-day-5",
+    "text": "The red box",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "wet-day",
+    "line_index": 4
+  },
+  {
+    "slug": "pen-cup-1",
+    "text": "My blue pen",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "pen-cup",
+    "line_index": 0
+  },
+  {
+    "slug": "pen-cup-2",
+    "text": "The small cup",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "pen-cup",
+    "line_index": 1
+  },
+  {
+    "slug": "pen-cup-3",
+    "text": "Sit and read",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "pen-cup",
+    "line_index": 2
+  },
+  {
+    "slug": "pen-cup-4",
+    "text": "A red pen",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "pen-cup",
+    "line_index": 3
+  },
+  {
+    "slug": "pen-cup-5",
+    "text": "The soft bed",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "pen-cup",
+    "line_index": 4
+  },
+  {
+    "slug": "frog-ship-1",
+    "text": "A tall ship",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "frog-ship",
+    "line_index": 0
+  },
+  {
+    "slug": "frog-ship-2",
+    "text": "The green frog",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "frog-ship",
+    "line_index": 1
+  },
+  {
+    "slug": "frog-ship-3",
+    "text": "The frog and the ship",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "frog-ship",
+    "line_index": 2
+  },
+  {
+    "slug": "frog-ship-4",
+    "text": "Run to the ship",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "frog-ship",
+    "line_index": 3
+  },
+  {
+    "slug": "frog-ship-5",
+    "text": "The big ship",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "frog-ship",
+    "line_index": 4
+  },
+  {
+    "slug": "cat-bed-1",
+    "text": "The soft bed",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "cat-bed",
+    "line_index": 0
+  },
+  {
+    "slug": "cat-bed-2",
+    "text": "The cat on the bed",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "cat-bed",
+    "line_index": 1
+  },
+  {
+    "slug": "cat-bed-3",
+    "text": "Sit on the bed",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "cat-bed",
+    "line_index": 2
+  },
+  {
+    "slug": "cat-bed-4",
+    "text": "A red hat",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "cat-bed",
+    "line_index": 3
+  },
+  {
+    "slug": "cat-bed-5",
+    "text": "The hot sun",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "cat-bed",
+    "line_index": 4
+  },
+  {
+    "slug": "quick-fox-1",
+    "text": "A quick fox",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "quick-fox",
+    "line_index": 0
+  },
+  {
+    "slug": "quick-fox-2",
+    "text": "The fox and the dog",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "quick-fox",
+    "line_index": 1
+  },
+  {
+    "slug": "quick-fox-3",
+    "text": "Run to the log",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "quick-fox",
+    "line_index": 2
+  },
+  {
+    "slug": "quick-fox-4",
+    "text": "The big log",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "quick-fox",
+    "line_index": 3
+  },
+  {
+    "slug": "quick-fox-5",
+    "text": "Sit on top",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "quick-fox",
+    "line_index": 4
+  },
+  {
+    "slug": "play-jump-1",
+    "text": "Play with me",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "play-jump",
+    "line_index": 0
+  },
+  {
+    "slug": "play-jump-2",
+    "text": "Run and jump",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "play-jump",
+    "line_index": 1
+  },
+  {
+    "slug": "play-jump-3",
+    "text": "The red box",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "play-jump",
+    "line_index": 2
+  },
+  {
+    "slug": "play-jump-4",
+    "text": "Clap and hop",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "play-jump",
+    "line_index": 3
+  },
+  {
+    "slug": "play-jump-5",
+    "text": "The big bug",
+    "kind": "sentence",
+    "level": 5,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "story_id": "play-jump",
+    "line_index": 4
   }
 ]
