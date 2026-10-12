@@ -130,7 +130,7 @@ def test_home_ui_exposes_four_difficulties():
     for label, n in (("Words", 1), ("Phrases", 2), ("Rhymes", 3), ("Stories", 4)):
         assert f'data-difficulty="{n}"' in html
         assert f">{label}</p>" in html
-        for stage in range(1, 6):
+        for stage in range(1, 9):
             assert f'data-level-pick="{n}" data-stage-pick="{stage}"' in html
     assert "difficulty_label" in js
     assert "difficultyLabel" in js

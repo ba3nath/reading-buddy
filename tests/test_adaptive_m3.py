@@ -69,7 +69,7 @@ def test_two_under_half_steps_down(tmp_env):
         level=3, correct_count=4, planned_count=10, settings=settings
     )
     assert level_after == 2
-    assert new_s["stage"] == 5  # drop into prior difficulty's last set
+    assert new_s["stage"] == 8  # drop into prior difficulty's last set
     assert new_s["low_streak"] == 0
     assert new_s["move_up_streak"] == 0
 
@@ -95,8 +95,8 @@ def test_auto_strict_after_three_move_ups(tmp_env):
     settings.update(
         {
             "level": 1,
-            "stage": 5,
-            "stage_by_difficulty": {"1": 5, "2": 1, "3": 1, "4": 1},
+            "stage": 8,
+            "stage_by_difficulty": {"1": 8, "2": 1, "3": 1, "4": 1},
             "mode": "beginner",
             "auto_strict": True,
             "auto_strict_sessions": 3,

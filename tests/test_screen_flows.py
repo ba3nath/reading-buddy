@@ -108,7 +108,7 @@ def test_flow_home_start():
 
 
 def test_flow_home_difficulty():
-    """Pick a difficulty exposes Words / Phrases / Rhymes / Stories with Set 1–5."""
+    """Pick a difficulty exposes Words / Phrases / Rhymes / Stories with Set 1–8."""
     assert "Pick a difficulty" in HTML
     for n, label in (
         (1, "Words"),
@@ -118,7 +118,7 @@ def test_flow_home_difficulty():
     ):
         assert f'data-difficulty="{n}"' in HTML
         assert f">{label}</p>" in HTML or f">{label}</" in HTML
-        for stage in range(1, 6):
+        for stage in range(1, 9):
             assert (
                 f'data-level-pick="{n}" data-stage-pick="{stage}"' in HTML
             ), f"missing {label} Set {stage}"
@@ -130,8 +130,8 @@ def test_flow_home_difficulty():
     start = _fn("startSession")
     assert "payload.stage" in start
     assert "markCurrentSets" in JS
-    # Five set buttons per difficulty in a single row.
-    assert "grid-template-columns: repeat(5, minmax(0, 1fr))" in CSS
+    # Eight set buttons per difficulty in a 4-wide grid (two rows).
+    assert "grid-template-columns: repeat(4, minmax(0, 1fr))" in CSS
     assert "details.more-levels" in wire
     assert "scrollIntoView" in wire
 

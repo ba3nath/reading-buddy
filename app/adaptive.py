@@ -36,7 +36,7 @@ def apply_level_and_auto_strict(
     """Return (level_after, updated_settings) for a completed session.
 
     ``level`` is a difficulty tier 1–4. Strong sessions advance the set
-    (stage) within that difficulty; clearing set 5 unlocks the next tier.
+    (stage) within that difficulty; clearing the last set unlocks the next tier.
     """
     settings = dict(settings)
     level = config.normalize_difficulty(level)

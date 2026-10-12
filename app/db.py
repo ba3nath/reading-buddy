@@ -184,7 +184,7 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         if int(merged.get("level", 0) or 0) != difficulty:
             merged["level"] = difficulty
             dirty = True
-    # Per-difficulty sets (stages) 1–5.
+    # Per-difficulty sets (stages) 1–8.
     by_diff = merged.get("stage_by_difficulty")
     if not isinstance(by_diff, dict):
         by_diff = config.default_stage_by_difficulty()

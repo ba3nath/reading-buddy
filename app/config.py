@@ -68,7 +68,7 @@ DIFFICULTY_TIERS: dict[int, dict[str, object]] = {
 }
 MAX_DIFFICULTY = 4
 # Each difficulty has this many ordered sets (stages) the child works through.
-STAGES_PER_DIFFICULTY = 5
+STAGES_PER_DIFFICULTY = 8
 
 
 def content_levels_for_difficulty(difficulty: int) -> tuple[int, ...]:
@@ -100,7 +100,7 @@ def default_stage_by_difficulty() -> dict[str, int]:
 
 
 def stage_label(difficulty: int, stage: int) -> str:
-    """Kid-facing badge, e.g. ``Words · Set 2/5``."""
+    """Kid-facing badge, e.g. ``Words · Set 2/8``."""
     return (
         f"{difficulty_label(difficulty)} · Set "
         f"{normalize_stage(stage)}/{STAGES_PER_DIFFICULTY}"
@@ -178,7 +178,7 @@ DEFAULT_SETTINGS = {
     "mode": "beginner",
     "level": 1,  # difficulty tier 1–4 (words / phrases / rhymes / stories)
     "difficulty_migrated": True,
-    "stage": 1,  # set 1–5 within the current difficulty
+    "stage": 1,  # set 1–8 within the current difficulty
     "stage_by_difficulty": {  # per-difficulty set progress
         "1": 1,
         "2": 1,
