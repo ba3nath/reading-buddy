@@ -29,6 +29,13 @@ export function reviewScript(): string {
   return resolve(readingBuddyRoot(), "scripts/review_audio_clips.py");
 }
 
+function pythonBin(cwd: string): string {
+  const venv = resolve(cwd, ".venv/bin/python");
+  if (existsSync(venv)) return venv;
+  // Prefer python3 on hosts without a `python` shim.
+  return "python3";
+}
+
 export type RunResult = {
   ok: boolean;
   exitCode: number;
@@ -44,17 +51,18 @@ export async function runReview(
 ): Promise<RunResult> {
   const cwd = readingBuddyRoot();
   const script = reviewScript();
+  const py = pythonBin(cwd);
   if (!existsSync(script)) {
     return {
       ok: false,
       exitCode: 127,
       stdout: "",
       stderr: `review script missing: ${script}`,
-      command: ["python", script, ...args],
+      command: [py, script, ...args],
       cwd,
     };
   }
-  const command = ["python", script, ...args];
+  const command = [py, script, ...args];
   const timeoutMs = opts.timeoutMs ?? 30 * 60 * 1000;
 
   return await new Promise((resolvePromise) => {

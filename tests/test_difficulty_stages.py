@@ -142,3 +142,15 @@ def test_session_create_accepts_stage(client, tmp_env):
     assert settings["level"] == 1
     assert settings["stage"] == 3
     assert settings["stage_by_difficulty"]["1"] == 3
+
+
+def test_js_allows_stages_six_through_eight():
+    """Regression: leftover <=5 clamps wiped sets 6–8 after expansion."""
+    from pathlib import Path
+
+    game = Path("static/js/game.js").read_text(encoding="utf-8")
+    parent = Path("static/js/parent.js").read_text(encoding="utf-8")
+    assert "n <= 5" not in game
+    assert "n <= 8" in game
+    assert "stage <= 5" not in parent
+    assert "stage <= 8" in parent

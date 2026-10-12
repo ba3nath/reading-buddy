@@ -327,8 +327,7 @@ def items_for_stage(
     if not rows:
         return []
     start, end = config.stage_slice_bounds(len(rows), stage)
-    chunk = rows[start:end]
-    return chunk or list(rows)
+    return rows[start:end]
 
 
 def build_adaptive_queue(
@@ -339,8 +338,11 @@ def build_adaptive_queue(
 ) -> list[sqlite3.Row]:
     """Build a unique queue for one set (stage) inside a difficulty tier.
 
-    Prefers the current set's items, then earlier sets for review padding,
-    never later (locked) sets. Snaps to 5 or 10.
+    Prefers the current set's items, then earlier sets for review padding.
+    If the unlocked pool is smaller than the session length (Phrases/Stories
+    sets are currently 4 items), falls back to the rest of the tier so the
+    queue can still fill 5|10. Prefer growing those pools over relying on
+    the fallback.
     """
     difficulty = config.normalize_difficulty(level)
     length = config.normalize_session_length(length)

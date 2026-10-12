@@ -17,7 +17,7 @@ export default defineTool({
     NEVER adds carrier words — spoken text must be only the on-screen token.
     Writes winners JSON for apply_winners / regen_clips.
   `,
-  effect: "read",
+  effect: "write",
   inputSchema: z.object({
     auditPath: z
       .string()

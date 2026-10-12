@@ -712,7 +712,8 @@ function markCurrentSets(settings) {
     const next = { ...state.stageByDifficulty };
     for (const [key, val] of Object.entries(incoming)) {
       const n = Number(val);
-      if (n >= 1 && n <= 5) next[Number(key)] = n;
+      // Keep in sync with STAGES_PER_DIFFICULTY (currently 8).
+      if (n >= 1 && n <= 8) next[Number(key)] = n;
     }
     state.stageByDifficulty = next;
   } else if (settings?.stage != null && settings?.level != null) {

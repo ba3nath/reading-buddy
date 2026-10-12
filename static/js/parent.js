@@ -88,8 +88,9 @@ function fillSettings(settings) {
   form.mode.value = settings.mode || "beginner";
   form.level.value = settings.level ?? 1;
   const stage = Number(settings.stage);
+  // Keep in sync with STAGES_PER_DIFFICULTY (currently 8).
   form.stage.value = String(
-    stage >= 1 && stage <= 5 ? stage : 1
+    stage >= 1 && stage <= 8 ? stage : 1
   );
   const len = Number(settings.session_length) === 5 ? 5 : 10;
   form.session_length.value = String(len);
