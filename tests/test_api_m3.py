@@ -233,6 +233,6 @@ def test_start_button_omits_level_pick():
     html = Path("static/index.html").read_text(encoding="utf-8")
     assert 'class="btn primary" data-start>Start</button>' in html
     assert 'class="btn primary" data-start data-level-pick' not in html
-    assert "data-stage-pick" not in html
+    assert "data-stage-pick" in html
     parent = Path("static/parent.html").read_text(encoding="utf-8")
     assert "Phrases" in parent

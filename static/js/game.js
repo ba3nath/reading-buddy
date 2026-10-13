@@ -750,6 +750,15 @@ async function boot() {
   }
 }
 
+async function refreshSetProgress() {
+  try {
+    const settings = await api("/api/parent/settings");
+    markCurrentSets(settings);
+  } catch {
+    /* keep the last colors */
+  }
+}
+
 function markCurrentSets(settings) {
   const incoming = settings?.stage_by_difficulty;
   if (incoming && typeof incoming === "object") {
@@ -771,6 +780,12 @@ function markCurrentSets(settings) {
     const stage = Number(btn.dataset.stagePick);
     const current = Number(state.stageByDifficulty[diff]) || 1;
     btn.classList.toggle("is-current", stage === current);
+    if (!settings?.set_progress) return;
+    const status = settings.set_progress?.[String(diff)]?.[String(stage)] || "new";
+    btn.classList.toggle("is-done", status === "done");
+    btn.classList.toggle("is-partial", status === "partial");
+    const word = status === "done" ? "finished" : status === "partial" ? "started" : "not started";
+    btn.setAttribute("aria-label", `Set ${stage}, ${word}`);
   });
 }
 
@@ -823,6 +838,7 @@ function pauseToHome() {
   state.paused = true;
   setMessage("Paused — tap Continue when you are ready");
   setState("home");
+  refreshSetProgress();
   const hint = $("[data-pause-hint]");
   if (hint) {
     const total =
@@ -1391,6 +1407,7 @@ async function finishSession() {
         stage_by_difficulty: {
           [String(data.level_after)]: data.stage_after,
         },
+        set_progress: data.set_progress,
       });
     }
     syncBuddyAnim();

@@ -16,8 +16,8 @@ def check(phase: str) -> list[str]:
     js = (ROOT / "static/js/game.js").read_text(encoding="utf-8")
     parent = (ROOT / "static/parent.html").read_text(encoding="utf-8")
     failures: list[str] = []
-    if "data-stage-pick" in html:
-        failures.append("Child home grew a set picker.")
+    if "data-stage-pick" not in html:
+        failures.append("Child home cannot choose Words, Phrases, Rhymes, or Stories.")
     if 'I heard "' not in js:
         failures.append('Child never shows "I heard".')
     if "sessionStorage" not in js or "/api/sessions/open" not in js:

@@ -159,9 +159,9 @@ def test_celebration_and_encourage_motion():
 
 def test_start_primary_and_more_levels():
     assert 'class="btn primary" data-start>Start</button>' in HTML
-    assert "more-levels" not in HTML
-    assert "Pick a difficulty" not in HTML
-    assert "data-stage-pick" not in HTML
+    assert "more-levels" in HTML
+    assert "Pick a difficulty" in HTML
+    assert "data-stage-pick" in HTML
     # Primary Start has no level pick — uses saved difficulty.
     assert 'class="btn primary" data-start data-level-pick' not in HTML
 

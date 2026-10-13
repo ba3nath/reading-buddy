@@ -108,9 +108,11 @@ def test_flow_home_start():
 
 
 def test_flow_home_difficulty():
-    """The child home has one Start. Sets live on the parent page."""
-    assert "Pick a difficulty" not in HTML
-    assert "data-stage-pick" not in HTML
+    """The child home can start any difficulty and set."""
+    assert "Pick a difficulty" in HTML
+    assert "data-stage-pick" in HTML
+    assert 'data-level-pick="3"' in HTML
+    assert 'data-level-pick="4"' in HTML
     assert 'class="btn primary" data-start>Start</button>' in HTML
     parent = Path("static/parent.html").read_text(encoding="utf-8")
     assert "Words" in parent and "Stories" in parent

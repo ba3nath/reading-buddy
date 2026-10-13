@@ -526,9 +526,13 @@ async def post_complete(session_id: int):
 def get_parent_settings():
     from app.parent import play_summary, tomorrow_note
 
+    from app.adaptive import set_progress
+
     settings = load_settings()
+    conn = get_conn()
     settings["play"] = play_summary(settings)
-    settings["tomorrow"] = tomorrow_note(get_conn(), settings)
+    settings["tomorrow"] = tomorrow_note(conn, settings)
+    settings["set_progress"] = set_progress(conn)
     return settings
 
 

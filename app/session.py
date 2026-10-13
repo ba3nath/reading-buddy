@@ -12,6 +12,7 @@ from app.adaptive import (
     apply_level_and_auto_strict,
     build_adaptive_queue,
     maybe_reinsert_miss,
+    set_progress,
 )
 from app.db import (
     credit_mastery_correct,
@@ -1108,4 +1109,5 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         "play": play,
         "home": play_summary(),
         "mastered_words": words_mastered_this_session(conn, session_id),
+        "set_progress": set_progress(conn),
     }

@@ -24,8 +24,8 @@ def check(phase: str) -> list[str]:
         failures.append("Auto strict never steps back to beginner.")
     if "MSG_MISS_AGAIN" not in config:
         failures.append("A first miss has no kind second-read line.")
-    if "Pick a difficulty" in html:
-        failures.append("Set picking leaked back onto the child home.")
+    if "data-stage-pick" not in html:
+        failures.append("The child cannot choose a difficulty and set.")
     if phase in {"fluency", "3", "4"} and 'payload.pop("duration_seconds"' not in main:
         failures.append("Read-through duration can leak to the child response.")
     if "No carriers" not in clip:

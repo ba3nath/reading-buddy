@@ -369,6 +369,90 @@ def _one_group_queue(
     ).fetchall()
 
 
+def set_item_ids(conn: sqlite3.Connection, difficulty: int, stage: int) -> set[int]:
+    """Item ids that belong to one set, with no review padding."""
+    difficulty = config.normalize_difficulty(difficulty)
+    stage = config.normalize_stage(stage)
+    if difficulty == 3:
+        rows = _one_group_queue(conn, stage, column="rhyme_group")
+    elif difficulty == 4:
+        rows = _one_group_queue(conn, stage, column="story_id")
+    else:
+        levels = config.content_levels_for_difficulty(difficulty)
+        rows = items_for_stage(_ordered_tier_items(conn, levels), stage)
+    return {int(row["id"]) for row in rows}
+
+
+def set_progress(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
+    """done, partial, or new for every difficulty and set.
+
+    A set is done when a finished session has scored every item in it.
+    Started items that are not all finished are partial. The rest are new.
+    """
+    catalog: dict[int, dict[int, set[int]]] = {}
+    for difficulty in range(1, config.MAX_DIFFICULTY + 1):
+        catalog[difficulty] = {
+            stage: set_item_ids(conn, difficulty, stage)
+            for stage in range(1, config.STAGES_PER_DIFFICULTY + 1)
+        }
+    covered: dict[tuple[int, int], set[int]] = {
+        (difficulty, stage): set()
+        for difficulty, stages in catalog.items()
+        for stage in stages
+    }
+    started: set[tuple[int, int]] = set()
+    locked: dict[int, set[int]] = {}
+    for row in conn.execute(
+        """
+        SELECT session_id, item_id FROM attempts
+        WHERE counts_for_session = 1
+          AND result IN ('correct', 'close', 'missed', 'skipped')
+        """
+    ):
+        locked.setdefault(int(row["session_id"]), set()).add(int(row["item_id"]))
+
+    for session in conn.execute(
+        "SELECT id, level, planned_item_ids, completed FROM sessions"
+    ):
+        difficulty = config.normalize_difficulty(session["level"])
+        stages = catalog.get(difficulty) or {}
+        try:
+            planned = {int(item_id) for item_id in json.loads(session["planned_item_ids"] or "[]")}
+        except (TypeError, ValueError):
+            planned = set()
+        evidence = planned if int(session["completed"] or 0) == 1 else locked.get(int(session["id"]), set())
+        if not evidence:
+            continue
+        best_stage = 0
+        best_overlap: set[int] = set()
+        for stage, ids in stages.items():
+            overlap = ids & evidence
+            if len(overlap) > len(best_overlap):
+                best_stage = stage
+                best_overlap = overlap
+        if not best_stage:
+            continue
+        key = (difficulty, best_stage)
+        if int(session["completed"] or 0) == 1:
+            covered[key] |= stages[best_stage] & planned
+        elif best_overlap:
+            started.add(key)
+
+    progress: dict[str, dict[str, str]] = {}
+    for difficulty, stages in catalog.items():
+        bucket: dict[str, str] = {}
+        for stage, ids in stages.items():
+            key = (difficulty, stage)
+            if ids and ids <= covered[key]:
+                bucket[str(stage)] = "done"
+            elif key in started or (covered[key] & ids):
+                bucket[str(stage)] = "partial"
+            else:
+                bucket[str(stage)] = "new"
+        progress[str(difficulty)] = bucket
+    return progress
+
+
 def items_for_stage(
     rows: list[sqlite3.Row], stage: int
 ) -> list[sqlite3.Row]:

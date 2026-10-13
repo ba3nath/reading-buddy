@@ -103,16 +103,61 @@ def test_clearing_last_set_unlocks_next_difficulty(tmp_env):
     assert new_s["stage_by_difficulty"]["2"] == 1
 
 
+def test_set_progress_done_partial_and_new(tmp_env):
+    from app.adaptive import set_item_ids, set_progress
+    from app.matching import score_attempt
+    from app.session import apply_attempt, complete_session, start_session
+
+    conn = tmp_env["conn"]
+    poem = start_session(conn, level=3, stage=1)
+    assert set_progress(conn)["3"]["1"] == "new"
+    assert set_progress(conn)["3"]["2"] == "new"
+    first = poem["items"][0]
+    match = score_attempt(
+        first["text"], first["text"], [0.95] * len(first["text"].split()), mode="beginner"
+    )
+    apply_attempt(conn, poem["session_id"], first["id"], match, queue_index=0)
+    assert set_progress(conn)["3"]["1"] == "partial"
+    for index, item in enumerate(poem["items"]):
+        if index == 0:
+            continue
+        match = score_attempt(
+            item["text"], item["text"], [0.95] * len(item["text"].split()), mode="beginner"
+        )
+        apply_attempt(conn, poem["session_id"], item["id"], match, queue_index=index)
+    complete_session(conn, poem["session_id"])
+    assert set_progress(conn)["3"]["1"] == "done"
+    assert set_progress(conn)["1"]["1"] == "new"
+
+    words = start_session(conn, level=1, stage=1)
+    for index, item in enumerate(words["items"]):
+        match = score_attempt(
+            item["text"], item["text"], [0.95] * len(item["text"].split()), mode="beginner"
+        )
+        apply_attempt(conn, words["session_id"], item["id"], match, queue_index=index)
+    complete_session(conn, words["session_id"])
+    played = {item["id"] for item in words["items"]}
+    whole = set_item_ids(conn, 1, 1)
+    status = set_progress(conn)["1"]["1"]
+    assert status == ("done" if whole and whole <= played else "partial")
+
+
 def test_ui_exposes_eight_sets_copy():
     from pathlib import Path
 
     html = Path("static/index.html").read_text(encoding="utf-8")
     js = Path("static/js/game.js").read_text(encoding="utf-8")
     parent = Path("static/parent.html").read_text(encoding="utf-8")
-    assert "data-stage-pick" not in html
+    assert "data-stage-pick" in html
+    assert html.count("Set ") >= 8
     assert parent.count("Set ") >= 8
     assert "stage_label" in js
     assert "markCurrentSets" in js
+    assert "is-done" in js
+    assert "is-partial" in js
+    css = Path("static/css/app.css").read_text(encoding="utf-8")
+    assert ".btn.set-btn.is-done" in css
+    assert ".btn.set-btn.is-partial" in css
     assert 'name="stage"' in parent
     assert "Set 1 of 8" in parent
     assert "Set 8 of 8" in parent

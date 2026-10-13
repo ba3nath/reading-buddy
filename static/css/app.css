@@ -1386,12 +1386,6 @@ body[data-state="recording"] .mic-particles {
   padding-inline: 0.2rem;
 }
 
-.set-btn.is-current {
-  background: linear-gradient(180deg, var(--warm), var(--warm-deep));
-  color: #2c241c;
-  border-color: transparent;
-}
-
 .btn {
   border: 0;
   border-radius: 999px;
@@ -1412,6 +1406,22 @@ body[data-state="recording"] .mic-particles {
   background: rgba(255, 255, 255, 0.65);
   color: var(--ink);
   border: 1px solid rgba(60, 40, 20, 0.12);
+}
+
+.btn.set-btn.is-partial {
+  background: linear-gradient(180deg, #fff6e4, var(--warm));
+  color: #2c241c;
+  border-color: var(--warm-deep);
+}
+
+.btn.set-btn.is-done {
+  background: linear-gradient(180deg, #e8f6e4, var(--meadow));
+  color: #1e3d28;
+  border-color: transparent;
+}
+
+.btn.set-btn.is-current {
+  box-shadow: inset 0 0 0 2px var(--ink);
 }
 
 body[data-state="boot"] .stage,

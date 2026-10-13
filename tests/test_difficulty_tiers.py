@@ -131,8 +131,9 @@ def test_home_ui_exposes_four_difficulties():
     html = Path("static/index.html").read_text(encoding="utf-8")
     parent = Path("static/parent.html").read_text(encoding="utf-8")
     js = Path("static/js/game.js").read_text(encoding="utf-8")
-    assert "data-stage-pick" not in html
+    assert "data-stage-pick" in html
     for label in ("Words", "Phrases", "Rhymes", "Stories"):
+        assert label in html
         assert label in parent
     assert "difficulty_label" in js
     assert "difficultyLabel" in js

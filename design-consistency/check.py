@@ -16,8 +16,8 @@ def check(phase: str) -> list[str]:
     js = (ROOT / "static/js/game.js").read_text(encoding="utf-8")
     css = (ROOT / "static/css/app.css").read_text(encoding="utf-8")
     failures: list[str] = []
-    if "data-stage-pick" in html or "Pick a difficulty" in html:
-        failures.append("Child home still has a set picker.")
+    if "data-stage-pick" not in html or "btn ghost set-btn" not in html:
+        failures.append("Child home cannot pick a set with the existing buttons.")
     if 'class="btn primary" data-start>Start</button>' not in html:
         failures.append("Primary Start button is missing.")
     lowered = js.lower()
