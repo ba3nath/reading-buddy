@@ -1765,116 +1765,108 @@
     "line_index": 3
   },
   {
-    "slug": "l7-row-boat-1",
-    "text": "Row row row your boat",
+    "slug": "rain-rain-1",
+    "text": "Rain rain go away",
     "kind": "line",
-    "level": 7,
+    "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "row row row your boat",
     "hard": 0,
-    "rhyme_group": "row-boat",
-    "line_index": 0
+    "rhyme_group": "rain-rain",
+    "line_index": 0,
+    "normalized": "rain rain go away"
   },
   {
-    "slug": "l7-row-boat-2",
-    "text": "Gently down the stream",
+    "slug": "rain-rain-2",
+    "text": "Come again another day",
     "kind": "line",
-    "level": 7,
+    "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "gently down the stream",
     "hard": 0,
-    "rhyme_group": "row-boat",
-    "line_index": 1
+    "rhyme_group": "rain-rain",
+    "line_index": 1,
+    "normalized": "come again another day"
   },
   {
-    "slug": "l7-row-boat-3",
-    "text": "Merrily merrily merrily merrily",
+    "slug": "rain-rain-3",
+    "text": "Little children want to play",
     "kind": "line",
-    "level": 7,
+    "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "merrily merrily merrily merrily",
     "hard": 0,
-    "rhyme_group": "row-boat",
-    "line_index": 2
+    "rhyme_group": "rain-rain",
+    "line_index": 2,
+    "normalized": "little children want to play"
   },
   {
-    "slug": "l7-row-boat-4",
-    "text": "Life is but a dream",
+    "slug": "rain-rain-4",
+    "text": "Rain rain go away",
     "kind": "line",
-    "level": 7,
+    "level": 6,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "life is but a dream",
     "hard": 0,
-    "rhyme_group": "row-boat",
-    "line_index": 3
+    "rhyme_group": "rain-rain",
+    "line_index": 3,
+    "normalized": "rain rain go away"
   },
   {
-    "slug": "l7-itsy-spider-1",
-    "text": "The itsy bitsy spider climbed up the water spout",
+    "slug": "little-boy-blue-1",
+    "text": "Little Boy Blue come blow your horn",
     "kind": "line",
     "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "the itsy bitsy spider climbed up the water spout",
     "hard": 0,
-    "rhyme_group": "itsy-spider",
-    "line_index": 0
+    "rhyme_group": "little-boy-blue",
+    "line_index": 0,
+    "normalized": "little boy blue come blow your horn"
   },
   {
-    "slug": "l7-itsy-spider-2",
-    "text": "Down came the rain and washed the spider out",
+    "slug": "little-boy-blue-2",
+    "text": "The sheep are in the meadow",
     "kind": "line",
     "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "down came the rain and washed the spider out",
     "hard": 0,
-    "rhyme_group": "itsy-spider",
-    "line_index": 1
+    "rhyme_group": "little-boy-blue",
+    "line_index": 1,
+    "normalized": "the sheep are in the meadow"
   },
   {
-    "slug": "l7-itsy-spider-3",
-    "text": "Out came the sun and dried up all the rain",
+    "slug": "little-boy-blue-3",
+    "text": "The cow is in the corn",
     "kind": "line",
     "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "out came the sun and dried up all the rain",
     "hard": 0,
-    "rhyme_group": "itsy-spider",
-    "line_index": 2
+    "rhyme_group": "little-boy-blue",
+    "line_index": 2,
+    "normalized": "the cow is in the corn"
   },
   {
-    "slug": "l7-itsy-spider-4",
-    "text": "And the itsy bitsy spider climbed up the spout again",
+    "slug": "little-boy-blue-4",
+    "text": "Where is the boy who looks after the sheep",
     "kind": "line",
     "level": 7,
     "source": "mother-goose",
     "pd_status": "approved",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "and the itsy bitsy spider climbed up the spout again",
     "hard": 0,
-    "rhyme_group": "itsy-spider",
-    "line_index": 3
+    "rhyme_group": "little-boy-blue",
+    "line_index": 3,
+    "normalized": "where is the boy who looks after the sheep"
   },
   {
     "slug": "dog-and-cat-1",
@@ -1962,7 +1954,7 @@
   },
   {
     "slug": "red-bus-3",
-    "text": "Sit on the big red bus.",
+    "text": "The kid sat on the big bus.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -1970,7 +1962,7 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 2,
-    "normalized": "sit on the big red bus"
+    "normalized": "the kid sat on the big bus"
   },
   {
     "slug": "red-bus-4",
@@ -2010,7 +2002,7 @@
   },
   {
     "slug": "wet-day-2",
-    "text": "The dog ran on the path.",
+    "text": "The dog ran in the wet mud.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2018,11 +2010,11 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 1,
-    "normalized": "the dog ran on the path"
+    "normalized": "the dog ran in the wet mud"
   },
   {
     "slug": "wet-day-3",
-    "text": "Hop to the wet log.",
+    "text": "The kid had a soft mop.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2030,11 +2022,11 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 2,
-    "normalized": "hop to the wet log"
+    "normalized": "the kid had a soft mop"
   },
   {
     "slug": "wet-day-4",
-    "text": "The soft mop was in the mud.",
+    "text": "Hop to the red box.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2042,11 +2034,11 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 3,
-    "normalized": "the soft mop was in the mud"
+    "normalized": "hop to the red box"
   },
   {
     "slug": "wet-day-5",
-    "text": "The red box was on the grass.",
+    "text": "They sit out of the rain.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2054,11 +2046,11 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 4,
-    "normalized": "the red box was on the grass"
+    "normalized": "they sit out of the rain"
   },
   {
     "slug": "pen-cup-1",
-    "text": "My blue pen was in a cup.",
+    "text": "The kid had a blue pen.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2066,11 +2058,11 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 0,
-    "normalized": "my blue pen was in a cup"
+    "normalized": "the kid had a blue pen"
   },
   {
     "slug": "pen-cup-2",
-    "text": "The small cup was on the bed.",
+    "text": "The pen was in a small cup.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2078,11 +2070,11 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 1,
-    "normalized": "the small cup was on the bed"
+    "normalized": "the pen was in a small cup"
   },
   {
     "slug": "pen-cup-3",
-    "text": "The kid can sit and read.",
+    "text": "Sit on the bed and read.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2090,7 +2082,7 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 2,
-    "normalized": "the kid can sit and read"
+    "normalized": "sit on the bed and read"
   },
   {
     "slug": "pen-cup-4",
@@ -2106,7 +2098,7 @@
   },
   {
     "slug": "pen-cup-5",
-    "text": "The soft bed was best.",
+    "text": "The kid can read with the pen.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2114,7 +2106,7 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 4,
-    "normalized": "the soft bed was best"
+    "normalized": "the kid can read with the pen"
   },
   {
     "slug": "frog-ship-1",
@@ -2226,7 +2218,7 @@
   },
   {
     "slug": "cat-bed-5",
-    "text": "The cat can sit on the bed.",
+    "text": "The soft cat sat with me.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2234,7 +2226,7 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 4,
-    "normalized": "the cat can sit on the bed"
+    "normalized": "the soft cat sat with me"
   },
   {
     "slug": "quick-fox-1",

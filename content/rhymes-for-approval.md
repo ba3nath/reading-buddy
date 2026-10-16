@@ -102,6 +102,8 @@ Sources:
 | --- | --- | --- |
 | Rain rain go away | approved | Traditional nursery rhyme; PD |
 | Come again another day | approved | Traditional nursery rhyme; PD |
+| Little children want to play | approved | Traditional nursery rhyme; PD |
+| Rain rain go away (closing) | approved | Traditional nursery rhyme; PD |
 
 Sources:
 
@@ -113,6 +115,8 @@ Sources:
 | --- | --- | --- |
 | Little Boy Blue come blow your horn | approved | Traditional Mother Goose; PD |
 | The sheep are in the meadow | approved | Traditional Mother Goose; PD |
+| The cow is in the corn | approved | Traditional Mother Goose; PD |
+| Where is the boy who looks after the sheep | approved | Traditional Mother Goose; PD |
 
 Sources:
 
@@ -125,11 +129,13 @@ Sources:
 
 None pending beyond the approved set above. Future candidates should be added here before copy into `items.json`.
 
+Row Your Boat and Itsy Bitsy Spider were removed from the ship set in favor of the approved Mother Goose poems above.
+
 ---
 
 ## Ship mapping
 
 | Level | How used |
 | --- | --- |
-| 6 | One approved line per item (`kind=line`), various `rhyme_group` values |
-| 7 | 2–4 line groups (`l7-jack-jill`, `l7-humpty`, `l7-twinkle`, `l7-baa`, `l7-hickory`) in `line_index` order |
+| 6 | Full poems (`rain-rain`, `hickory-dickory`, `mary-lamb`) as `kind=line` groups |
+| 7 | Full poems (`jack-and-jill`, `humpty-dumpty`, `twinkle-star`, `baa-baa`, `little-boy-blue`) in `line_index` order |

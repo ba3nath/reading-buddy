@@ -27,7 +27,7 @@ from app.audio_files import (
     write_bytes,
 )
 from app.db import connect, init_schema, load_settings, upsert_items_from_json
-from app.matching import score_attempt
+from app.matching import hypothesis_from_whisper_words, score_attempt
 from app.parent import (
     accuracy_by_day,
     apply_settings_update,
@@ -281,10 +281,15 @@ async def _post_passage(session_id: int, audio: UploadFile, mode: str):
                 ):
                     match = score_attempt(target_text, "", mode=mode, force_retry=True)
                 else:
-                    confidences = [w.probability for w in transcript.words]
+                    heard_text, confidences = hypothesis_from_whisper_words(
+                        transcript.words
+                    )
+                    if not heard_text:
+                        heard_text = transcript.transcript
+                        confidences = []
                     match = score_attempt(
                         target_text,
-                        transcript.transcript,
+                        heard_text,
                         confidences if confidences else None,
                         mode=mode,
                     )
@@ -459,10 +464,13 @@ async def post_attempt(
                 payload, keep_audio=keep_audio, wav_path=wav_path
             )
 
-        confidences = [w.probability for w in transcript.words]
+        heard_text, confidences = hypothesis_from_whisper_words(transcript.words)
+        if not heard_text:
+            heard_text = transcript.transcript
+            confidences = []
         match = score_attempt(
             target_text,
-            transcript.transcript,
+            heard_text,
             confidences if confidences else None,
             mode=mode,
         )

@@ -1,0 +1,22 @@
+{
+  "id": "story-line-function-drops-strict",
+  "mode": "strict",
+  "target_text": "The big dog ran to the cat.",
+  "heard_text": "big dog ran to cat",
+  "word_confidences": [0.95, 0.94, 0.93, 0.92, 0.91],
+  "expect": {
+    "result": "missed",
+    "words_correct": 5,
+    "words_total": 7,
+    "word_scores": [
+      { "word": "the", "heard": "", "confidence": null, "result": "missed" },
+      { "word": "big", "heard": "big", "confidence": 0.95, "result": "correct" },
+      { "word": "dog", "heard": "dog", "confidence": 0.94, "result": "correct" },
+      { "word": "ran", "heard": "ran", "confidence": 0.93, "result": "correct" },
+      { "word": "to", "heard": "to", "confidence": 0.92, "result": "correct" },
+      { "word": "the", "heard": "", "confidence": null, "result": "missed" },
+      { "word": "cat", "heard": "cat", "confidence": 0.91, "result": "correct" }
+    ],
+    "replay_words": ["the", "the"]
+  }
+}

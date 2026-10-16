@@ -636,6 +636,20 @@ ALIASES: dict[str, str] = {
     "best": "star",
     "fast": "train",
     "ran": "run",
+    "away": "park",
+    "another": "park",
+    "go": "run",
+    "children": "kid",
+    "want": "play",
+    "blow": "horn",
+    "meadow": "grass",
+    "cow": "sheep",
+    "corn": "grass",
+    "looks": "look",
+    "after": "park",
+    "boy": "kid",
+    "day": "sun",
+    "again": "sparkle",
 }
 
 

@@ -17,6 +17,32 @@ Mode = Literal["beginner", "strict"]
 
 _NORMALIZE_RE = re.compile(r"[^a-z0-9\s]+")
 
+# Tiny words Whisper often drops on longer lines. Beginner forgives these;
+# content words still decide the item.
+FUNCTION_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "to",
+        "of",
+        "on",
+        "in",
+        "at",
+        "for",
+        "and",
+        "or",
+        "is",
+        "are",
+        "was",
+        "were",
+        "with",
+        "from",
+        "that",
+        "this",
+    }
+)
+
 
 @dataclass
 class WordScore:
@@ -56,6 +82,29 @@ def tokenize(text: str) -> list[str]:
     if not normalized:
         return []
     return normalized.split()
+
+
+def hypothesis_from_whisper_words(
+    words: list,
+) -> tuple[str, list[float | None]]:
+    """Normalize each ASR word so confidences stay aligned with hyp tokens.
+
+    Whisper often attaches punctuation (\"dog.\") or leading spaces; stripping
+    per token keeps probability count in sync with tokenize(heard_text).
+    """
+    tokens: list[str] = []
+    confidences: list[float | None] = []
+    for w in words or []:
+        raw = getattr(w, "word", None)
+        if raw is None and isinstance(w, dict):
+            raw = w.get("word", "")
+        prob = getattr(w, "probability", None)
+        if prob is None and isinstance(w, dict):
+            prob = w.get("probability")
+        for part in tokenize(str(raw or "")):
+            tokens.append(part)
+            confidences.append(float(prob) if prob is not None else None)
+    return " ".join(tokens), confidences
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -157,6 +206,10 @@ def align_tokens(target: list[str], hypothesis: list[str]) -> list[tuple[str, st
     return pairs
 
 
+def is_function_word(word: str) -> bool:
+    return (word or "") in FUNCTION_WORDS
+
+
 def score_word(
     target: str,
     heard: str,
@@ -175,6 +228,15 @@ def score_word(
     # Beginner — trust an exact (or plural) transcript over Whisper
     # confidence. Kid short words often land at 0.3–0.55 and used to force
     # a pointless "close" second try.
+    # Longer story/rhyme lines: forgive dropped/swapped function words so a
+    # good reading is not a full miss when Whisper omits "the"/"to"/"a".
+    if is_function_word(target):
+        if (
+            not heard
+            or is_function_word(heard)
+            or is_beginner_near_match(target, heard)
+        ):
+            return "correct"
     if not heard:
         return "missed"
     if is_plural_pair(target, heard):
@@ -280,7 +342,28 @@ def score_attempt(
 
     # Strict: extras / missing / reorder make the item not exact.
     exact_seq = target_tokens == hyp_tokens
-    if mode == "strict" and not exact_seq:
+    if mode == "strict" and exact_seq:
+        # Exact full-line match: use mean confidence so one soft "the"/"big"
+        # under 0.85 does not force a pointless second try on a clear reading.
+        # Multi-word nursery lines get a lower bar — Whisper under-confidences
+        # hickory/dickory even when the words are right.
+        present = [
+            float(ws.confidence)
+            for ws in word_scores
+            if ws.confidence is not None
+        ]
+        mean_conf = (sum(present) / len(present)) if present else 0.0
+        threshold = (
+            config.STRICT_MULTIWORD_EXACT_MIN_MEAN
+            if words_total >= 2
+            else config.STRICT_CORRECT_MIN_PROB
+        )
+        verdict: WordResult = "correct" if mean_conf >= threshold else "close"
+        word_scores = [
+            WordScore(ws.word, ws.heard, ws.confidence, verdict)
+            for ws in word_scores
+        ]
+    elif mode == "strict" and not exact_seq:
         # Re-score: any non-exact token is missed unless exact+low-conf → close
         revised: list[WordScore] = []
         for ws in word_scores:

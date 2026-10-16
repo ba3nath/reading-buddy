@@ -9,6 +9,7 @@ import pytest
 
 from app.matching import (
     align_tokens,
+    hypothesis_from_whisper_words,
     is_beginner_edit_close,
     is_plural_pair,
     levenshtein,
@@ -17,6 +18,7 @@ from app.matching import (
     score_attempt,
     tokenize,
 )
+from app.whisper_engine import TranscriptWord
 
 FIXTURES = Path(__file__).parent / "fixtures" / "transcripts"
 CONTENT = Path(__file__).resolve().parents[1] / "content" / "items.json"
@@ -68,10 +70,25 @@ def _run_case(name: str):
         "jill-hill-beginner",
         "sit-sat-beginner",
         "ship-chip-beginner",
+        "story-line-function-drops",
+        "story-line-content-miss",
+        "story-line-function-drops-strict",
     ],
 )
 def test_transcript_fixtures(name):
     _run_case(name)
+
+
+def test_hypothesis_from_whisper_words_strips_punctuation():
+    heard, confs = hypothesis_from_whisper_words(
+        [
+            TranscriptWord(word=" The", probability=0.9),
+            TranscriptWord(word="big", probability=0.8),
+            TranscriptWord(word="dog.", probability=0.7),
+        ]
+    )
+    assert heard == "the big dog"
+    assert confs == [0.9, 0.8, 0.7]
 
 
 def test_normalize_strips_punctuation():
@@ -197,6 +214,42 @@ def test_low_confidence_exact_still_close_strict():
     result = score_attempt("cat", "cat", [0.40], mode="strict")
     assert result.result == "close"
     assert result.word_scores[0].result == "close"
+
+
+def test_strict_exact_line_uses_mean_confidence():
+    """Real session: Whisper heard the line; two soft tokens must not fail it."""
+    confs = [
+        0.5750277042388916,  # the
+        0.7884606122970581,  # big
+        0.9936681389808655,  # dog
+        0.863253653049469,  # ran
+        0.9780876636505127,  # to
+        0.9955867528915405,  # the
+        0.9698108434677124,  # cat
+    ]
+    result = score_attempt(
+        "The big dog ran to the cat.",
+        "the big dog ran to the cat",
+        confs,
+        mode="strict",
+    )
+    assert result.result == "correct"
+    assert result.words_correct == 7
+    assert all(ws.result == "correct" for ws in result.word_scores)
+
+
+def test_strict_hickory_exact_low_mean_still_correct():
+    """Real session 25: exact 'hickory dickory dock' at mean ~0.55 must pass."""
+    confs = [0.42491139593039406, 0.5735829919576645, 0.6374983191490173]
+    result = score_attempt(
+        "Hickory dickory dock",
+        "hickory dickory dock",
+        confs,
+        mode="strict",
+    )
+    assert sum(confs) / len(confs) < 0.85
+    assert result.result == "correct"
+    assert result.words_correct == 3
 
 
 def test_strict_extras_not_exact():

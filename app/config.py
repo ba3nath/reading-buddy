@@ -27,6 +27,9 @@ NO_SPEECH_PROB_MAX = 0.60
 LOW_TOKEN_PROB = 0.25
 BEGINNER_CORRECT_MIN_PROB = 0.60
 STRICT_CORRECT_MIN_PROB = 0.85
+# Multi-word exact matches (nursery lines): Whisper often scores nonsense
+# words like hickory/dickory ~0.4–0.7 even when the transcript is perfect.
+STRICT_MULTIWORD_EXACT_MIN_MEAN = 0.50
 
 WHISPER_MODEL = "small.en"
 WHISPER_DEVICE = "cpu"
