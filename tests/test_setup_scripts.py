@@ -36,6 +36,18 @@ def test_readme_documents_windows_espeak():
 
 
 def test_readme_documents_runner():
-    assert "python runner.py" in README
+    assert "./run" in README
+    assert "python3 runner.py" in README
     assert "launchctl" in README
     assert "--force-audio" in README
+    assert "--localhost-only" in README
+    assert "--force-deps" in README
+    assert "0.0.0.0" in README
+    assert (ROOT / "run").is_file()
+
+
+def test_readme_documents_quick_start_and_matching():
+    assert "git pull" in README
+    assert "Beginner" in README
+    assert "Strict" in README
+    assert "/parent" in README

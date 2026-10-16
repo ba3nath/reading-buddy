@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Regenerate listen clips when audio inputs change, then start the app.
+"""One command after git pull: deps, venv, audio, server, open URLs.
 
-Typical use (from the repo root, after one-time setup):
+Typical use (from the repo root):
 
-    python runner.py              # maybe regen audio → start
-    python runner.py --stop       # stop launchd job or local uvicorn
-    python runner.py --foreground # uvicorn in this terminal (any OS)
-    python runner.py --force-audio
+    ./run
+    python3 runner.py
+    python3 runner.py --stop
+    python3 runner.py --foreground
+    python3 runner.py --force-audio
+    python3 runner.py --localhost-only
 
-On macOS, the default start path installs/loads a LaunchAgent via ``launchctl``
-so Reading Buddy comes back after reboot. Elsewhere (or with ``--foreground``),
-uvicorn runs in the foreground on 127.0.0.1:8765.
+Creates/uses ``.venv``, installs requirements when they change, downloads
+models if missing, regenerates listen clips when needed, restarts the server,
+and prints localhost + LAN URLs.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ import os
 import platform
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -44,18 +47,72 @@ AUDIO_INPUT_PATHS: tuple[str, ...] = (
 )
 
 STAMP_PATH = config.DATA_DIR / "runner_audio_stamp.json"
+DEPS_STAMP_PATH = config.DATA_DIR / "runner_deps_stamp.json"
 PID_PATH = config.DATA_DIR / "runner_uvicorn.pid"
 LOG_DIR = config.DATA_DIR / "logs"
 LAUNCHD_LABEL = "com.readingbuddy.server"
-HEALTH_URL = f"http://{config.HOST}:{config.PORT}/api/health"
+REQUIREMENTS = ROOT / "requirements.txt"
+MIN_PY = (3, 11)
+
+
+def _venv_dir() -> Path:
+    return ROOT / ".venv"
 
 
 def _venv_python() -> Path:
     if platform.system() == "Windows":
-        candidate = ROOT / ".venv" / "Scripts" / "python.exe"
-    else:
-        candidate = ROOT / ".venv" / "bin" / "python"
-    return candidate if candidate.is_file() else Path(sys.executable)
+        return _venv_dir() / "Scripts" / "python.exe"
+    return _venv_dir() / "bin" / "python"
+
+
+def _using_project_venv() -> bool:
+    try:
+        return Path(sys.executable).resolve() == _venv_python().resolve()
+    except OSError:
+        return False
+
+
+def find_system_python() -> Path:
+    """Prefer a Python 3.11+ interpreter for creating the venv."""
+    candidates: list[Path] = []
+    for name in ("python3.12", "python3.11", "python3", "python"):
+        found = shutil.which(name)
+        if found:
+            candidates.append(Path(found))
+    # Also consider the interpreter running this file (may be Homebrew python3).
+    candidates.insert(0, Path(sys.executable))
+
+    seen: set[Path] = set()
+    for path in candidates:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            continue
+        if resolved in seen or not resolved.is_file():
+            continue
+        seen.add(resolved)
+        try:
+            out = subprocess.run(
+                [str(resolved), "-c", "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            continue
+        text = (out.stdout or "").strip()
+        try:
+            major_s, minor_s = text.split(".", 1)
+            version = (int(major_s), int(minor_s))
+        except ValueError:
+            continue
+        if version >= MIN_PY:
+            return resolved
+
+    raise RuntimeError(
+        f"Python {MIN_PY[0]}.{MIN_PY[1]}+ not found. "
+        "Install Python 3.11+ (macOS: brew install python@3.12) and re-run."
+    )
 
 
 def _run(
@@ -75,12 +132,133 @@ def _run(
     )
 
 
+def ensure_venv() -> Path:
+    """Create ``.venv`` if needed; return its python path."""
+    py = _venv_python()
+    if py.is_file():
+        return py
+    system = find_system_python()
+    print(f"Creating virtualenv with {system} …", flush=True)
+    _run([str(system), "-m", "venv", str(_venv_dir())])
+    if not py.is_file():
+        raise RuntimeError(f"venv python missing after create: {py}")
+    return py
+
+
+def reexec_in_venv_if_needed(argv: list[str]) -> None:
+    """Re-launch this script under ``.venv`` so imports use project deps."""
+    if _using_project_venv():
+        return
+    venv_py = ensure_venv()
+    print(f"Using venv: {venv_py}", flush=True)
+    os.execv(str(venv_py), [str(venv_py), str(ROOT / "runner.py"), *argv])
+
+
 def file_digest(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _load_json_stamp(path: Path) -> dict | None:
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def ensure_deps(*, force: bool = False) -> bool:
+    """pip install -r requirements.txt when the lockfile changed or imports fail.
+
+    Returns True when pip install ran.
+    """
+    if not REQUIREMENTS.is_file():
+        raise RuntimeError(f"Missing {REQUIREMENTS}")
+
+    req_hash = file_digest(REQUIREMENTS)
+    stamp = _load_json_stamp(DEPS_STAMP_PATH) or {}
+    imports_ok = True
+    try:
+        import fastapi  # noqa: F401
+        import uvicorn  # noqa: F401
+        import faster_whisper  # noqa: F401
+        import kokoro_onnx  # noqa: F401
+        import metaphone  # noqa: F401
+    except ImportError:
+        imports_ok = False
+
+    if not force and stamp.get("requirements_sha256") == req_hash and imports_ok:
+        print("Dependencies up to date — skip pip install.", flush=True)
+        return False
+
+    reason = "forced" if force else ("imports missing" if not imports_ok else "requirements.txt changed")
+    print(f"Installing Python packages ({reason})…", flush=True)
+    py = str(_venv_python())
+    _run([py, "-m", "pip", "install", "--upgrade", "pip"])
+    _run([py, "-m", "pip", "install", "-r", str(REQUIREMENTS)])
+    config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DEPS_STAMP_PATH.write_text(
+        json.dumps(
+            {
+                "requirements_sha256": req_hash,
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return True
+
+
+def models_ready() -> bool:
+    return (
+        config.KOKORO_MODEL_PATH.is_file()
+        and config.KOKORO_VOICES_PATH.is_file()
+        and config.KOKORO_MODEL_PATH.stat().st_size > 0
+        and config.KOKORO_VOICES_PATH.stat().st_size > 0
+    )
+
+
+def ensure_models() -> bool:
+    """Download Whisper + Kokoro once when model files are missing."""
+    if models_ready():
+        # Whisper may still be in HF cache / models/; Kokoro is the hard gate for audio.
+        print("Models present — skip download.", flush=True)
+        return False
+    print("Downloading models (Whisper + Kokoro) — needs network once…", flush=True)
+    _run([str(_venv_python()), str(ROOT / "scripts" / "download_models.py")])
+    if not models_ready():
+        raise RuntimeError(
+            "Model download finished but Kokoro files are still missing. "
+            f"Expected {config.KOKORO_MODEL_PATH}"
+        )
+    return True
+
+
+def ensure_system_tools() -> None:
+    missing: list[str] = []
+    if not shutil.which("ffmpeg"):
+        missing.append("ffmpeg")
+    if not (shutil.which("espeak") or shutil.which("espeak-ng")):
+        missing.append("espeak or espeak-ng")
+    if missing:
+        tip = {
+            "Darwin": "brew install ffmpeg espeak",
+            "Windows": "winget install Gyan.FFmpeg and eSpeak-NG.eSpeak-NG",
+            "Linux": "sudo apt install ffmpeg espeak-ng",
+        }.get(platform.system(), "install ffmpeg and espeak-ng")
+        print(
+            "WARNING: missing tools: "
+            + ", ".join(missing)
+            + f"\n  Install with: {tip}",
+            flush=True,
+        )
 
 
 def audio_inputs_fingerprint() -> dict[str, str]:
@@ -93,11 +271,8 @@ def audio_inputs_fingerprint() -> dict[str, str]:
 
 
 def load_stamp() -> dict[str, str] | None:
-    if not STAMP_PATH.is_file():
-        return None
-    try:
-        payload = json.loads(STAMP_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    payload = _load_json_stamp(STAMP_PATH)
+    if not payload:
         return None
     files = payload.get("files")
     return files if isinstance(files, dict) else None
@@ -106,7 +281,10 @@ def load_stamp() -> dict[str, str] | None:
 def save_stamp(files: dict[str, str]) -> None:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     STAMP_PATH.write_text(
-        json.dumps({"files": files, "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S")}, indent=2)
+        json.dumps(
+            {"files": files, "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+            indent=2,
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -163,9 +341,25 @@ def maybe_regenerate_audio(*, force: bool = False) -> bool:
     return True
 
 
+def maybe_regenerate_illustrations() -> bool:
+    keys = ROOT / "static" / "illustrations" / "keys.json"
+    if keys.is_file():
+        return False
+    script = ROOT / "scripts" / "generate_illustrations.py"
+    if not script.is_file():
+        return False
+    print("Illustrations missing — generating…", flush=True)
+    _run([str(_venv_python()), str(script)])
+    return True
+
+
+def health_url() -> str:
+    return f"http://127.0.0.1:{config.PORT}/api/health"
+
+
 def health_ok(timeout: float = 2.0) -> bool:
     try:
-        with urllib.request.urlopen(HEALTH_URL, timeout=timeout) as resp:
+        with urllib.request.urlopen(health_url(), timeout=timeout) as resp:
             if resp.status != 200:
                 return False
             body = json.loads(resp.read().decode("utf-8"))
@@ -174,17 +368,57 @@ def health_ok(timeout: float = 2.0) -> bool:
         return False
 
 
+def lan_ips() -> list[str]:
+    """Best-effort IPv4 addresses useful on the same Wi‑Fi."""
+    found: list[str] = []
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            ip = sock.getsockname()[0]
+            if ip and not ip.startswith("127."):
+                found.append(ip)
+    except OSError:
+        pass
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            ip = info[4][0]
+            if ip and not ip.startswith("127.") and ip not in found:
+                found.append(ip)
+    except OSError:
+        pass
+    return found
+
+
+def print_ready_banner(*, bind_host: str) -> None:
+    port = config.PORT
+    print("", flush=True)
+    print("Reading Buddy is ready", flush=True)
+    print(f"  This computer:  http://127.0.0.1:{port}", flush=True)
+    print(f"  Parent page:    http://127.0.0.1:{port}/parent", flush=True)
+    if bind_host in ("0.0.0.0", "::"):
+        ips = lan_ips()
+        if ips:
+            for ip in ips:
+                print(f"  Same Wi‑Fi:     http://{ip}:{port}", flush=True)
+        else:
+            print("  Same Wi‑Fi:     (could not detect LAN IP)", flush=True)
+    else:
+        print("  (localhost only — pass nothing / omit --localhost-only for Wi‑Fi)", flush=True)
+    print(f"  Health:         {health_url()}", flush=True)
+    print("  Stop later:     ./run --stop", flush=True)
+    print("", flush=True)
+
+
 def launchd_plist_path() -> Path:
-    home = Path.home()
-    return home / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
+    return Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
 
 
-def launchd_plist_body(python: Path) -> str:
+def launchd_plist_body(python: Path, *, bind_host: str) -> str:
     log_dir = LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
     stdout = log_dir / "uvicorn.out.log"
     stderr = log_dir / "uvicorn.err.log"
-    # Keep XML simple — paths should not need exotic escaping for this project.
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -200,7 +434,7 @@ def launchd_plist_body(python: Path) -> str:
     <string>uvicorn</string>
     <string>app.main:app</string>
     <string>--host</string>
-    <string>{config.HOST}</string>
+    <string>{bind_host}</string>
     <string>--port</string>
     <string>{config.PORT}</string>
   </array>
@@ -240,7 +474,6 @@ def stop_launchd() -> None:
         capture_output=True,
         text=True,
     )
-    # Older macOS / habit: unload by plist path too.
     if plist.is_file():
         subprocess.run(
             ["launchctl", "unload", str(plist)],
@@ -251,17 +484,16 @@ def stop_launchd() -> None:
         print(f"Stopped LaunchAgent {LAUNCHD_LABEL}", flush=True)
 
 
-def start_launchd() -> None:
+def start_launchd(*, bind_host: str) -> None:
     if not launchctl_available():
         raise RuntimeError("launchctl is only available on macOS")
     python = _venv_python()
     plist = launchd_plist_path()
     plist.parent.mkdir(parents=True, exist_ok=True)
     stop_launchd()
-    plist.write_text(launchd_plist_body(python), encoding="utf-8")
+    plist.write_text(launchd_plist_body(python, bind_host=bind_host), encoding="utf-8")
     uid = os.getuid()
     domain = f"gui/{uid}"
-    # bootout may have removed it; bootstrap + kickstart is the modern path.
     boot = subprocess.run(
         ["launchctl", "bootstrap", domain, str(plist)],
         check=False,
@@ -269,7 +501,6 @@ def start_launchd() -> None:
         text=True,
     )
     if boot.returncode != 0:
-        # Fall back to classic load.
         _run(["launchctl", "load", "-w", str(plist)], check=False)
     else:
         subprocess.run(
@@ -300,7 +531,34 @@ def stop_pidfile() -> None:
     PID_PATH.unlink(missing_ok=True)
 
 
-def start_uvicorn_background() -> None:
+def _free_port() -> None:
+    """Best-effort kill whatever is listening on the app port (macOS/Linux)."""
+    if platform.system() == "Windows":
+        return
+    try:
+        out = subprocess.run(
+            ["lsof", f"-tiTCP:{config.PORT}", "-sTCP:LISTEN"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return
+    for line in (out.stdout or "").split():
+        try:
+            pid = int(line.strip())
+        except ValueError:
+            continue
+        if pid == os.getpid():
+            continue
+        try:
+            os.kill(pid, signal.SIGTERM)
+            print(f"Freed port {config.PORT} (stopped pid {pid})", flush=True)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
+def start_uvicorn_background(*, bind_host: str) -> None:
     """Detach uvicorn and record a pidfile (non-macOS service fallback)."""
     stop_pidfile()
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -316,7 +574,7 @@ def start_uvicorn_background() -> None:
             "uvicorn",
             "app.main:app",
             "--host",
-            config.HOST,
+            bind_host,
             "--port",
             str(config.PORT),
         ],
@@ -328,14 +586,17 @@ def start_uvicorn_background() -> None:
     )
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     PID_PATH.write_text(str(proc.pid), encoding="utf-8")
-    print(f"Started uvicorn pid {proc.pid} → http://{config.HOST}:{config.PORT}", flush=True)
+    print(f"Started uvicorn pid {proc.pid}", flush=True)
 
 
-def start_uvicorn_foreground() -> None:
+def start_uvicorn_foreground(*, bind_host: str) -> None:
     env = os.environ.copy()
     env["HF_HUB_OFFLINE"] = "1"
     env["PYTHONUNBUFFERED"] = "1"
-    print(f"Starting uvicorn on http://{config.HOST}:{config.PORT} (Ctrl+C to stop)", flush=True)
+    print(
+        f"Starting uvicorn on http://{bind_host}:{config.PORT} (Ctrl+C to stop)",
+        flush=True,
+    )
     os.execvpe(
         str(_venv_python()),
         [
@@ -344,7 +605,7 @@ def start_uvicorn_foreground() -> None:
             "uvicorn",
             "app.main:app",
             "--host",
-            config.HOST,
+            bind_host,
             "--port",
             str(config.PORT),
         ],
@@ -352,24 +613,28 @@ def start_uvicorn_foreground() -> None:
     )
 
 
-def wait_for_health(*, seconds: float = 60.0) -> bool:
+def wait_for_health(*, seconds: float = 90.0) -> bool:
     deadline = time.time() + seconds
     while time.time() < deadline:
         if health_ok():
-            print(f"Healthy: {HEALTH_URL}", flush=True)
+            print(f"Healthy: {health_url()}", flush=True)
             return True
         time.sleep(0.5)
-    print(f"WARNING: health check did not pass within {seconds:.0f}s ({HEALTH_URL})", flush=True)
+    print(
+        f"WARNING: health check did not pass within {seconds:.0f}s ({health_url()})",
+        flush=True,
+    )
     return False
 
 
 def stop_all() -> None:
     stop_launchd()
     stop_pidfile()
-    # Best-effort: free the port if something else is bound.
+    _free_port()
+    time.sleep(0.4)
     if health_ok(timeout=0.5):
         print(
-            f"Something is still answering on {config.HOST}:{config.PORT}. "
+            f"Something is still answering on port {config.PORT}. "
             "Stop it manually if needed.",
             flush=True,
         )
@@ -377,13 +642,23 @@ def stop_all() -> None:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Refresh audio if needed, then start the Reading Buddy server."
+        description="Bootstrap deps/venv, refresh audio if needed, restart Reading Buddy."
     )
     p.add_argument("--no-audio", action="store_true", help="Skip audio stamp / regenerate")
     p.add_argument(
         "--force-audio",
         action="store_true",
         help="Force regenerate all generated wavs",
+    )
+    p.add_argument(
+        "--force-deps",
+        action="store_true",
+        help="Force pip install -r requirements.txt",
+    )
+    p.add_argument(
+        "--skip-deps",
+        action="store_true",
+        help="Skip venv/pip/model bootstrap (audio + server only)",
     )
     p.add_argument(
         "--foreground",
@@ -406,11 +681,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Do not wait for /api/health after start",
     )
+    p.add_argument(
+        "--localhost-only",
+        action="store_true",
+        help="Bind 127.0.0.1 only (no phone/tablet on Wi‑Fi)",
+    )
     return p.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv)
+    raw = list(argv) if argv is not None else sys.argv[1:]
+    args = parse_args(raw)
     os.chdir(ROOT)
     config.ensure_dirs()
 
@@ -418,10 +699,24 @@ def main(argv: list[str] | None = None) -> int:
         stop_all()
         return 0
 
+    if not args.skip_deps:
+        # Create venv with system Python, then re-exec under it before pip/imports.
+        ensure_venv()
+        reexec_in_venv_if_needed(raw)
+        ensure_system_tools()
+        ensure_deps(force=args.force_deps)
+        ensure_models()
+        maybe_regenerate_illustrations()
+
     if not args.no_audio:
         maybe_regenerate_audio(force=args.force_audio)
 
-    # Default: LaunchAgent on macOS; foreground uvicorn elsewhere.
+    bind_host = "127.0.0.1" if args.localhost_only else "0.0.0.0"
+
+    # Always restart so a git pull + ./run picks up new code.
+    print("Restarting server…", flush=True)
+    stop_all()
+
     if args.launchd:
         if not launchctl_available():
             print("ERROR: --launchd requires macOS launchctl.", file=sys.stderr)
@@ -437,28 +732,22 @@ def main(argv: list[str] | None = None) -> int:
         mode = "foreground"
 
     if mode == "launchd":
-        start_launchd()
+        start_launchd(bind_host=bind_host)
         if not args.no_wait:
             wait_for_health()
-        print(f"Open http://{config.HOST}:{config.PORT}", flush=True)
+        print_ready_banner(bind_host=bind_host)
         return 0
 
     if mode == "background":
-        start_uvicorn_background()
+        start_uvicorn_background(bind_host=bind_host)
         if not args.no_wait:
             wait_for_health()
-        print(f"Open http://{config.HOST}:{config.PORT}", flush=True)
+        print_ready_banner(bind_host=bind_host)
         return 0
 
-    # Foreground.
-    if health_ok(timeout=0.3):
-        print(
-            f"Port {config.PORT} already looks healthy — "
-            "reusing it. Pass --stop first to restart.",
-            flush=True,
-        )
-        return 0
-    start_uvicorn_foreground()
+    # Foreground — print URLs first; process is replaced by uvicorn.
+    print_ready_banner(bind_host=bind_host)
+    start_uvicorn_foreground(bind_host=bind_host)
     return 0
 
 

@@ -1,126 +1,121 @@
 # Reading Buddy
 
-Local reading game for a child: listen-then-say with Kokoro clips, microphone capture, `faster-whisper` `small.en` on CPU, Beginner/Strict matching, stars, adaptive queue, day ladder / mastery, end-of-session replay, animated buddies, a growth-only garden, and a parent trend page with CSV export.
+A local reading game for a child: listen, then say it back. Kokoro speaks the prompt; the mic and `faster-whisper` (`small.en` on CPU) score the reading. Stars, an adaptive queue, day-ladder mastery, end-of-session replay, buddies, a growth-only garden, and a parent trends page (CSV export, no PIN).
 
-Bind: [http://127.0.0.1:8765](http://127.0.0.1:8765) (localhost only). Parent: [http://127.0.0.1:8765/parent](http://127.0.0.1:8765/parent) (no PIN).
+## Quick start (after `git pull`)
+
+From the repo root:
+
+```bash
+./run
+# Windows / fallback: python3 runner.py
+```
+
+The runner will:
+
+1. Find Python 3.11+, create `.venv` if needed, and re-run inside it  
+2. Install `requirements.txt` when it changed (or imports are missing)  
+3. Download Whisper + Kokoro models once if they are missing  
+4. Regenerate listen clips only when content/TTS inputs changed or clips are missing  
+5. Restart the server and print URLs, for example:
+
+```text
+This computer:  http://127.0.0.1:8765
+Parent page:    http://127.0.0.1:8765/parent
+Same Wi‑Fi:     http://192.168.x.x:8765
+```
+
+Use Chrome or Edge (needed for the microphone).
+
+| Command | What it does |
+| --- | --- |
+| `./run` | Bootstrap + audio if needed + restart |
+| `./run --stop` | Stop the server |
+| `./run --force-audio` | Rebuild all listen clips |
+| `./run --force-deps` | Re-run `pip install -r requirements.txt` |
+| `./run --localhost-only` | Bind `127.0.0.1` only (no phone/tablet) |
+| `./run --foreground` | Keep uvicorn in this terminal |
+
+On macOS, the default start path installs a LaunchAgent via `launchctl` (`com.readingbuddy.server`) so the app can come back after reboot. Elsewhere, uvicorn runs in the foreground unless you pass `--background`.
 
 ## Requirements
 
 - Python 3.11+ (3.12 recommended)
-- **ffmpeg** on `PATH` (`ffmpeg -version` must succeed)
+- **ffmpeg** on `PATH` (`ffmpeg -version`)
   - macOS: `brew install ffmpeg` (or `scripts/setup_mac.sh`)
   - Windows: `winget install Gyan.FFmpeg` (or `scripts/setup_windows.ps1`)
   - Linux: `sudo apt install ffmpeg`
-- **espeak / espeak-ng** on `PATH` (Kokoro phonemizer; required before `generate_audio.py`)
-  - macOS: `brew install espeak` (or `scripts/setup_mac.sh`)
-  - Windows: `winget install --id eSpeak-NG.eSpeak-NG -e` (or Chocolatey `choco install espeak`; `scripts/setup_windows.ps1` tries both)
+- **espeak** or **espeak-ng** on `PATH` (Kokoro phonemizer)
+  - macOS: `brew install espeak`
+  - Windows: `winget install --id eSpeak-NG.eSpeak-NG -e`
   - Linux: `sudo apt install espeak-ng`
-- Chrome or Edge for the microphone (localhost is a secure context)
 
-## Setup (once, while online)
-
-**macOS**
+First-time machine setup (Homebrew tools + venv + models) can still use:
 
 ```bash
-chmod +x scripts/setup_mac.sh
-./scripts/setup_mac.sh
+./scripts/setup_mac.sh          # macOS
+.\scripts\setup_windows.ps1     # Windows PowerShell
 ```
 
-**Windows (PowerShell)**
+After that, day-to-day is just `./run`.
 
-```powershell
-.\scripts\setup_windows.ps1
-```
+## What the child and parent see
 
-**Manual**
+**Child** — pick a buddy, then Words / Phrases / Rhymes / Stories. Each difficulty has eight sets; finished sets are marked done, started ones look partial. One Start button; refresh resumes an open session. Rhymes play a real nursery poem line by line, then a required read-through. Stories are short decodable narratives in order, then a read-through. Missed words get a kind second try; silence is a retry, not a fail.
 
-```bash
-cd /workspace   # or your clone root
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python scripts/download_models.py    # Whisper small.en + Kokoro ONNX
-python scripts/tag_sounds.py --download   # optional: CMU dict → sound_tags
-python scripts/generate_audio.py     # wavs into audio/generated/
-# After TTS/postprocess changes (or if clips sound clipped): 
-#   python scripts/generate_audio.py --force
-python scripts/generate_illustrations.py   # word/line pictograms → static/illustrations/
-# Whisper audit / single-token A/B retune (see audio-clip-review/):
-#   python scripts/review_audio_clips.py audit --out /tmp/audio_audit.json
-```
+**Parent** (`/parent`) — accuracy, mastered words, tricky words, sound heatmap, settings (mode, length, buddy, keep-audio), tomorrow note, kept-clip playback, CSV zip export.
 
-Drop a parent recording at `audio/human/{slug}.wav` to override a generated clip.
+`GET /api/health` → `{ "whisper", "ffmpeg", "offline", "audio" }`.
 
-### Listen-clip review agent
+## Matching (Beginner vs Strict)
 
-`audio-clip-review/` is a BDK agent that wraps `scripts/review_audio_clips.py`
-(Whisper ndarray audit → single-token A/B → apply overrides → regen). See
-`audio-clip-review/README.md`.
+- **Beginner** — forgiving on short slips; drops of tiny words (`the`, `a`, `to`, …) on longer lines do not fail a clear reading.  
+- **Strict** — needs the full word sequence. Exact multi-word lines use mean Whisper confidence (nursery words like *hickory* are often soft), so a correct reading is not failed by one low token score.
 
-## Run (day-to-day)
+## Offline play
 
-From the repo root (venv optional — `runner.py` prefers `.venv`):
-
-```bash
-python runner.py
-```
-
-What it does:
-
-1. Regenerates `audio/generated/` when audio inputs changed (`app/audio_files.py`, `scripts/generate_audio.py`, `content/items.json`, `app/config.py`) or clips are missing
-2. Starts the server:
-   - **macOS:** LaunchAgent via `launchctl` (`com.readingbuddy.server`, survives reboot)
-   - **elsewhere:** uvicorn in the foreground on `127.0.0.1:8765`
-
-Useful flags: `--stop`, `--foreground`, `--background`, `--force-audio`, `--launchd`.
-
-### Manual uvicorn (offline second run)
-
-After models and clips exist, play with the network off:
+After models and clips exist, the network can be off. `./run` sets `HF_HUB_OFFLINE=1` for the server. Manual equivalent:
 
 ```bash
 source .venv/bin/activate
 export HF_HUB_OFFLINE=1
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8765
 ```
 
-Windows PowerShell:
+## Optional / advanced
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-$env:HF_HUB_OFFLINE = "1"
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+```bash
+python scripts/tag_sounds.py --download   # CMU dict → sound_tags
+python scripts/generate_illustrations.py  # pictograms → static/illustrations/
+# Override a clip with a parent recording:
+#   audio/human/{slug}.wav
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Child game: buddies (Krishna / unicorn), garden growth on each completed session, four difficulties (Words / Phrases / Rhymes / Stories) with uniform 5 or 10 items, Home · pause / Continue mid-session, and rhyme-time listen-and-sing-along on Rhymes (one clip per line on screen). Parent page: accuracy, mastered, tricky words, sound heatmap (v1 reading-accuracy note), settings, keep-audio playback, CSV zip export.
+Listen-clip review agent (Whisper audit / A/B retune): see `audio-clip-review/README.md`.
 
-`GET /api/health` reports `{ "whisper", "ffmpeg", "offline", "audio" }`.
-
-## Tests (no mic)
+## Tests
 
 ```bash
 source .venv/bin/activate
 pytest -q
 ```
 
-Matcher, session, adaptive, and API tests (M1–M4) use fixture transcripts and a Whisper double.
+## Privacy & kindness
 
-## Privacy
-
-- Temp audio is deleted in a `finally` block after scoring.
-- `keep_audio` defaults to false. When true, wavs are copied to `data/kept/{attempt_id}.wav` for the parent page; turning the setting off deletes those files.
-- SQLite stores transcripts and results, never audio bytes.
-- Server binds `127.0.0.1` only.
-
-## Kindness
-
-No visible timers, no lost stars or garden growth, no red fail screens, no buzzers. Silence is a retry. Buddies are original characters (Krishna, unicorn).
+- Temp mic audio is deleted after scoring.  
+- `keep_audio` defaults to off; when on, wavs go to `data/kept/{attempt_id}.wav` for the parent page.  
+- SQLite stores transcripts and results, never audio bytes.  
+- Default bind is `0.0.0.0` so a tablet on Wi‑Fi works; use `./run --localhost-only` for loopback only.  
+- No visible timers, no lost stars or garden growth, no red fail screens, no buzzers.
 
 ## Layout
 
-- `app/` — FastAPI, matcher, session, adaptive queue, parent aggregations, Whisper, audio helpers
-- `static/` — child game + parent page (plain HTML/JS), mascot SVGs, word pictograms
-- `content/items.json` — levels 1–7
-- `scripts/setup_mac.sh`, `scripts/setup_windows.ps1` — one-time online setup
-- `audio/generated/`, `audio/human/`, `models/`, `data/` — gitignored runtime assets
-- `tests/` — pytest suites
+| Path | Role |
+| --- | --- |
+| `run` / `runner.py` | Day-to-day bootstrap + restart |
+| `app/` | FastAPI, matcher, session, adaptive queue, Whisper, audio |
+| `static/` | Child + parent UI, mascots, pictograms |
+| `content/items.json` | Words, phrases, nursery rhymes, short stories |
+| `scripts/` | Setup, models, audio, illustrations |
+| `audio/generated/`, `models/`, `data/` | Runtime assets (gitignored) |
+| `tests/` | pytest |

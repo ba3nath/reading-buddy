@@ -84,6 +84,33 @@ def test_rhyme_and_story_are_one_group(tmp_env):
     assert not any(row["text"] == "The big dog" for row in loose)
 
 
+def test_shipped_rhymes_are_approved_mother_goose(tmp_env):
+    conn = tmp_env["conn"]
+    groups = {
+        row["rhyme_group"]
+        for row in conn.execute(
+            "SELECT DISTINCT rhyme_group FROM items WHERE rhyme_group IS NOT NULL"
+        )
+    }
+    assert "rain-rain" in groups
+    assert "little-boy-blue" in groups
+    assert "jack-and-jill" in groups
+    assert "row-boat" not in groups
+    assert "itsy-spider" not in groups
+    rain = [
+        row["text"]
+        for row in conn.execute(
+            """
+            SELECT text FROM items
+            WHERE rhyme_group = 'rain-rain'
+            ORDER BY line_index
+            """
+        )
+    ]
+    assert rain[0] == "Rain rain go away"
+    assert any("children" in line.lower() for line in rain)
+
+
 def test_passage_omits_duration_and_parent_keeps_it(client, whisper_double, tone_wav, tmp_env):
     from app.whisper_engine import AttemptTranscript, TranscriptWord
 

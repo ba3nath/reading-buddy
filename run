@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Simple entrypoint after git pull: ./run
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+if [[ -x "$ROOT/.venv/bin/python" ]]; then
+  exec "$ROOT/.venv/bin/python" "$ROOT/runner.py" "$@"
+fi
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 "$ROOT/runner.py" "$@"
+fi
+if command -v python >/dev/null 2>&1; then
+  exec python "$ROOT/runner.py" "$@"
+fi
+echo "ERROR: Python 3 not found. Install Python 3.11+ and re-run ./run" >&2
+exit 1
