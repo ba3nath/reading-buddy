@@ -633,6 +633,9 @@ ALIASES: dict[str, str] = {
     "dickory": "mouse",
     "down": "hill",
     "again": "sparkle",
+    "best": "star",
+    "fast": "train",
+    "ran": "run",
 }
 
 

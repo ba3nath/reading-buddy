@@ -73,11 +73,15 @@ def test_rhyme_and_story_are_one_group(tmp_env):
     poem = build_adaptive_queue(conn, level=3, length=10, stage=1)
     assert len({row["rhyme_group"] for row in poem}) == 1
     assert len(poem) >= 2
+    assert all(row["kind"] == "line" for row in poem)
     story = build_adaptive_queue(conn, level=4, length=10, stage=2)
     assert len({row["story_id"] for row in story}) == 1
     assert story[0]["story_id"] != build_adaptive_queue(conn, level=4, length=10, stage=1)[0]["story_id"]
+    # Each story line is a real sentence, not a bare word label.
+    assert all(len(row["text"].split()) >= 4 for row in story)
     loose = [row for row in conn.execute("SELECT text FROM items WHERE level = 5")]
     assert not any(row["text"] == "The cat sat on the mat." for row in loose)
+    assert not any(row["text"] == "The big dog" for row in loose)
 
 
 def test_passage_omits_duration_and_parent_keeps_it(client, whisper_double, tone_wav, tmp_env):

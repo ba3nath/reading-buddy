@@ -1878,442 +1878,482 @@
   },
   {
     "slug": "dog-and-cat-1",
-    "text": "The big dog",
+    "text": "The big dog ran to the cat.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "dog-and-cat",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "the big dog ran to the cat"
   },
   {
     "slug": "dog-and-cat-2",
-    "text": "Run to the cat",
+    "text": "The fat cat sat on the bed.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "dog-and-cat",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the fat cat sat on the bed"
   },
   {
     "slug": "dog-and-cat-3",
-    "text": "The fat cat",
+    "text": "The dog said come and play.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "dog-and-cat",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "the dog said come and play"
   },
   {
     "slug": "dog-and-cat-4",
-    "text": "Sit on the bed",
+    "text": "The cat and the dog can hop.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "dog-and-cat",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "the cat and the dog can hop"
   },
   {
     "slug": "dog-and-cat-5",
-    "text": "The hot sun",
+    "text": "They sit in the hot sun.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "dog-and-cat",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "they sit in the hot sun"
   },
   {
     "slug": "red-bus-1",
-    "text": "A red bus",
+    "text": "A red bus was on the path.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "red-bus",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "a red bus was on the path"
   },
   {
     "slug": "red-bus-2",
-    "text": "The big bus",
+    "text": "The kid had a red hat.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "red-bus",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the kid had a red hat"
   },
   {
     "slug": "red-bus-3",
-    "text": "Sit on the bus",
+    "text": "Sit on the big red bus.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "red-bus",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "sit on the big red bus"
   },
   {
     "slug": "red-bus-4",
-    "text": "The red hat",
+    "text": "Look at the long path.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "red-bus",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "look at the long path"
   },
   {
     "slug": "red-bus-5",
-    "text": "A hot sun",
+    "text": "The fast bus can win.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "red-bus",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the fast bus can win"
   },
   {
     "slug": "wet-day-1",
-    "text": "The wet log",
+    "text": "The rain was wet and cold.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "wet-day",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "the rain was wet and cold"
   },
   {
     "slug": "wet-day-2",
-    "text": "A soft mop",
+    "text": "The dog ran on the path.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "wet-day",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the dog ran on the path"
   },
   {
     "slug": "wet-day-3",
-    "text": "Hop to the path",
+    "text": "Hop to the wet log.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "wet-day",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "hop to the wet log"
   },
   {
     "slug": "wet-day-4",
-    "text": "The rain",
+    "text": "The soft mop was in the mud.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "wet-day",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "the soft mop was in the mud"
   },
   {
     "slug": "wet-day-5",
-    "text": "The red box",
+    "text": "The red box was on the grass.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "wet-day",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the red box was on the grass"
   },
   {
     "slug": "pen-cup-1",
-    "text": "My blue pen",
+    "text": "My blue pen was in a cup.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "pen-cup",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "my blue pen was in a cup"
   },
   {
     "slug": "pen-cup-2",
-    "text": "The small cup",
+    "text": "The small cup was on the bed.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "pen-cup",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the small cup was on the bed"
   },
   {
     "slug": "pen-cup-3",
-    "text": "Sit and read",
+    "text": "The kid can sit and read.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "pen-cup",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "the kid can sit and read"
   },
   {
     "slug": "pen-cup-4",
-    "text": "A red pen",
+    "text": "Look at the red pen.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "pen-cup",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "look at the red pen"
   },
   {
     "slug": "pen-cup-5",
-    "text": "The soft bed",
+    "text": "The soft bed was best.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "pen-cup",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the soft bed was best"
   },
   {
     "slug": "frog-ship-1",
-    "text": "A tall ship",
+    "text": "A green frog sat on a ship.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "frog-ship",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "a green frog sat on a ship"
   },
   {
     "slug": "frog-ship-2",
-    "text": "The green frog",
+    "text": "The tall ship was in the sun.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "frog-ship",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the tall ship was in the sun"
   },
   {
     "slug": "frog-ship-3",
-    "text": "The frog and the ship",
+    "text": "The frog can hop and swim.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "frog-ship",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "the frog can hop and swim"
   },
   {
     "slug": "frog-ship-4",
-    "text": "Run to the ship",
+    "text": "Run to the big ship.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "frog-ship",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "run to the big ship"
   },
   {
     "slug": "frog-ship-5",
-    "text": "The big ship",
+    "text": "The frog and the ship can play.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "frog-ship",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the frog and the ship can play"
   },
   {
     "slug": "cat-bed-1",
-    "text": "The soft bed",
+    "text": "The soft cat sat on the bed.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "cat-bed",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "the soft cat sat on the bed"
   },
   {
     "slug": "cat-bed-2",
-    "text": "The cat on the bed",
+    "text": "The cat had a red hat.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "cat-bed",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the cat had a red hat"
   },
   {
     "slug": "cat-bed-3",
-    "text": "Sit on the bed",
+    "text": "Sit on the bed with me.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "cat-bed",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "sit on the bed with me"
   },
   {
     "slug": "cat-bed-4",
-    "text": "A red hat",
+    "text": "The fat cat was in the sun.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "cat-bed",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "the fat cat was in the sun"
   },
   {
     "slug": "cat-bed-5",
-    "text": "The hot sun",
+    "text": "The cat can sit on the bed.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "cat-bed",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the cat can sit on the bed"
   },
   {
     "slug": "quick-fox-1",
-    "text": "A quick fox",
+    "text": "A quick fox ran to the log.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "quick-fox",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "a quick fox ran to the log"
   },
   {
     "slug": "quick-fox-2",
-    "text": "The fox and the dog",
+    "text": "The dog ran with the fox.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "quick-fox",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "the dog ran with the fox"
   },
   {
     "slug": "quick-fox-3",
-    "text": "Run to the log",
+    "text": "Look at the big log.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "quick-fox",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "look at the big log"
   },
   {
     "slug": "quick-fox-4",
-    "text": "The big log",
+    "text": "The fox sat on top.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "quick-fox",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "the fox sat on top"
   },
   {
     "slug": "quick-fox-5",
-    "text": "Sit on top",
+    "text": "The dog and the fox can play.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "quick-fox",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "the dog and the fox can play"
   },
   {
     "slug": "play-jump-1",
-    "text": "Play with me",
+    "text": "The kid can play with me.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "play-jump",
-    "line_index": 0
+    "line_index": 0,
+    "normalized": "the kid can play with me"
   },
   {
     "slug": "play-jump-2",
-    "text": "Run and jump",
+    "text": "Run and jump on the path.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "play-jump",
-    "line_index": 1
+    "line_index": 1,
+    "normalized": "run and jump on the path"
   },
   {
     "slug": "play-jump-3",
-    "text": "The red box",
+    "text": "Clap and hop to the box.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "play-jump",
-    "line_index": 2
+    "line_index": 2,
+    "normalized": "clap and hop to the box"
   },
   {
     "slug": "play-jump-4",
-    "text": "Clap and hop",
+    "text": "A big bug was on the box.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "play-jump",
-    "line_index": 3
+    "line_index": 3,
+    "normalized": "a big bug was on the box"
   },
   {
     "slug": "play-jump-5",
-    "text": "The big bug",
+    "text": "They can play and win.",
     "kind": "sentence",
     "level": 5,
-    "source": "decodable",
+    "source": "decodable-story",
     "pd_status": "n/a",
     "sound_tags": [],
     "story_id": "play-jump",
-    "line_index": 4
+    "line_index": 4,
+    "normalized": "they can play and win"
   }
 ]
