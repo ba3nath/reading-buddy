@@ -6,9 +6,32 @@ Set-Location $Root
 Write-Host "==> Reading Buddy setup (Windows)"
 Write-Host "    Project root: $Root"
 
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-  Write-Error "python not found. Install Python 3.11+ from python.org and re-run."
+# Prefer the Windows py launcher with 3.12 when available (3.14/3.15 break faster-whisper).
+$PyExe = $null
+$PyArgs = @()
+if (Get-Command py -ErrorAction SilentlyContinue) {
+  foreach ($ver in @("-3.12", "-3.11", "-3.13")) {
+    $v = & py $ver -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')" 2>$null
+    if ($LASTEXITCODE -eq 0 -and "$v".Trim() -match '^3\.(11|12|13)$') {
+      $PyExe = "py"
+      $PyArgs = @($ver)
+      break
+    }
+  }
 }
+if (-not $PyExe) {
+  if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    Write-Error "Python 3.11–3.13 not found. Install 3.12 from python.org (Add to PATH) or: winget install Python.Python.3.12"
+  }
+  $v = & python -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"
+  if ("$v".Trim() -notmatch '^3\.(11|12|13)$') {
+    Write-Error "Python $v is unsupported (need 3.11–3.13, recommend 3.12). Install Python.Python.3.12, delete .venv, re-run."
+  }
+  $PyExe = "python"
+  $PyArgs = @()
+}
+$PyLabel = & $PyExe @PyArgs -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"
+Write-Host "    Using: $PyExe $($PyArgs -join ' ') (Python $PyLabel)"
 
 function Refresh-Path {
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
@@ -90,7 +113,11 @@ Then close and re-open this terminal so PATH updates, and re-run:
 }
 
 Write-Host "==> Creating virtualenv"
-python -m venv .venv
+if (Test-Path .venv) {
+  Write-Host "    Removing existing .venv"
+  Remove-Item -Recurse -Force .venv
+}
+& $PyExe @PyArgs -m venv .venv
 & "$Root\.venv\Scripts\python.exe" -m pip install --upgrade pip
 & "$Root\.venv\Scripts\pip.exe" install -r requirements.txt
 

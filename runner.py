@@ -52,7 +52,28 @@ PID_PATH = config.DATA_DIR / "runner_uvicorn.pid"
 LOG_DIR = config.DATA_DIR / "logs"
 LAUNCHD_LABEL = "com.readingbuddy.server"
 REQUIREMENTS = ROOT / "requirements.txt"
+# Intersection of upstream requires-python / wheels:
+#   kokoro-onnx: >=3.10,<3.14
+#   onnxruntime / ctranslate2: solid wheels for 3.11–3.13 (not 3.15)
 MIN_PY = (3, 11)
+MAX_PY = (3, 13)
+# Prefer a known-good CPython for Windows/macOS installs.
+PREFERRED_PY = ((3, 12), (3, 11), (3, 13))
+
+# Import smoke-test after pip install (names, not versions).
+RUNTIME_IMPORTS = (
+    "fastapi",
+    "uvicorn",
+    "faster_whisper",
+    "ctranslate2",
+    "kokoro_onnx",
+    "onnxruntime",
+    "metaphone",
+    "soundfile",
+    "numpy",
+    "httpx",
+    "pydantic",
+)
 
 
 def _venv_dir() -> Path:
@@ -72,47 +93,134 @@ def _using_project_venv() -> bool:
         return False
 
 
+def _parse_version_text(text: str) -> tuple[int, int] | None:
+    text = (text or "").strip()
+    try:
+        major_s, minor_s = text.split(".", 1)
+        return int(major_s), int(minor_s.split(".", 1)[0])
+    except ValueError:
+        return None
+
+
+def _python_version(cmd: list[str]) -> tuple[int, int] | None:
+    try:
+        out = subprocess.run(
+            [*cmd, "-c", "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return _parse_version_text(out.stdout or "")
+
+
+def _version_supported(version: tuple[int, int]) -> bool:
+    return MIN_PY <= version <= MAX_PY
+
+
+def _python_install_hint() -> str:
+    band = f"{MIN_PY[0]}.{MIN_PY[1]}–{MAX_PY[0]}.{MAX_PY[1]}"
+    if platform.system() == "Windows":
+        return (
+            f"Need Python {band} (3.12 recommended). "
+            "Python 3.14/3.15 cannot install faster-whisper/ctranslate2 yet.\n"
+            "  winget install Python.Python.3.12\n"
+            "  Remove-Item -Recurse -Force .venv\n"
+            "  py -3.12 runner.py\n"
+            "Also install: winget install --id eSpeak-NG.eSpeak-NG -e"
+        )
+    if platform.system() == "Darwin":
+        return (
+            f"Need Python {band} (3.12 recommended).\n"
+            "  brew install python@3.12\n"
+            "  rm -rf .venv && ./run"
+        )
+    return f"Install Python 3.12 ({band}), delete .venv, and re-run."
+
+
+def verify_runtime_imports(py: str | None = None) -> None:
+    """Fail fast if a required package did not install into the venv."""
+    exe = py or str(_venv_python())
+    code = "import " + ", ".join(RUNTIME_IMPORTS)
+    try:
+        subprocess.run(
+            [exe, "-c", code],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            f"Venv python not found: {exe}\n" + _python_install_hint()
+        ) from exc
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or "").strip()
+        raise RuntimeError(
+            "Dependency import check failed after pip install.\n"
+            f"{detail}\n" + _python_install_hint()
+        ) from exc
+
+
 def find_system_python() -> Path:
-    """Prefer a Python 3.11+ interpreter for creating the venv."""
-    candidates: list[Path] = []
-    for name in ("python3.12", "python3.11", "python3", "python"):
+    """Pick a supported CPython (3.11–3.13), preferring 3.12."""
+    commands: list[list[str]] = []
+    for name in (
+        "python3.12",
+        "python3.11",
+        "python3.13",
+        "python3",
+        "python",
+    ):
         found = shutil.which(name)
         if found:
-            candidates.append(Path(found))
-    # Also consider the interpreter running this file (may be Homebrew python3).
-    candidates.insert(0, Path(sys.executable))
+            commands.append([found])
+    if platform.system() == "Windows" and shutil.which("py"):
+        for flag in ("-3.12", "-3.11", "-3.13"):
+            commands.append(["py", flag])
+    # Current interpreter last — may be too new (e.g. pythoncore-3.15).
+    commands.append([sys.executable])
 
-    seen: set[Path] = set()
-    for path in candidates:
-        try:
-            resolved = path.resolve()
-        except OSError:
+    found_versions: list[tuple[tuple[int, int], Path]] = []
+    seen: set[str] = set()
+    for cmd in commands:
+        version = _python_version(cmd)
+        if version is None or not _version_supported(version):
             continue
-        if resolved in seen or not resolved.is_file():
-            continue
-        seen.add(resolved)
+        # Resolve to a real executable path for venv creation.
         try:
             out = subprocess.run(
-                [str(resolved), "-c", "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"],
+                [*cmd, "-c", "import sys; print(sys.executable)"],
                 check=True,
                 capture_output=True,
                 text=True,
             )
+            exe = Path((out.stdout or "").strip())
+            key = str(exe.resolve()) if exe.is_file() else str(cmd)
         except (OSError, subprocess.CalledProcessError):
             continue
-        text = (out.stdout or "").strip()
-        try:
-            major_s, minor_s = text.split(".", 1)
-            version = (int(major_s), int(minor_s))
-        except ValueError:
+        if key in seen or not exe.is_file():
             continue
-        if version >= MIN_PY:
-            return resolved
+        seen.add(key)
+        found_versions.append((version, exe))
 
-    raise RuntimeError(
-        f"Python {MIN_PY[0]}.{MIN_PY[1]}+ not found. "
-        "Install Python 3.11+ (macOS: brew install python@3.12) and re-run."
-    )
+    if not found_versions:
+        raise RuntimeError(
+            f"Need Python {MIN_PY[0]}.{MIN_PY[1]}–{MAX_PY[0]}.{MAX_PY[1]} "
+            f"(3.12 recommended). faster-whisper does not install on newer Pythons yet.\n"
+            + _python_install_hint()
+        )
+
+    def sort_key(item: tuple[tuple[int, int], Path]) -> tuple[int, tuple[int, int]]:
+        version, _path = item
+        try:
+            rank = PREFERRED_PY.index(version)
+        except ValueError:
+            rank = len(PREFERRED_PY)
+        return (rank, version)
+
+    found_versions.sort(key=sort_key)
+    return found_versions[0][1]
 
 
 def _run(
@@ -133,12 +241,24 @@ def _run(
 
 
 def ensure_venv() -> Path:
-    """Create ``.venv`` if needed; return its python path."""
+    """Create ``.venv`` if needed; recreate when it uses an unsupported Python."""
     py = _venv_python()
     if py.is_file():
-        return py
+        version = _python_version([str(py)])
+        if version is not None and _version_supported(version):
+            return py
+        label = f"{version[0]}.{version[1]}" if version else "unknown"
+        print(
+            f"Existing .venv uses Python {label}; "
+            f"need {MIN_PY[0]}.{MIN_PY[1]}–{MAX_PY[0]}.{MAX_PY[1]}. Recreating…",
+            flush=True,
+        )
+        shutil.rmtree(_venv_dir(), ignore_errors=True)
+
     system = find_system_python()
-    print(f"Creating virtualenv with {system} …", flush=True)
+    version = _python_version([str(system)])
+    label = f"{version[0]}.{version[1]}" if version else "?"
+    print(f"Creating virtualenv with Python {label}: {system} …", flush=True)
     _run([str(system), "-m", "venv", str(_venv_dir())])
     if not py.is_file():
         raise RuntimeError(f"venv python missing after create: {py}")
@@ -184,12 +304,8 @@ def ensure_deps(*, force: bool = False) -> bool:
     stamp = _load_json_stamp(DEPS_STAMP_PATH) or {}
     imports_ok = True
     try:
-        import fastapi  # noqa: F401
-        import uvicorn  # noqa: F401
-        import faster_whisper  # noqa: F401
-        import kokoro_onnx  # noqa: F401
-        import metaphone  # noqa: F401
-    except ImportError:
+        verify_runtime_imports(str(_venv_python()))
+    except RuntimeError:
         imports_ok = False
 
     if not force and stamp.get("requirements_sha256") == req_hash and imports_ok:
@@ -199,14 +315,41 @@ def ensure_deps(*, force: bool = False) -> bool:
     reason = "forced" if force else ("imports missing" if not imports_ok else "requirements.txt changed")
     print(f"Installing Python packages ({reason})…", flush=True)
     py = str(_venv_python())
-    _run([py, "-m", "pip", "install", "--upgrade", "pip"])
-    _run([py, "-m", "pip", "install", "-r", str(REQUIREMENTS)])
+    venv_ver = _python_version([py])
+    if venv_ver is not None and not _version_supported(venv_ver):
+        raise RuntimeError(
+            f".venv is Python {venv_ver[0]}.{venv_ver[1]}; "
+            f"need {MIN_PY[0]}.{MIN_PY[1]}–{MAX_PY[0]}.{MAX_PY[1]}.\n"
+            + _python_install_hint()
+        )
+    try:
+        _run([py, "-m", "pip", "install", "--upgrade", "pip"])
+        _run([py, "-m", "pip", "install", "-r", str(REQUIREMENTS)])
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            "pip install failed. If you see 'no matching distribution' for "
+            "ctranslate2 / faster-whisper / onnxruntime, your Python is too new "
+            f"(need {MIN_PY[0]}.{MIN_PY[1]}–{MAX_PY[0]}.{MAX_PY[1]}).\n"
+            + _python_install_hint()
+        ) from exc
+    verify_runtime_imports(py)
+    # pip check catches broken dependency graphs (optional but useful).
+    check = subprocess.run(
+        [py, "-m", "pip", "check"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if check.returncode != 0:
+        print("WARNING: pip check reported issues:", flush=True)
+        print((check.stdout or check.stderr or "").strip(), flush=True)
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     DEPS_STAMP_PATH.write_text(
         json.dumps(
             {
                 "requirements_sha256": req_hash,
                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "python": f"{venv_ver[0]}.{venv_ver[1]}" if venv_ver else None,
             },
             indent=2,
         )

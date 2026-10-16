@@ -22,9 +22,28 @@ def check(phase: str) -> list[str]:
         "fluency": ("apply_passage", "duration_seconds"),
         "3": ("quest_label", "mastered_words"),
         "4": ("word-soft", "is-word"),
+        "runner": (
+            "ensure_deps",
+            "find_system_python",
+            "verify_runtime_imports",
+            "requires-python",
+            "ctranslate2",
+        ),
     }
     # Phase 4 markers live in the client; coverage still requires the phase tests above.
-    blob = text + "\n" + (ROOT / "static/js/game.js").read_text(encoding="utf-8")
+    blob = (
+        text
+        + "\n"
+        + (ROOT / "static/js/game.js").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "tests/test_runner.py").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "tests/test_dependencies.py").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    )
     for marker in required.get(phase, ()):
         if marker not in blob and marker not in text:
             failures.append(f"No test or client marker for {marker}.")

@@ -64,6 +64,73 @@ def test_parse_args_localhost_only_and_force_deps():
 def test_find_system_python_returns_usable_interpreter():
     py = runner.find_system_python()
     assert py.is_file()
+    version = runner._python_version([str(py)])
+    assert version is not None
+    assert runner._version_supported(version)
+
+
+def test_python_version_bounds_reject_too_new():
+    assert runner.MIN_PY == (3, 11)
+    assert runner.MAX_PY == (3, 13)
+    assert runner._version_supported((3, 12))
+    assert runner._version_supported((3, 11))
+    assert runner._version_supported((3, 13))
+    assert not runner._version_supported((3, 10))
+    assert not runner._version_supported((3, 14))
+    assert not runner._version_supported((3, 15))
+
+
+def test_requirements_and_pyproject_agree_on_python_band():
+    req = (runner.ROOT / "requirements.txt").read_text(encoding="utf-8")
+    pyproject = (runner.ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert "ctranslate2" in req
+    assert "onnxruntime" in req
+    assert "kokoro-onnx" in req
+    assert 'requires-python = ">=3.11,<3.14"' in pyproject
+    assert "3.11" in req and "3.13" in req
+
+
+def test_runtime_imports_list_covers_stack():
+    for name in (
+        "fastapi",
+        "faster_whisper",
+        "ctranslate2",
+        "kokoro_onnx",
+        "onnxruntime",
+        "metaphone",
+    ):
+        assert name in runner.RUNTIME_IMPORTS
+
+
+def test_ensure_venv_recreates_unsupported_interpreter(monkeypatch, tmp_path):
+    venv_dir = tmp_path / ".venv"
+    py_path = venv_dir / "bin" / "python"
+    py_path.parent.mkdir(parents=True)
+    py_path.write_text("", encoding="utf-8")
+    monkeypatch.setattr(runner, "_venv_dir", lambda: venv_dir)
+    monkeypatch.setattr(runner, "_venv_python", lambda: py_path)
+    monkeypatch.setattr(runner, "find_system_python", lambda: Path("/usr/bin/python3.12"))
+    calls: list[list[str]] = []
+
+    class _Ok:
+        returncode = 0
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001
+        calls.append(cmd)
+        py_path.parent.mkdir(parents=True, exist_ok=True)
+        py_path.write_text("", encoding="utf-8")
+        return _Ok()
+
+    monkeypatch.setattr(runner, "_run", fake_run)
+
+    def version_of(cmd):  # noqa: ANN001
+        # Before recreate: unsupported. After _run created venv: supported.
+        return (3, 12) if calls else (3, 15)
+
+    monkeypatch.setattr(runner, "_python_version", version_of)
+    out = runner.ensure_venv()
+    assert out == py_path
+    assert calls and "venv" in calls[0]
 
 
 def test_maybe_regenerate_skips_when_stamp_matches(monkeypatch, tmp_path):
@@ -128,6 +195,7 @@ def test_ensure_deps_skips_when_stamp_and_imports_ok(monkeypatch, tmp_path):
         json.dumps({"requirements_sha256": digest}),
         encoding="utf-8",
     )
+    monkeypatch.setattr(runner, "verify_runtime_imports", lambda py=None: None)
     calls: list[list[str]] = []
 
     def fake_run(cmd, **kwargs):  # noqa: ANN001
@@ -146,6 +214,8 @@ def test_ensure_deps_runs_when_forced(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "DEPS_STAMP_PATH", tmp_path / "deps.json")
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(runner, "_venv_python", lambda: Path("/venv/bin/python"))
+    monkeypatch.setattr(runner, "_python_version", lambda cmd: (3, 12))
+    monkeypatch.setattr(runner, "verify_runtime_imports", lambda py=None: None)
     calls: list[list[str]] = []
 
     class _Ok:
@@ -156,8 +226,13 @@ def test_ensure_deps_runs_when_forced(monkeypatch, tmp_path):
         return _Ok()
 
     monkeypatch.setattr(runner, "_run", fake_run)
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *a, **k: type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+    )
     assert runner.ensure_deps(force=True) is True
-    assert any("pip" in c for c in calls)
+    assert any("pip" in " ".join(c) for c in calls)
     stamp = json.loads((tmp_path / "deps.json").read_text(encoding="utf-8"))
     assert stamp["requirements_sha256"] == runner.file_digest(req)
 
@@ -188,3 +263,86 @@ def test_run_entrypoint_script_is_executable_shell():
     assert text.startswith("#!/")
     assert "runner.py" in text
     assert path.stat().st_mode & 0o111
+
+
+def test_maybe_regenerate_illustrations_skips_when_keys_exist(monkeypatch):
+    keys = runner.ROOT / "static" / "illustrations" / "keys.json"
+    if not keys.is_file():
+        return
+    called: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001
+        called.append(cmd)
+        raise AssertionError("illustrations should not regenerate")
+
+    monkeypatch.setattr(runner, "_run", fake_run)
+    assert runner.maybe_regenerate_illustrations() is False
+    assert called == []
+
+
+def test_maybe_regenerate_illustrations_runs_when_missing(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    (tmp_path / "scripts").mkdir()
+    script = tmp_path / "scripts" / "generate_illustrations.py"
+    script.write_text("# stub\n", encoding="utf-8")
+    (tmp_path / "static" / "illustrations").mkdir(parents=True)
+    monkeypatch.setattr(runner, "_venv_python", lambda: Path("/venv/bin/python"))
+    calls: list[list[str]] = []
+
+    class _Ok:
+        returncode = 0
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001
+        calls.append(cmd)
+        return _Ok()
+
+    monkeypatch.setattr(runner, "_run", fake_run)
+    assert runner.maybe_regenerate_illustrations() is True
+    assert calls and "generate_illustrations.py" in calls[0][-1]
+
+
+def test_print_ready_banner_mentions_parent_and_stop(capsys):
+    runner.print_ready_banner(bind_host="0.0.0.0")
+    out = capsys.readouterr().out
+    assert "127.0.0.1" in out
+    assert "/parent" in out
+    assert "./run --stop" in out
+
+
+def test_main_stop_returns_zero(monkeypatch):
+    stopped: list[bool] = []
+
+    def fake_stop() -> None:
+        stopped.append(True)
+
+    monkeypatch.setattr(runner, "stop_all", fake_stop)
+    assert runner.main(["--stop"]) == 0
+    assert stopped == [True]
+
+
+def test_ensure_deps_runs_when_requirements_hash_changes(monkeypatch, tmp_path):
+    req = tmp_path / "requirements.txt"
+    req.write_text("fastapi>=0.1\n", encoding="utf-8")
+    monkeypatch.setattr(runner, "REQUIREMENTS", req)
+    monkeypatch.setattr(runner, "DEPS_STAMP_PATH", tmp_path / "deps.json")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    (tmp_path / "deps.json").write_text(
+        json.dumps({"requirements_sha256": "old" * 16}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "_venv_python", lambda: Path("/venv/bin/python"))
+    monkeypatch.setattr(runner, "_python_version", lambda cmd: (3, 12))
+    monkeypatch.setattr(runner, "verify_runtime_imports", lambda py=None: None)
+    calls: list[list[str]] = []
+
+    class _Ok:
+        returncode = 0
+
+    monkeypatch.setattr(runner, "_run", lambda cmd, **k: calls.append(cmd) or _Ok())
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        lambda *a, **k: type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+    )
+    assert runner.ensure_deps(force=False) is True
+    assert any("requirements.txt" in " ".join(c) for c in calls)

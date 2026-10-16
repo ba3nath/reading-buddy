@@ -40,7 +40,10 @@ On macOS, the default start path installs a LaunchAgent via `launchctl` (`com.re
 
 ## Requirements
 
-- Python 3.11+ (3.12 recommended)
+- Python **3.11–3.13** (**3.12 recommended**). Declared in `pyproject.toml` as `requires-python = ">=3.11,<3.14"`.
+  - **Why:** `kokoro-onnx` requires `<3.14`; `ctranslate2` / `onnxruntime` have no good **3.15** wheels yet (Windows pip fails with `ResolutionImpossible`).
+  - Windows: [python.org 3.12](https://www.python.org/downloads/) (tick “Add to PATH”), or `winget install Python.Python.3.12`, then delete `.venv` and run `py -3.12 runner.py`
+  - Also on Windows: `winget install --id eSpeak-NG.eSpeak-NG -e` and `winget install Gyan.FFmpeg`
 - **ffmpeg** on `PATH` (`ffmpeg -version`)
   - macOS: `brew install ffmpeg` (or `scripts/setup_mac.sh`)
   - Windows: `winget install Gyan.FFmpeg` (or `scripts/setup_windows.ps1`)
@@ -98,6 +101,13 @@ Listen-clip review agent (Whisper audit / A/B retune): see `audio-clip-review/RE
 ```bash
 source .venv/bin/activate
 pytest -q
+# Runner / dependency contract + matching:
+pytest -q tests/test_dependencies.py tests/test_runner.py tests/test_matching.py
+# Line coverage for the install path:
+pytest -q --cov=runner --cov=app.matching --cov-report=term-missing \
+  tests/test_dependencies.py tests/test_runner.py tests/test_matching.py
+# Gate (includes a "runner" phase marker check):
+python test-coverage/check.py --phase runner
 ```
 
 ## Privacy & kindness

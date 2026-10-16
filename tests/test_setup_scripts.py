@@ -21,6 +21,8 @@ def test_windows_setup_checks_and_installs_espeak():
     gen_pos = WIN.index("generate_audio.py")
     assert espeak_pos < gen_pos
     assert "ERROR: espeak or espeak-ng is not on PATH" in WIN
+    assert "Python.Python.3.12" in WIN
+    assert "-3.12" in WIN
 
 
 def test_mac_setup_requires_espeak():
@@ -51,3 +53,7 @@ def test_readme_documents_quick_start_and_matching():
     assert "Beginner" in README
     assert "Strict" in README
     assert "/parent" in README
+    assert "3.12" in README
+    assert "3.14" in README or "3.15" in README
+    assert "requires-python" in README or "pyproject.toml" in README
+    assert "ctranslate2" in README

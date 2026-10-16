@@ -91,6 +91,34 @@ def test_hypothesis_from_whisper_words_strips_punctuation():
     assert confs == [0.9, 0.8, 0.7]
 
 
+def test_beginner_function_word_swap_still_correct():
+    from app.matching import FUNCTION_WORDS, score_attempt
+
+    assert "the" in FUNCTION_WORDS
+    result = score_attempt(
+        "Sit on the bed with me.",
+        "sit on a bed with me",
+        [0.9] * 6,
+        mode="beginner",
+    )
+    assert result.result == "correct"
+
+
+def test_strict_multiword_threshold_below_mean_is_close():
+    """Mean under STRICT_MULTIWORD_EXACT_MIN_MEAN stays close even if exact."""
+    from app import config
+
+    confs = [0.2, 0.2, 0.2]
+    assert sum(confs) / len(confs) < config.STRICT_MULTIWORD_EXACT_MIN_MEAN
+    result = score_attempt(
+        "Hickory dickory dock",
+        "hickory dickory dock",
+        confs,
+        mode="strict",
+    )
+    assert result.result == "close"
+
+
 def test_normalize_strips_punctuation():
     assert normalize_text("Don't!") == "dont"
     assert tokenize("Quick brown fox") == ["quick", "brown", "fox"]
