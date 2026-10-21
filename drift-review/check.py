@@ -70,6 +70,13 @@ def _failures_phase2() -> list[str]:
     config = (ROOT / "app/config.py").read_text(encoding="utf-8")
     if "_build_scheduler_v2_queue" not in adaptive:
         fails.append("scheduler_v2 queue builder missing")
+    # Intent: opener is scoped to the chosen set — not global lowest-id "cat".
+    if "id_filter=stage_ids" not in adaptive:
+        fails.append("scheduler_v2 opener is not scoped to the current set")
+    if "never pull cat" not in adaptive and "in this set" not in adaptive:
+        fails.append("scheduler_v2 lost the set-scoped opener comment/guard")
+    if "stop_at=fill_cap" not in adaptive:
+        fails.append("scheduler_v2 does not reserve/fill the chosen set before earlier review")
     if "LEITNER_GAPS_DAYS" not in config and "leitner" not in config.lower():
         fails.append("Leitner gaps missing from config")
     if "scheduler_shadow" not in config:
@@ -78,6 +85,18 @@ def _failures_phase2() -> list[str]:
         encoding="utf-8"
     ):
         fails.append("Leitner box column/update missing")
+    intent = ROOT / "tests/test_scheduler_set_intent.py"
+    if not intent.is_file():
+        fails.append("Missing tests/test_scheduler_set_intent.py (set-pick intent)")
+    else:
+        text = intent.read_text(encoding="utf-8")
+        for marker in (
+            "test_each_words_set_opens_with_an_item_from_that_set",
+            "test_mastered_cat_does_not_hijack_later_set_opener",
+            "test_earlier_due_reviews_cannot_crowd_out_chosen_set",
+        ):
+            if marker not in text:
+                fails.append(f"Set-intent test missing: {marker}")
     return fails
 
 

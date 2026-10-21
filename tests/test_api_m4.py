@@ -249,16 +249,25 @@ def test_export_zip_four_csvs(client):
     )
     zf = zipfile.ZipFile(io.BytesIO(res.content))
     names = set(zf.namelist())
-    assert names == {
+    assert {
         "items.csv",
         "sessions.csv",
         "attempts.csv",
         "mastery.csv",
+        "events.csv",
         "settings.csv",
-    }
+        "README.txt",
+    } <= names
+    items_header = zf.read("items.csv").decode("utf-8").splitlines()[0]
+    assert "pattern" in items_header and "sight_word" in items_header
+    mastery_header = zf.read("mastery.csv").decode("utf-8").splitlines()[0]
+    assert "box" in mastery_header
+    attempts_header = zf.read("attempts.csv").decode("utf-8").splitlines()[0]
+    assert "latency_ms" in attempts_header
     for name in names:
-        text = zf.read(name).decode("utf-8")
-        assert "," in text or text.strip()  # header row at least
+        if name.endswith(".csv"):
+            text = zf.read(name).decode("utf-8")
+            assert "," in text or text.strip()
 
 
 def test_garden_grows_on_complete(client, whisper_double, tone_wav):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -25,7 +26,6 @@ RMS_MIN = 0.01
 MIN_AUDIO_SECONDS = 0.3
 NO_SPEECH_PROB_MAX = 0.60
 LOW_TOKEN_PROB = 0.25
-BEGINNER_CORRECT_MIN_PROB = 0.60
 STRICT_CORRECT_MIN_PROB = 0.85
 # Multi-word exact matches (nursery lines): Whisper often scores nonsense
 # words like hickory/dickory ~0.4–0.7 even when the transcript is perfect.
@@ -211,8 +211,21 @@ DEFAULT_SETTINGS = {
     "effort_stars": True,  # at least one star for a locking try (correct/close)
 }
 
+def _leitner_gaps_from_catalog() -> tuple[int, ...]:
+    """Prefer content/patterns.json so curriculum and runtime share one source."""
+    path = ROOT / "content" / "patterns.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        gaps = data.get("leitner_gaps_days")
+        if isinstance(gaps, list) and len(gaps) >= 5:
+            return tuple(int(x) for x in gaps[:5])
+    except (OSError, TypeError, ValueError):
+        pass
+    return (0, 1, 3, 7, 14)
+
+
 # Leitner box → days until next review (box 1 is "due now"/same session).
-LEITNER_GAPS_DAYS = (0, 1, 3, 7, 14)
+LEITNER_GAPS_DAYS = _leitner_gaps_from_catalog()
 LEITNER_MASTERED_BOX = 4
 
 BUDDIES = ("krishna", "unicorn")

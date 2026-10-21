@@ -46,6 +46,7 @@ def test_stage_slice_covers_pool_without_overlap():
 
 def test_queue_stays_inside_current_and_earlier_sets(tmp_env):
     conn = tmp_env["conn"]
+    save_settings({**load_settings(), "scheduler_v2": True})
     levels = content_levels_for_difficulty(1)
     tier = _ordered_tier_items(conn, levels)
     stage3 = {int(r["id"]) for r in items_for_stage(tier, 3)}
@@ -58,11 +59,12 @@ def test_queue_stays_inside_current_and_earlier_sets(tmp_env):
 
     queue = build_adaptive_queue(conn, level=1, length=10, stage=3)
     ids = {int(r["id"]) for r in queue}
-    # Prefer current/earlier sets; Words stage pools are large enough to avoid later.
-    assert len(ids & (stage3 | earlier)) >= 1
-    assert len(queue) == 10
-    # Majority of the set should not be locked later-stage items.
-    assert len(ids & later) <= 2
+    assert len(queue) in (5, 10)
+    # Intent: Set 3 is the session — not a sprinkle of later sets, not empty of Set 3.
+    assert int(queue[0]["id"]) in stage3
+    assert len(ids & stage3) >= 4
+    assert len(ids & later) == 0
+    assert ids <= (stage3 | earlier)
 
 
 def test_start_session_reports_stage_label(tmp_env):

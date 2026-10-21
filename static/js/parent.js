@@ -180,6 +180,12 @@ function fillSettings(settings) {
   form.buddy.value = settings.buddy || "krishna";
   form.keep_audio.checked = Boolean(settings.keep_audio);
   form.auto_strict.checked = settings.auto_strict !== false;
+  if (form.effort_stars) {
+    form.effort_stars.checked = settings.effort_stars !== false;
+  }
+  if (form.scheduler_shadow) {
+    form.scheduler_shadow.checked = Boolean(settings.scheduler_shadow);
+  }
   syncBuddyThumb(form.buddy.value);
 }
 
@@ -263,6 +269,10 @@ function wire() {
       buddy: form.buddy.value,
       keep_audio: form.keep_audio.checked,
       auto_strict: form.auto_strict.checked,
+      effort_stars: form.effort_stars ? form.effort_stars.checked : true,
+      scheduler_shadow: form.scheduler_shadow
+        ? form.scheduler_shadow.checked
+        : false,
     };
     try {
       const saved = await api("/api/parent/settings", {

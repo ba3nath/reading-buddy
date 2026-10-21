@@ -66,7 +66,7 @@ After that, day-to-day is just `./run`.
 
 **Child** — pick a buddy, then Words / Phrases / Rhymes / Stories. Each difficulty has eight sets; finished sets are marked done, started ones look partial. One Start button; refresh resumes an open session. Rhymes play a real nursery poem line by line, then a required read-through. Stories are short decodable narratives in order, then a read-through. Missed words get a kind second try; silence is a retry, not a fail.
 
-**Parent** (`/parent`) — accuracy, mastered words, tricky words, pattern + sound heatmaps, record-your-voice overrides, settings (mode, length, buddy, keep-audio), tomorrow note, kept-clip playback, CSV zip export.
+**Parent** (`/parent`) — accuracy, mastered words, tricky words, pattern + sound heatmaps, record-your-voice overrides, settings (mode, length, buddy, keep-audio, effort stars), tomorrow note, kept-clip playback, CSV zip (analytics only — use `./run --backup` to restore progress).
 
 **Backup / restore progress** (DB + settings + kept clips + parent voice in `audio/human/`):
 

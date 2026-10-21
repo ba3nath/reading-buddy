@@ -226,13 +226,21 @@ def list_kept_clips(conn) -> dict[str, Any]:
 
 
 def export_zip_bytes(conn) -> bytes:
+    """Analytics CSV zip (not a full restore — use ./run --backup for that)."""
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         _csv_table(
             zf,
             "items.csv",
             conn,
-            "SELECT id, slug, text, kind, level, sound_tags, rhyme_group, line_index, source, pd_status, hard FROM items ORDER BY id",
+            """
+            SELECT id, slug, text, kind, level, pattern, sight_word, sound_tags,
+                   rhyme_group, line_index, story_id, source, pd_status, hard
+            FROM items ORDER BY id
+            """,
         )
         _csv_table(
             zf,
@@ -244,13 +252,32 @@ def export_zip_bytes(conn) -> bytes:
             zf,
             "attempts.csv",
             conn,
-            "SELECT id, session_id, item_id, heard, confidence, result, counts_for_session, is_replay, queue_index, replay_word, created_at FROM attempts ORDER BY id",
+            """
+            SELECT id, session_id, item_id, heard, confidence, result,
+                   counts_for_session, is_replay, queue_index, replay_word,
+                   latency_ms, duration_seconds, passage, created_at
+            FROM attempts ORDER BY id
+            """,
         )
         _csv_table(
             zf,
             "mastery.csv",
             conn,
-            "SELECT item_id, correct_count, days_json, miss_count, review_step, next_review_on, mastered, mastered_on, last_result, last_seen_on FROM mastery ORDER BY item_id",
+            """
+            SELECT item_id, correct_count, days_json, miss_count, review_step,
+                   next_review_on, box, mastered, mastered_on, last_result, last_seen_on
+            FROM mastery ORDER BY item_id
+            """,
+        )
+        _csv_table(
+            zf,
+            "events.csv",
+            conn,
+            """
+            SELECT id, created_at, session_id, item_id, pattern, sight_word, result,
+                   phase, latency_ms, duration_seconds, counts_for_mastery, meta_json
+            FROM events ORDER BY id
+            """,
         )
         # Settings snapshot (profile optional — still export so progress is backed up).
         settings = load_settings()
@@ -260,6 +287,14 @@ def export_zip_bytes(conn) -> bytes:
         for key in sorted(settings.keys()):
             writer.writerow([key, json.dumps(settings[key])])
         zf.writestr("settings.csv", out.getvalue())
+        zf.writestr(
+            "README.txt",
+            (
+                "Reading Buddy CSV export (analytics).\n"
+                "For a restorable backup of progress + parent voice, use:\n"
+                "  ./run --backup\n"
+            ),
+        )
     return buf.getvalue()
 
 
@@ -344,6 +379,8 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
         "profile_name",
         "buddy",
         "keep_audio",
+        "effort_stars",
+        "scheduler_shadow",
     }
     for key, value in payload.items():
         if key not in allowed:
@@ -378,6 +415,13 @@ def apply_settings_update(payload: dict[str, Any]) -> dict[str, Any]:
     )
     settings["auto_strict"] = bool(settings.get("auto_strict", True))
     settings["keep_audio"] = bool(settings.get("keep_audio", False))
+    settings["effort_stars"] = bool(settings.get("effort_stars", True))
+    settings["scheduler_shadow"] = bool(settings.get("scheduler_shadow", False))
+    # scheduler_v2 is always on in build_adaptive_queue; keep flag true for clarity.
+    settings["scheduler_v2"] = True
+    # Empty unlocked_patterns = derive from mastery; reject stale non-list values.
+    if not isinstance(settings.get("unlocked_patterns"), list):
+        settings["unlocked_patterns"] = []
     buddy = str(settings.get("buddy", "krishna")).lower()
     if buddy == "mouse":
         buddy = "unicorn"  # migrate retired mouse buddy

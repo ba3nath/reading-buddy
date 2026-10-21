@@ -485,20 +485,28 @@ def load_or_build_timings(
     import json
 
     path = timings_path_for_slug(slug)
-    if path.is_file() and not force:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            words = data.get("words") if isinstance(data, dict) else data
-            if isinstance(words, list) and words:
-                return words
-        except (OSError, ValueError, TypeError):
-            pass
-    elif force and path.is_file():
+    wav = resolve_audio_slug(slug)
+    if force and path.is_file():
         try:
             path.unlink()
         except OSError:
             pass
-    wav = resolve_audio_slug(slug)
+    elif path.is_file() and not force:
+        # Rebuild when the active wav (human or generated) is newer than cache.
+        stale = False
+        if wav is not None and wav.is_file():
+            try:
+                stale = wav.stat().st_mtime > path.stat().st_mtime + 0.01
+            except OSError:
+                stale = True
+        if not stale:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                words = data.get("words") if isinstance(data, dict) else data
+                if isinstance(words, list) and words:
+                    return words
+            except (OSError, ValueError, TypeError):
+                pass
     duration = 1.0
     if wav is not None:
         try:
@@ -509,7 +517,8 @@ def load_or_build_timings(
     try:
         config.AUDIO_GENERATED.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            json.dumps({"slug": slug, "words": words}, indent=2) + "\n",
+            json.dumps({"slug": slug, "words": words, "source": str(wav) if wav else ""}, indent=2)
+            + "\n",
             encoding="utf-8",
         )
     except OSError:

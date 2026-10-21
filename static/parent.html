@@ -79,10 +79,19 @@
           <input name="auto_strict" type="checkbox" />
           Auto-strict after move-up streak
         </label>
+        <label class="check">
+          <input name="effort_stars" type="checkbox" />
+          Effort stars (at least one star for a locking try)
+        </label>
+        <label class="check">
+          <input name="scheduler_shadow" type="checkbox" />
+          Log scheduler shadow (dev: compare old vs new queue)
+        </label>
         <div class="form-actions">
           <button type="submit" class="btn primary">Save settings</button>
           <button type="button" class="btn ghost" data-export>Download CSV zip</button>
         </div>
+        <p class="note">CSV zip is analytics only. To back up progress + your voice clips: <code>./run --backup</code></p>
         <p class="form-status" data-settings-status aria-live="polite"></p>
       </form>
     </section>

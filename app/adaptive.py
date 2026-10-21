@@ -621,9 +621,13 @@ def _build_scheduler_v2_queue(
     length: int,
     stage: int,
 ) -> list[sqlite3.Row]:
-    """Easy opener → due → new (pattern-unlocked) → easy closer.
+    """Easy opener → due → this set's items → earlier review → easy closer.
 
     Rhymes and stories stay one group per set (unchanged).
+
+    Choosing a set always unlocks that set's patterns (so Set 3 is not stuck
+    replaying Set 1's ``cat``). Mastery-based unlock still gates *earlier*
+    review padding from patterns the child has not opened yet.
     """
     if difficulty == 3:
         poem = _one_group_queue(conn, stage, column="rhyme_group")
@@ -637,29 +641,42 @@ def _build_scheduler_v2_queue(
     content_levels = config.content_levels_for_difficulty(difficulty)
     ph = _placeholders(len(content_levels))
     today = local_today()
-    open_patterns = set(current_unlocked_patterns(conn))
     tier_rows = _ordered_tier_items(conn, content_levels)
     stage_rows = items_for_stage(tier_rows, stage)
     stage_ids = {int(r["id"]) for r in stage_rows}
     earlier_ids: set[int] = set()
     for s in range(1, stage):
         earlier_ids.update(int(r["id"]) for r in items_for_stage(tier_rows, s))
-    pool_ids = stage_ids | earlier_ids
-    tier_ids = {int(r["id"]) for r in tier_rows}
+
+    # Set pick opens this set's patterns; mastery unlock gates cross-set review.
+    stage_patterns = {
+        str(r["pattern"] or "")
+        for r in stage_rows
+        if "pattern" in r.keys() and r["pattern"]
+    }
+    mastery_unlocked = set(current_unlocked_patterns(conn))
+    review_patterns = mastery_unlocked | stage_patterns
 
     queue: list[sqlite3.Row] = []
     seen: set[int] = set()
+
+    # Leave one slot for an easy closer when the session is longer than 2.
+    fill_cap = max(0, length - 1) if length > 2 else length
 
     def _take(
         rows: list[sqlite3.Row],
         *,
         id_filter: set[int] | None = None,
         require_pattern: bool = False,
+        pattern_set: set[str] | None = None,
         limit: int | None = None,
+        stop_at: int | None = None,
     ) -> None:
+        allowed = pattern_set if pattern_set is not None else review_patterns
+        cap = length if stop_at is None else stop_at
         added = 0
         for row in rows:
-            if len(queue) >= length:
+            if len(queue) >= cap:
                 return
             if limit is not None and added >= limit:
                 return
@@ -668,7 +685,7 @@ def _build_scheduler_v2_queue(
                 continue
             if id_filter is not None and rid not in id_filter:
                 continue
-            if require_pattern and not _pattern_allowed(row, open_patterns):
+            if require_pattern and not _pattern_allowed(row, allowed):
                 continue
             queue.append(row)
             seen.add(rid)
@@ -687,8 +704,11 @@ def _build_scheduler_v2_queue(
         """,
         content_levels,
     ).fetchall()
-    # Opener: one easy item from the unlocked pool.
-    _take(easy, id_filter=pool_ids or tier_ids, require_pattern=True, limit=1)
+    # Opener: easiest word *in this set* (never pull cat from Set 1 into Set 5).
+    _take(easy, id_filter=stage_ids, require_pattern=False, limit=1)
+    if not queue and stage_rows:
+        queue.append(stage_rows[0])
+        seen.add(int(stage_rows[0]["id"]))
 
     due = conn.execute(
         f"""
@@ -703,37 +723,52 @@ def _build_scheduler_v2_queue(
         """,
         (*content_levels, today),
     ).fetchall()
-    _take(due, id_filter=stage_ids)
-    _take(due, id_filter=earlier_ids)
+    # This set first (due + curriculum order), then earlier review — never let
+    # Set 1 due-reviews crowd out the set the child just picked.
+    _take(due, id_filter=stage_ids, require_pattern=False, stop_at=fill_cap)
+    _take(stage_rows, require_pattern=False, stop_at=fill_cap)
+    _take(
+        due,
+        id_filter=earlier_ids,
+        require_pattern=True,
+        pattern_set=mastery_unlocked,
+        stop_at=fill_cap,
+    )
+    earlier_rows = [r for r in tier_rows if int(r["id"]) in earlier_ids]
+    _take(
+        earlier_rows,
+        require_pattern=True,
+        pattern_set=mastery_unlocked,
+        stop_at=fill_cap,
+    )
+    # Prefer current + earlier. Later sets only as last resort so 5|10 length
+    # still works when a set is thin (e.g. phrases = 4/stage) — and only after
+    # every item in this set is already queued.
+    allowed_ids = stage_ids | earlier_ids
+    if len(queue) < fill_cap:
+        _take(tier_rows, id_filter=allowed_ids, require_pattern=False, stop_at=fill_cap)
+    later_ids = {
+        int(r["id"]) for r in tier_rows if int(r["id"]) not in allowed_ids
+    }
+    stage_fully_included = not stage_ids or stage_ids.issubset(seen)
+    if len(queue) < fill_cap and stage_fully_included and later_ids:
+        _take(tier_rows, id_filter=later_ids, require_pattern=False, stop_at=fill_cap)
 
-    new_items = conn.execute(
-        f"""
-        SELECT i.*
-        FROM items i
-        LEFT JOIN mastery m ON m.item_id = i.id
-        WHERE i.level IN ({ph})
-          AND COALESCE(m.mastered, 0) = 0
-          AND (m.next_review_on IS NULL OR m.next_review_on > ?)
-        ORDER BY COALESCE(m.correct_count, 0) ASC, i.id ASC
-        """,
-        (*content_levels, today),
-    ).fetchall()
-    # Leave one slot for the closer when length > 2.
-    fill_cap = max(0, length - 1) if length > 2 else length
-    while len(queue) < fill_cap:
-        before = len(queue)
-        _take(new_items, id_filter=stage_ids, require_pattern=True)
-        _take(new_items, id_filter=earlier_ids, require_pattern=True)
-        if len(queue) == before:
-            _take(new_items, id_filter=stage_ids, require_pattern=False)
-            _take(new_items, id_filter=earlier_ids, require_pattern=False)
-            _take(new_items, id_filter=tier_ids, require_pattern=False)
-            break
-
+    # Closer: easy item from this set when possible.
     if len(queue) < length:
-        _take(easy, id_filter=pool_ids or tier_ids, require_pattern=False, limit=1)
+        _take(easy, id_filter=stage_ids, require_pattern=False, limit=1)
     if len(queue) < length:
-        _take(easy, id_filter=tier_ids, require_pattern=False)
+        _take(
+            easy,
+            id_filter=earlier_ids,
+            require_pattern=True,
+            pattern_set=mastery_unlocked,
+            limit=1,
+        )
+    if len(queue) < length:
+        _take(easy, id_filter=allowed_ids, require_pattern=False)
+    if len(queue) < length and stage_fully_included and later_ids:
+        _take(easy, id_filter=later_ids, require_pattern=False, limit=1)
 
     if not queue:
         for candidate in stage_rows or tier_rows:
@@ -753,16 +788,15 @@ def build_adaptive_queue(
 ) -> list[sqlite3.Row]:
     """Build a unique queue for one set (stage) inside a difficulty tier.
 
-    When ``scheduler_v2`` is on (default), uses Leitner-aware mix + pattern
-    unlock for words/phrases. Rhymes/stories stay one-group sessions.
+    Always uses the Leitner / set-scoped scheduler (``scheduler_v2``). The
+    legacy queue remains only for shadow comparison via ``shadow_queue_ids``.
+    Rhymes/stories stay one-group sessions.
     """
     difficulty = config.normalize_difficulty(level)
     length = config.normalize_session_length(length)
     stage = config.normalize_stage(stage if stage is not None else 1)
-    settings = load_settings()
-    if bool(settings.get("scheduler_v2", True)):
-        return _build_scheduler_v2_queue(conn, difficulty, length, stage)
-    return _build_legacy_queue(conn, difficulty, length, stage)
+    # Force set-scoped mix — legacy path drifts from "Set N practises Set N".
+    return _build_scheduler_v2_queue(conn, difficulty, length, stage)
 
 
 def shadow_queue_ids(

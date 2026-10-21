@@ -25,7 +25,6 @@ from app.db import (
     get_item,
     get_session,
     item_public,
-    list_items_for_level,
     load_settings,
     local_now_iso,
     local_today,
@@ -53,18 +52,6 @@ def abandon_open_sessions(conn: sqlite3.Connection) -> None:
         """,
         (now,),
     )
-
-
-def build_fixed_queue(conn: sqlite3.Connection, level: int, length: int) -> list[sqlite3.Row]:
-    pool = list_items_for_level(conn, level)
-    if not pool:
-        raise SessionError("unavailable", f"No content for level {level}", 503)
-    queue: list[sqlite3.Row] = []
-    idx = 0
-    while len(queue) < length:
-        queue.append(pool[idx % len(pool)])
-        idx += 1
-    return queue
 
 
 def start_session(
@@ -1127,6 +1114,7 @@ def apply_passage(
 
 
 def words_mastered_this_session(conn: sqlite3.Connection, session_id: int) -> list[str]:
+    """Words that hit Leitner mastery today in this session (not legacy count=3)."""
     rows = conn.execute(
         """
         SELECT DISTINCT i.text
@@ -1134,10 +1122,12 @@ def words_mastered_this_session(conn: sqlite3.Connection, session_id: int) -> li
         JOIN items i ON i.id = a.item_id
         JOIN mastery m ON m.item_id = a.item_id
         WHERE a.session_id = ? AND a.result = 'correct' AND a.counts_for_session = 1
-          AND m.mastered = 1 AND m.correct_count = 3 AND m.mastered_on = ?
+          AND m.mastered = 1
+          AND m.mastered_on = ?
+          AND COALESCE(m.box, 0) >= ?
         ORDER BY i.id ASC
         """,
-        (session_id, local_today()),
+        (session_id, local_today(), config.LEITNER_MASTERED_BOX),
     ).fetchall()
     return [str(row["text"]) for row in rows]
 
@@ -1161,9 +1151,13 @@ def complete_session(conn: sqlite3.Connection, session_id: int) -> dict[str, Any
         settings=settings,
     )
     save_settings(new_settings)
-    from app.parent import bump_garden, bump_play_stats, play_summary
+    from app.parent import bump_garden, bump_play_stats, garden_stage_name, play_summary
 
+    growth_before = int(new_settings.get("garden_growth", 0) or 0)
+    stage_before = garden_stage_name(growth_before)
     garden = bump_garden(new_settings)
+    garden["stage_before"] = stage_before
+    garden["stage_changed"] = garden["stage"] != stage_before
     # Re-load after garden write so play stats see latest growth.
     after_garden = load_settings()
     play = bump_play_stats(after_garden, stars_earned=int(session["stars"]))

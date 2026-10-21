@@ -19,7 +19,14 @@ def check(phase: str) -> list[str]:
     required = {
         "0": ("curriculum-audit", "validate_patterns", "log_event", "warmup", "backup"),
         "1": ("open_session_view", "read_again", "mode_source", "unlocked_patterns"),
-        "2": ("story_id", "rhyme_group", "scheduler_v2", "LEITNER"),
+        "2": (
+            "story_id",
+            "rhyme_group",
+            "scheduler_v2",
+            "LEITNER",
+            "test_each_words_set_opens_with_an_item_from_that_set",
+            "test_mastered_cat_does_not_hijack_later_set_opener",
+        ),
         "fluency": ("apply_passage", "duration_seconds"),
         "3": ("quest_label", "mastered_words", "playItemClip", "effort_stars"),
         "4": ("word-soft", "is-word"),
@@ -42,6 +49,8 @@ def check(phase: str) -> list[str]:
         + (ROOT / "tests/test_dependencies.py").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "tests/test_learning_phases.py").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "tests/test_scheduler_set_intent.py").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "app/adaptive.py").read_text(encoding="utf-8")
         + "\n"

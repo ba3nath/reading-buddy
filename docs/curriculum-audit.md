@@ -12,7 +12,7 @@ Snapshot of what Reading Buddy already had vs the learning roadmap, and gaps clo
 | `sound_tags` | CMU ARPAbet buckets (`th`, `r`, `s`, `sh`, `ch`) | Parent phoneme heatmap only — **not** a grapheme curriculum |
 | Attempts | Result + `word_scores` in SQLite | No pattern, no latency |
 | Listen audio | Whole-clip WAV under `audio/generated/` | Human override via `audio/human/{slug}.wav`; Phase 3 adds proportional `{slug}.json` timings + listen highlight |
-| Export | Parent CSV zip | No restore path |
+| Export | Parent CSV zip (analytics) | Restorable backup is `./run --backup` (DB + human voice), not CSV |
 
 ## Phase 0 additions
 

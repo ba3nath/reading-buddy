@@ -1505,12 +1505,18 @@ async function finishSession() {
         if (cap) {
           const stage = data.garden.stage;
           const learned = (data.mastered_words || [])[0];
-          cap.textContent =
-            stage === "sticker"
-              ? "New garden sticker unlocked — it stays forever!"
-              : learned
-                ? `Your garden grew — new ${stage}! ${learned}`
-                : `Your garden grew — new ${stage}!`;
+          const stageChanged = Boolean(data.garden.stage_changed);
+          if (stage === "sticker" && stageChanged) {
+            cap.textContent = "New garden sticker unlocked — it stays forever!";
+          } else if (stageChanged) {
+            cap.textContent = learned
+              ? `Your garden grew — new ${stage}! ${learned}`
+              : `Your garden grew — new ${stage}!`;
+          } else {
+            cap.textContent = learned
+              ? `Your garden grew. You can read ${learned}!`
+              : "Your garden grew — it never shrinks.";
+          }
         }
         applyGardenStage(wrap, data.garden.growth);
       }

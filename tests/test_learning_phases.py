@@ -111,6 +111,26 @@ def test_scheduler_v2_and_shadow(conn, monkeypatch):
     assert current_unlocked_patterns(conn)
 
 
+def test_scheduler_v2_set_does_not_always_open_with_cat(conn):
+    """Later sets must use that set's words — not Set 1's global easy opener."""
+    from app.adaptive import items_for_stage, _ordered_tier_items
+
+    settings = load_settings()
+    settings["scheduler_v2"] = True
+    save_settings(settings)
+    tier = _ordered_tier_items(conn, config.content_levels_for_difficulty(1))
+    stage2 = items_for_stage(tier, 2)
+    stage2_ids = {int(r["id"]) for r in stage2}
+    assert stage2_ids
+    queue = build_adaptive_queue(conn, 1, 5, stage=2)
+    assert queue, "expected a queue for set 2"
+    # Opener and majority of the queue should come from set 2.
+    assert int(queue[0]["id"]) in stage2_ids
+    assert queue[0]["slug"] != "cat" or "cat" in {r["slug"] for r in stage2}
+    in_stage = sum(1 for r in queue if int(r["id"]) in stage2_ids)
+    assert in_stage >= 4, [(r["slug"], r["id"]) for r in queue]
+
+
 def test_effort_stars_awards_try():
     assert _effort_stars(0, result="close", again=False, hard_bonus=False) >= 1
     assert _effort_stars(0, result="missed", again=False, hard_bonus=False) == 0
@@ -169,12 +189,15 @@ def test_timings_force_rebuild_after_override(tmp_path, monkeypatch):
     cached = json.loads((gen / "cat.json").read_text(encoding="utf-8"))
     assert cached["words"][0]["end"] <= 0.5
 
-    # Longer human override must rebuild when force=True.
+    # Longer human override rebuilds when wav is newer than the JSON cache.
+    import time
+
+    time.sleep(0.05)
     write_wav(human / "cat.wav", 1.2)
-    stale = load_or_build_timings("cat", "cat")  # would keep cache without force
-    assert stale[0]["end"] <= 0.5
-    rebuilt = load_or_build_timings("cat", "cat", force=True)
+    rebuilt = load_or_build_timings("cat", "cat")
     assert rebuilt[0]["end"] >= 1.0
+    forced = load_or_build_timings("cat", "cat", force=True)
+    assert forced[0]["end"] >= 1.0
 
 
 def test_audio_timings_and_voice_upload_api(client, tmp_path, monkeypatch, tone_wav):
