@@ -21,12 +21,14 @@ from app.audio_files import (
     ffmpeg_available,
     generated_audio_ready,
     is_silence,
+    load_or_build_timings,
     new_temp_paths,
     resolve_audio_slug,
     wav_duration_and_rms,
     write_bytes,
 )
 from app.db import connect, init_schema, load_settings, upsert_items_from_json
+from app.events import pattern_accuracy_by_day
 from app.matching import hypothesis_from_whisper_words, score_attempt
 from app.parent import (
     accuracy_by_day,
@@ -35,6 +37,7 @@ from app.parent import (
     keep_attempt_wav,
     list_kept_clips,
     mastered_lists,
+    pattern_heatmap,
     sound_heatmap,
     tricky_words,
 )
@@ -87,6 +90,22 @@ async def lifespan(app: FastAPI):
     logger.info("Loaded %s items from content/items.json", count)
     try:
         engine.load()
+        # Keep the decode path warm so the first kid take is not cold-start slow.
+        if engine.ready:
+            warm = config.TEMP_DIR / "warmup-silence.wav"
+            try:
+                if not warm.is_file():
+                    import wave
+
+                    config.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+                    with wave.open(str(warm), "wb") as wf:
+                        wf.setnchannels(1)
+                        wf.setsampwidth(2)
+                        wf.setframerate(16000)
+                        wf.writeframes(b"\x00\x00" * 1600)
+                engine.transcribe(warm, initial_prompt="")
+            except Exception as warm_exc:  # noqa: BLE001
+                logger.debug("Whisper warm path skipped: %s", warm_exc)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Whisper load error: %s", exc)
     yield
@@ -146,6 +165,24 @@ def health() -> dict[str, bool]:
         "offline": config.is_offline_configured(),
         "audio": audio_ok,
     }
+
+
+@app.get("/api/warmup")
+def warmup() -> dict[str, Any]:
+    """Touch Whisper so the next score is not a cold load."""
+    ok = False
+    try:
+        if not engine.ready:
+            engine.load()
+        warm = config.TEMP_DIR / "warmup-silence.wav"
+        if engine.ready and warm.is_file():
+            engine.transcribe(warm, initial_prompt="")
+            ok = True
+        elif engine.ready:
+            ok = True
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("warmup failed: %s", exc)
+    return {"ok": ok, "whisper": bool(engine.ready)}
 
 
 @app.get("/api/sessions/open")
@@ -316,6 +353,7 @@ async def post_attempt(
     audio: UploadFile = File(...),
     queue_index: int | None = Form(None),
     word: str = Form(""),
+    client_latency_ms: int | None = Form(None),
 ):
     if phase not in ("read", "replay", "passage"):
         return JSONResponse(
@@ -341,6 +379,15 @@ async def post_attempt(
     if mode not in ("beginner", "strict"):
         mode = "beginner"
     replay_word = (word or "").strip()
+    import time as _time
+
+    score_started = _time.perf_counter()
+    latency_ms = None
+    if client_latency_ms is not None:
+        try:
+            latency_ms = max(0, min(120_000, int(client_latency_ms)))
+        except (TypeError, ValueError):
+            latency_ms = None
 
     if not ffmpeg_available() or not engine.ready:
         return JSONResponse(
@@ -371,6 +418,23 @@ async def post_attempt(
         item["text"], phase=phase, replay_word=replay_word
     )
 
+    def _apply(match, *, silence: bool = False):
+        # Prefer client stop→response when present; else server score-path time.
+        used_latency = latency_ms
+        if used_latency is None:
+            used_latency = int((_time.perf_counter() - score_started) * 1000)
+        return apply_attempt(
+            conn,
+            session_id,
+            item_id,
+            match,
+            phase=phase,
+            is_silence_path=silence,
+            queue_index=queue_index,
+            replay_word=replay_word,
+            latency_ms=used_latency,
+        )
+
     webm_path, wav_path = new_temp_paths(".webm")
     try:
         data = await audio.read()
@@ -381,16 +445,7 @@ async def post_attempt(
         if len(data) == 0:
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                payload = apply_attempt(
-                    conn,
-                    session_id,
-                    item_id,
-                    match,
-                    phase=phase,
-                    is_silence_path=True,
-                    queue_index=queue_index,
-                    replay_word=replay_word,
-                )
+                payload = _apply(match, silence=True)
             except SessionError as exc:
                 return JSONResponse(
                     status_code=exc.status,
@@ -411,16 +466,7 @@ async def post_attempt(
         if is_silence(wav_path):
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                payload = apply_attempt(
-                    conn,
-                    session_id,
-                    item_id,
-                    match,
-                    phase=phase,
-                    is_silence_path=True,
-                    queue_index=queue_index,
-                    replay_word=replay_word,
-                )
+                payload = _apply(match, silence=True)
             except SessionError as exc:
                 return JSONResponse(
                     status_code=exc.status,
@@ -445,16 +491,7 @@ async def post_attempt(
         ):
             match = score_attempt(target_text, "", mode=mode, force_retry=True)
             try:
-                payload = apply_attempt(
-                    conn,
-                    session_id,
-                    item_id,
-                    match,
-                    phase=phase,
-                    is_silence_path=True,
-                    queue_index=queue_index,
-                    replay_word=replay_word,
-                )
+                payload = _apply(match, silence=True)
             except SessionError as exc:
                 return JSONResponse(
                     status_code=exc.status,
@@ -476,16 +513,7 @@ async def post_attempt(
         )
         if match.result == "retry":
             try:
-                payload = apply_attempt(
-                    conn,
-                    session_id,
-                    item_id,
-                    match,
-                    phase=phase,
-                    is_silence_path=True,
-                    queue_index=queue_index,
-                    replay_word=replay_word,
-                )
+                payload = _apply(match, silence=True)
             except SessionError as exc:
                 return JSONResponse(
                     status_code=exc.status,
@@ -496,15 +524,7 @@ async def post_attempt(
             )
 
         try:
-            payload = apply_attempt(
-                conn,
-                session_id,
-                item_id,
-                match,
-                phase=phase,
-                queue_index=queue_index,
-                replay_word=replay_word,
-            )
+            payload = _apply(match)
         except SessionError as exc:
             return JSONResponse(
                 status_code=exc.status,
@@ -587,6 +607,71 @@ def parent_sounds():
     return sound_heatmap(get_conn())
 
 
+@app.get("/api/parent/patterns")
+def parent_patterns():
+    from app.adaptive import current_unlocked_patterns
+
+    conn = get_conn()
+    return {
+        "heatmap": pattern_heatmap(conn),
+        "by_day": pattern_accuracy_by_day(conn),
+        "unlocked": current_unlocked_patterns(conn),
+    }
+
+
+@app.post("/api/parent/voice/{slug}")
+async def parent_voice_upload(slug: str, audio: UploadFile = File(...)):
+    """Save a parent recording as audio/human/{slug}.wav (overrides TTS)."""
+    if not slug or "/" in slug or "\\" in slug or ".." in slug:
+        return JSONResponse(
+            status_code=400,
+            content=error_body("bad_request", "Invalid slug"),
+        )
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT slug, text FROM items WHERE slug = ?", (slug,)
+    ).fetchone()
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_body("not_found", f"Unknown slug '{slug}'"),
+        )
+    if not ffmpeg_available():
+        return JSONResponse(
+            status_code=503,
+            content=error_body("unavailable", "ffmpeg unavailable"),
+        )
+    webm_path, wav_path = new_temp_paths(".webm")
+    try:
+        data = await audio.read()
+        if not data:
+            return JSONResponse(
+                status_code=400,
+                content=error_body("bad_request", "Empty audio"),
+            )
+        write_bytes(webm_path, data)
+        try:
+            convert_to_wav(webm_path, wav_path)
+        except AudioError as exc:
+            return JSONResponse(
+                status_code=503,
+                content=error_body("unavailable", exc.message),
+            )
+        if is_silence(wav_path):
+            return JSONResponse(
+                status_code=400,
+                content=error_body("bad_request", "Recording was silent"),
+            )
+        config.AUDIO_HUMAN.mkdir(parents=True, exist_ok=True)
+        dest = config.AUDIO_HUMAN / f"{slug}.wav"
+        dest.write_bytes(wav_path.read_bytes())
+        # Rebuild timings from the human clip length (invalidate TTS cache).
+        load_or_build_timings(slug, str(row["text"]), force=True)
+        return {"ok": True, "slug": slug, "path": f"audio/human/{slug}.wav"}
+    finally:
+        delete_quiet(webm_path, wav_path)
+
+
 @app.get("/api/parent/kept")
 def parent_kept_list():
     return list_kept_clips(get_conn())
@@ -624,6 +709,27 @@ def get_audio(slug: str):
             content=error_body("not_found", f"No audio for slug '{slug}'"),
         )
     return FileResponse(path, media_type="audio/wav", filename=f"{slug}.wav")
+
+
+@app.get("/api/audio/{slug}/timings")
+def get_audio_timings(slug: str):
+    """Word timings for read-along highlight during listen playback."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT slug, text FROM items WHERE slug = ?", (slug,)
+    ).fetchone()
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_body("not_found", f"No item for slug '{slug}'"),
+        )
+    if resolve_audio_slug(slug) is None:
+        return JSONResponse(
+            status_code=404,
+            content=error_body("not_found", f"No audio for slug '{slug}'"),
+        )
+    words = load_or_build_timings(slug, str(row["text"]))
+    return {"slug": slug, "words": words}
 
 
 @app.get("/")

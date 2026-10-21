@@ -119,8 +119,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_attempts_queue ON attempts (session_id, queue_index)"
     )
     _ensure_column(conn, "items", "story_id", "TEXT")
+    _ensure_column(conn, "items", "pattern", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(conn, "items", "sight_word", "INTEGER NOT NULL DEFAULT 0")
     _ensure_column(conn, "attempts", "passage", "INTEGER NOT NULL DEFAULT 0")
     _ensure_column(conn, "attempts", "duration_seconds", "REAL")
+    _ensure_column(conn, "attempts", "latency_ms", "INTEGER")
+    _ensure_column(conn, "mastery", "box", "INTEGER NOT NULL DEFAULT 1")
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
     # Backfill play_item_ids from planned when empty.
     conn.execute(
         """
@@ -223,6 +230,8 @@ def save_settings(settings: dict[str, Any], path: Path | None = None) -> None:
 
 def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = None) -> int:
     _ensure_column(conn, "items", "story_id", "TEXT")
+    _ensure_column(conn, "items", "pattern", "TEXT NOT NULL DEFAULT ''")
+    _ensure_column(conn, "items", "sight_word", "INTEGER NOT NULL DEFAULT 0")
     path = items_path or config.CONTENT_ITEMS
     with path.open("r", encoding="utf-8") as f:
         payload = json.load(f)
@@ -242,12 +251,15 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
         source = raw.get("source", "cvc")
         pd_status = raw.get("pd_status", "n/a")
         hard = 1 if raw.get("hard", level >= 3) else 0
+        pattern = str(raw.get("pattern") or "")
+        sight_word = 1 if raw.get("sight_word") else 0
         conn.execute(
             """
             INSERT INTO items (
               slug, text, normalized, kind, level, sound_tags, sounds_locked,
-              rhyme_group, line_index, source, pd_status, hard, story_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              rhyme_group, line_index, source, pd_status, hard, story_id,
+              pattern, sight_word
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(slug) DO UPDATE SET
               text=excluded.text,
               normalized=excluded.normalized,
@@ -260,7 +272,9 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
               source=excluded.source,
               pd_status=excluded.pd_status,
               hard=excluded.hard,
-              story_id=excluded.story_id
+              story_id=excluded.story_id,
+              pattern=excluded.pattern,
+              sight_word=excluded.sight_word
             """,
             (
                 slug,
@@ -276,6 +290,8 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
                 pd_status,
                 hard,
                 story_id,
+                pattern,
+                sight_word,
             ),
         )
         count += 1

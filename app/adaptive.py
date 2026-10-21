@@ -8,7 +8,9 @@ from datetime import date, timedelta
 from typing import Any
 
 from app import config
-from app.db import ensure_mastery_row, local_today
+from app.db import ensure_mastery_row, local_today, load_settings
+from app.events import known_ratio_by_pattern
+from app.patterns import unlocked_patterns
 
 
 def move_up_score(correct_count: int, planned_count: int) -> bool:
@@ -147,7 +149,7 @@ def apply_day_ladder(
     ensure_mastery_row(conn, item_id)
     row = conn.execute(
         """
-        SELECT review_step, next_review_on, mastered, correct_count, days_json
+        SELECT review_step, next_review_on, mastered, correct_count, days_json, box
         FROM mastery WHERE item_id = ?
         """,
         (item_id,),
@@ -155,36 +157,29 @@ def apply_day_ladder(
     today = _today()
     today_s = local_today()
 
+    # Leitner box (1–5); gaps from config.LEITNER_GAPS_DAYS.
+    try:
+        box = int(row["box"] or 1)
+    except (KeyError, IndexError, TypeError):
+        box = 1
+    box = max(1, min(5, box))
+
     if result == "missed":
-        if row["mastered"] == 1:
-            conn.execute(
-                """
-                UPDATE mastery
-                SET miss_count = miss_count + 1, last_result = 'missed',
-                    last_seen_on = ?
-                WHERE item_id = ?
-                """,
-                (today_s, item_id),
-            )
-            return
-        step = int(row["review_step"] or 0)
-        if step == 0:
-            next_on = today + timedelta(days=1)
-            step = 1
-        elif step == 1:
-            next_on = today + timedelta(days=3)
-            step = 3
-        else:
-            next_on = today + timedelta(days=7)
-            step = 7
+        # Gentle demotion: step box back silently (even if previously mastered).
+        new_box = 1 if row["mastered"] == 1 else max(1, box - 1)
+        gap = config.LEITNER_GAPS_DAYS[min(new_box, len(config.LEITNER_GAPS_DAYS)) - 1]
+        # Box 1 is "due now"; schedule for today so the queue picks it up.
+        next_on = today + timedelta(days=int(gap))
+        step = 1 if gap <= 1 else (3 if gap <= 3 else 7)
         conn.execute(
             """
             UPDATE mastery
-            SET review_step = ?, next_review_on = ?, miss_count = miss_count + 1,
+            SET box = ?, review_step = ?, next_review_on = ?,
+                miss_count = miss_count + 1, mastered = 0,
                 last_result = 'missed', last_seen_on = ?
             WHERE item_id = ?
             """,
-            (step, next_on.isoformat(), today_s, item_id),
+            (new_box, step, next_on.isoformat(), today_s, item_id),
         )
         return
 
@@ -193,51 +188,52 @@ def apply_day_ladder(
     if today_s not in days:
         days.append(today_s)
     correct_count = int(row["correct_count"]) + 1
-    mastered = 1 if correct_count >= 3 and len(set(days)) >= 2 else 0
+    new_box = min(5, box + 1)
+    distinct_days = len(set(days))
+    # Mastered = box >= 4 with passes on separate days (Phase 2).
+    mastered = (
+        1
+        if new_box >= config.LEITNER_MASTERED_BOX and distinct_days >= 2
+        else 0
+    )
+    # Legacy fallback: still allow classic 3-correct/2-day if box somehow stalls.
+    if not mastered and correct_count >= 3 and distinct_days >= 2 and new_box >= 3:
+        mastered = 1
 
-    if mastered or row["mastered"] == 1:
+    if mastered or (row["mastered"] == 1 and new_box >= config.LEITNER_MASTERED_BOX):
         conn.execute(
             """
             UPDATE mastery
             SET correct_count = ?, days_json = ?, review_step = 0,
-                next_review_on = NULL, mastered = 1,
+                next_review_on = NULL, mastered = 1, box = ?,
                 mastered_on = COALESCE(mastered_on, ?),
                 last_result = 'correct', last_seen_on = ?
             WHERE item_id = ?
             """,
-            (correct_count, json.dumps(days), today_s, today_s, item_id),
+            (correct_count, json.dumps(days), max(new_box, config.LEITNER_MASTERED_BOX), today_s, today_s, item_id),
         )
         return
 
-    step = int(row["review_step"] or 0)
-    on_ladder = row["next_review_on"] is not None or step > 0
-
+    gap = config.LEITNER_GAPS_DAYS[min(new_box, len(config.LEITNER_GAPS_DAYS)) - 1]
     if keep_plus_one_day:
-        next_on = today + timedelta(days=1)
-        step = 1
-    elif on_ladder:
-        if step <= 1:
-            next_on = today + timedelta(days=3)
-            step = 3
-        else:
-            next_on = today + timedelta(days=7)
-            step = 7
-    else:
-        next_on = None
-        step = 0
+        gap = 1
+        new_box = max(1, min(new_box, 2))
+    next_on = today + timedelta(days=int(gap)) if gap else today
+    step = 1 if gap <= 1 else (3 if gap <= 3 else 7)
 
     conn.execute(
         """
         UPDATE mastery
         SET correct_count = ?, days_json = ?, review_step = ?,
-            next_review_on = ?, last_result = 'correct', last_seen_on = ?
+            next_review_on = ?, box = ?, last_result = 'correct', last_seen_on = ?
         WHERE item_id = ?
         """,
         (
             correct_count,
             json.dumps(days),
             step,
-            next_on.isoformat() if next_on else None,
+            next_on.isoformat(),
+            new_box,
             today_s,
             item_id,
         ),
@@ -463,25 +459,41 @@ def items_for_stage(
     return rows[start:end]
 
 
-def build_adaptive_queue(
-    conn: sqlite3.Connection,
-    level: int,
-    length: int,
-    stage: int | None = None,
-) -> list[sqlite3.Row]:
-    """Build a unique queue for one set (stage) inside a difficulty tier.
+def current_unlocked_patterns(conn: sqlite3.Connection) -> list[str]:
+    """Derive unlocked ladder prefixes; honour persisted settings override."""
+    settings = load_settings()
+    persisted = settings.get("unlocked_patterns")
+    if isinstance(persisted, list) and persisted:
+        return [str(p) for p in persisted]
+    ratios = known_ratio_by_pattern(conn)
+    return unlocked_patterns(ratios)
 
-    Prefers the current set's items, then earlier sets for review padding.
-    If the unlocked pool is smaller than the session length (Phrases/Stories
-    sets are currently 4 items), falls back to the rest of the tier so the
-    queue can still fill 5|10. Prefer growing those pools over relying on
-    the fallback.
-    """
-    difficulty = config.normalize_difficulty(level)
-    length = config.normalize_session_length(length)
-    stage = config.normalize_stage(
-        stage if stage is not None else 1
-    )
+
+def _pattern_allowed(row: sqlite3.Row, open_patterns: set[str]) -> bool:
+    try:
+        pat = str(row["pattern"] or "")
+    except (KeyError, IndexError, TypeError):
+        return True
+    if not pat or not open_patterns:
+        return True
+    if pat in open_patterns:
+        return True
+    # Sight words always practise once any phonics step is open.
+    try:
+        if int(row["sight_word"] or 0) == 1 and "sight" in open_patterns:
+            return True
+    except (KeyError, IndexError, TypeError):
+        pass
+    return False
+
+
+def _build_legacy_queue(
+    conn: sqlite3.Connection,
+    difficulty: int,
+    length: int,
+    stage: int,
+) -> list[sqlite3.Row]:
+    """Pre–scheduler_v2 mix: due → unmastered → mastered padding."""
     if difficulty == 3:
         poem = _one_group_queue(conn, stage, column="rhyme_group")
         if poem:
@@ -496,7 +508,6 @@ def build_adaptive_queue(
     tier_rows = _ordered_tier_items(conn, content_levels)
     stage_rows = items_for_stage(tier_rows, stage)
     stage_ids = {int(r["id"]) for r in stage_rows}
-    # Earlier sets only — unlock later sets by advancing stage.
     earlier_ids: set[int] = set()
     for s in range(1, stage):
         earlier_ids.update(int(r["id"]) for r in items_for_stage(tier_rows, s))
@@ -539,7 +550,7 @@ def build_adaptive_queue(
     _take(due, id_filter=stage_ids)
     _take(due, id_filter=earlier_ids)
 
-    if difficulty == 3:  # rhymes
+    if difficulty == 3:
         fill = _rhyme_grouped(conn, content_levels)
     else:
         fill = conn.execute(
@@ -556,12 +567,10 @@ def build_adaptive_queue(
     tier_ids = {int(r["id"]) for r in tier_rows}
     _take(fill, skip_correct_today=True, id_filter=stage_ids)
     _take(fill, skip_correct_today=True, id_filter=earlier_ids)
-    # Prefer a full 5/10 set: allow same-day unmastered before mastered padding.
     if len(queue) < length:
         _take(fill, skip_correct_today=False, id_filter=stage_ids)
     if len(queue) < length:
         _take(fill, skip_correct_today=False, id_filter=earlier_ids)
-    # Small sets (e.g. Phrases slices of 4) may need the rest of the tier to hit 5|10.
     if len(queue) < length:
         _take(fill, skip_correct_today=False, id_filter=tier_ids)
 
@@ -596,7 +605,6 @@ def build_adaptive_queue(
                 queue.append(row)
                 seen.add(rid)
 
-    # C7: never return an empty queue when any item exists in the tier.
     if not queue:
         for candidate in stage_rows or tier_rows:
             queue.append(candidate)
@@ -605,6 +613,171 @@ def build_adaptive_queue(
     if not queue:
         raise ValueError(f"No content for difficulty {difficulty}")
     return _snap_uniform_length(queue, length)
+
+
+def _build_scheduler_v2_queue(
+    conn: sqlite3.Connection,
+    difficulty: int,
+    length: int,
+    stage: int,
+) -> list[sqlite3.Row]:
+    """Easy opener → due → new (pattern-unlocked) → easy closer.
+
+    Rhymes and stories stay one group per set (unchanged).
+    """
+    if difficulty == 3:
+        poem = _one_group_queue(conn, stage, column="rhyme_group")
+        if poem:
+            return poem
+    if difficulty == 4:
+        story = _one_group_queue(conn, stage, column="story_id")
+        if story:
+            return story
+
+    content_levels = config.content_levels_for_difficulty(difficulty)
+    ph = _placeholders(len(content_levels))
+    today = local_today()
+    open_patterns = set(current_unlocked_patterns(conn))
+    tier_rows = _ordered_tier_items(conn, content_levels)
+    stage_rows = items_for_stage(tier_rows, stage)
+    stage_ids = {int(r["id"]) for r in stage_rows}
+    earlier_ids: set[int] = set()
+    for s in range(1, stage):
+        earlier_ids.update(int(r["id"]) for r in items_for_stage(tier_rows, s))
+    pool_ids = stage_ids | earlier_ids
+    tier_ids = {int(r["id"]) for r in tier_rows}
+
+    queue: list[sqlite3.Row] = []
+    seen: set[int] = set()
+
+    def _take(
+        rows: list[sqlite3.Row],
+        *,
+        id_filter: set[int] | None = None,
+        require_pattern: bool = False,
+        limit: int | None = None,
+    ) -> None:
+        added = 0
+        for row in rows:
+            if len(queue) >= length:
+                return
+            if limit is not None and added >= limit:
+                return
+            rid = int(row["id"])
+            if rid in seen:
+                continue
+            if id_filter is not None and rid not in id_filter:
+                continue
+            if require_pattern and not _pattern_allowed(row, open_patterns):
+                continue
+            queue.append(row)
+            seen.add(rid)
+            added += 1
+
+    easy = conn.execute(
+        f"""
+        SELECT i.*
+        FROM items i
+        LEFT JOIN mastery m ON m.item_id = i.id
+        WHERE i.level IN ({ph})
+        ORDER BY COALESCE(m.mastered, 0) DESC,
+                 COALESCE(m.box, 1) DESC,
+                 COALESCE(m.correct_count, 0) DESC,
+                 i.id ASC
+        """,
+        content_levels,
+    ).fetchall()
+    # Opener: one easy item from the unlocked pool.
+    _take(easy, id_filter=pool_ids or tier_ids, require_pattern=True, limit=1)
+
+    due = conn.execute(
+        f"""
+        SELECT i.*
+        FROM items i
+        JOIN mastery m ON m.item_id = i.id
+        WHERE i.level IN ({ph})
+          AND m.mastered = 0
+          AND m.next_review_on IS NOT NULL
+          AND m.next_review_on <= ?
+        ORDER BY COALESCE(m.box, 1) ASC, m.next_review_on ASC, i.id ASC
+        """,
+        (*content_levels, today),
+    ).fetchall()
+    _take(due, id_filter=stage_ids)
+    _take(due, id_filter=earlier_ids)
+
+    new_items = conn.execute(
+        f"""
+        SELECT i.*
+        FROM items i
+        LEFT JOIN mastery m ON m.item_id = i.id
+        WHERE i.level IN ({ph})
+          AND COALESCE(m.mastered, 0) = 0
+          AND (m.next_review_on IS NULL OR m.next_review_on > ?)
+        ORDER BY COALESCE(m.correct_count, 0) ASC, i.id ASC
+        """,
+        (*content_levels, today),
+    ).fetchall()
+    # Leave one slot for the closer when length > 2.
+    fill_cap = max(0, length - 1) if length > 2 else length
+    while len(queue) < fill_cap:
+        before = len(queue)
+        _take(new_items, id_filter=stage_ids, require_pattern=True)
+        _take(new_items, id_filter=earlier_ids, require_pattern=True)
+        if len(queue) == before:
+            _take(new_items, id_filter=stage_ids, require_pattern=False)
+            _take(new_items, id_filter=earlier_ids, require_pattern=False)
+            _take(new_items, id_filter=tier_ids, require_pattern=False)
+            break
+
+    if len(queue) < length:
+        _take(easy, id_filter=pool_ids or tier_ids, require_pattern=False, limit=1)
+    if len(queue) < length:
+        _take(easy, id_filter=tier_ids, require_pattern=False)
+
+    if not queue:
+        for candidate in stage_rows or tier_rows:
+            queue.append(candidate)
+            break
+
+    if not queue:
+        raise ValueError(f"No content for difficulty {difficulty}")
+    return _snap_uniform_length(queue, length)
+
+
+def build_adaptive_queue(
+    conn: sqlite3.Connection,
+    level: int,
+    length: int,
+    stage: int | None = None,
+) -> list[sqlite3.Row]:
+    """Build a unique queue for one set (stage) inside a difficulty tier.
+
+    When ``scheduler_v2`` is on (default), uses Leitner-aware mix + pattern
+    unlock for words/phrases. Rhymes/stories stay one-group sessions.
+    """
+    difficulty = config.normalize_difficulty(level)
+    length = config.normalize_session_length(length)
+    stage = config.normalize_stage(stage if stage is not None else 1)
+    settings = load_settings()
+    if bool(settings.get("scheduler_v2", True)):
+        return _build_scheduler_v2_queue(conn, difficulty, length, stage)
+    return _build_legacy_queue(conn, difficulty, length, stage)
+
+
+def shadow_queue_ids(
+    conn: sqlite3.Connection,
+    level: int,
+    length: int,
+    stage: int,
+) -> dict[str, list[int]]:
+    """Build both schedulers for shadow comparison (Phase 2)."""
+    difficulty = config.normalize_difficulty(level)
+    length = config.normalize_session_length(length)
+    stage = config.normalize_stage(stage)
+    v2 = [int(r["id"]) for r in _build_scheduler_v2_queue(conn, difficulty, length, stage)]
+    legacy = [int(r["id"]) for r in _build_legacy_queue(conn, difficulty, length, stage)]
+    return {"scheduler_v2": v2, "legacy": legacy}
 
 
 def maybe_reinsert_miss(

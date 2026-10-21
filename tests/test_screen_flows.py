@@ -169,10 +169,10 @@ def test_flow_listen_idle_mic():
     show = _fn("showListen")
     assert "stopClip()" in show
     assert 'setState("listen")' in show
-    assert "playClip(" in show
+    assert "playItemClip(item)" in show
     assert "enterIdle()" in show
     assert show.index("stopClip()") < show.index("setWord(")
-    assert show.count("playClip(") == 1
+    assert show.count("playItemClip(") == 1
     # Previous multi-word score ("3 of 3 words") must not linger on the next item.
     assert "clearPhraseScore()" in show
     assert "clearPhraseScore" in JS
@@ -203,7 +203,7 @@ def test_flow_hear_again():
 
     hear = _fn("hearAgain")
     assert "currentListenUrl()" in hear
-    assert "playClip(url)" in hear
+    assert "playItemClip(" in hear
     assert 'state.id !== "idle"' in hear
     assert "setMicEnabled(false)" in hear
     assert "syncHearAgain()" in hear
@@ -307,7 +307,7 @@ def test_flow_replay():
     """After complete, missed words enter replay phase then return to end."""
     show = _fn("showReplayItem")
     assert 'setState("session-replay")' in show
-    assert "playClip(" in show
+    assert "playItemClip(entry)" in show
     assert "Tap to read" in show
     fin = _fn("finishReplay")
     assert 'setState("session-end")' in fin

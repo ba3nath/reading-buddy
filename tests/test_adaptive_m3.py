@@ -383,28 +383,29 @@ def test_miss_keeps_planned_count_for_ratio(tmp_env):
 def test_day_ladder_and_mastery(tmp_env):
     conn = tmp_env["conn"]
     item_id = conn.execute("SELECT id FROM items WHERE slug='cat'").fetchone()["id"]
+    # Leitner: a miss drops to box 1 and is due today (gap 0).
     apply_day_ladder(conn, item_id, "missed")
     row = conn.execute("SELECT * FROM mastery WHERE item_id=?", (item_id,)).fetchone()
+    assert int(row["box"]) == 1
     assert row["review_step"] == 1
-    assert row["next_review_on"] == (date.fromisoformat(local_today()) + timedelta(days=1)).isoformat()
+    assert row["next_review_on"] == date.fromisoformat(local_today()).isoformat()
 
     apply_day_ladder(conn, item_id, "missed")
     row = conn.execute("SELECT * FROM mastery WHERE item_id=?", (item_id,)).fetchone()
-    assert row["review_step"] == 3
+    assert int(row["box"]) == 1
 
-    apply_day_ladder(conn, item_id, "missed")
-    row = conn.execute("SELECT * FROM mastery WHERE item_id=?", (item_id,)).fetchone()
-    assert row["review_step"] == 7
-
-    # Mastery: 3 corrects on >= 2 days
+    # Mastery: box >= 4 with passes on separate days
     conn.execute(
-        "UPDATE mastery SET correct_count=0, days_json='[]', mastered=0, review_step=0, next_review_on=NULL WHERE item_id=?",
+        """
+        UPDATE mastery
+        SET correct_count=0, days_json='[]', mastered=0, box=1,
+            review_step=0, next_review_on=NULL
+        WHERE item_id=?
+        """,
         (item_id,),
     )
     conn.commit()
-    # Day 1
     apply_day_ladder(conn, item_id, "correct")
-    # Fake prior day
     conn.execute(
         "UPDATE mastery SET days_json=? WHERE item_id=?",
         (json.dumps(["2020-01-01"]), item_id),
@@ -413,7 +414,7 @@ def test_day_ladder_and_mastery(tmp_env):
     apply_day_ladder(conn, item_id, "correct")
     apply_day_ladder(conn, item_id, "correct")
     row = conn.execute("SELECT * FROM mastery WHERE item_id=?", (item_id,)).fetchone()
-    assert row["correct_count"] >= 3
+    assert int(row["box"]) >= 4
     assert row["mastered"] == 1
     assert row["next_review_on"] is None
 

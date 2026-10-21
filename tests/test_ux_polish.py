@@ -201,9 +201,9 @@ def test_level7_does_not_stack_previous_and_current_audio():
     # showListen stops any prior clip before swapping text + playing the new slug.
     show = JS.split("async function showListen()")[1].split("async function ")[0]
     assert "stopClip()" in show
-    assert "playClip(`/api/audio/${encodeURIComponent(item.slug)}`)" in show
+    assert "playItemClip(item)" in show
     assert show.index("stopClip()") < show.index("setWord(")
-    assert show.count("playClip(") == 1
+    assert show.count("playItemClip(") == 1
 
     # After a scored take, handleAttempt must not play any clip before advancing.
     handle = JS.split("function handleAttempt(result)")[1].split("\nfunction advance(")[0]

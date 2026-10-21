@@ -1,4 +1,4 @@
-"""The four phase gates pass without editing the audio-clip agent."""
+"""Phase gates (incl. drift-review) pass without editing the audio-clip agent."""
 
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ AGENTS = (
     "ux-consistency",
     "test-coverage",
     "code-review",
+    "drift-review",
 )
-PHASES = ("1", "2", "fluency", "3", "4")
+PHASES = ("0", "1", "2", "fluency", "3", "4")
 
 
 def test_gate_agents_pass_every_phase():

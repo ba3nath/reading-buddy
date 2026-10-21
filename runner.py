@@ -829,6 +829,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Bind 127.0.0.1 only (no phone/tablet on Wi‑Fi)",
     )
+    p.add_argument(
+        "--backup",
+        action="store_true",
+        help="Zip data/ progress (DB + settings) and exit",
+    )
+    p.add_argument(
+        "--restore",
+        metavar="ZIP",
+        default=None,
+        help="Restore data/ from a backup zip and exit",
+    )
+    p.add_argument(
+        "--force-restore",
+        action="store_true",
+        help="Allow --restore to overwrite an existing reading.db",
+    )
     return p.parse_args(argv)
 
 
@@ -837,6 +853,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(raw)
     os.chdir(ROOT)
     config.ensure_dirs()
+
+    if args.backup:
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "backup_data.py"), "backup"],
+            cwd=ROOT,
+        ).returncode
+    if args.restore:
+        cmd = [
+            sys.executable,
+            str(ROOT / "scripts" / "backup_data.py"),
+            "restore",
+            str(args.restore),
+        ]
+        if args.force_restore:
+            cmd.append("--force")
+        return subprocess.run(cmd, cwd=ROOT).returncode
 
     if args.stop:
         stop_all()

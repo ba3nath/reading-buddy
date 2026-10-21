@@ -2,13 +2,37 @@
 
 from __future__ import annotations
 
-import audioop
+import array
+import math
 import subprocess
 import wave
 from pathlib import Path
 from uuid import uuid4
 
 from app import config
+
+
+def _pcm_rms(frames: bytes, sampwidth: int) -> float:
+    """RMS of little-endian PCM (stdlib ``audioop`` was removed in 3.13)."""
+    if not frames or sampwidth <= 0:
+        return 0.0
+    if sampwidth == 1:
+        # 8-bit PCM is unsigned.
+        samples = array.array("B")
+        samples.frombytes(frames)
+        if not samples:
+            return 0.0
+        mean = sum((s - 128) ** 2 for s in samples) / len(samples)
+        return math.sqrt(mean)
+    typecode = {2: "h", 4: "i"}.get(sampwidth)
+    if typecode is None:
+        return 0.0
+    samples = array.array(typecode)
+    samples.frombytes(frames)
+    if not samples:
+        return 0.0
+    mean = sum(int(s) * int(s) for s in samples) / len(samples)
+    return math.sqrt(mean)
 
 
 class AudioError(Exception):
@@ -77,10 +101,10 @@ def wav_duration_and_rms(wav_path: Path) -> tuple[float, float]:
     if n_frames == 0 or framerate == 0:
         return 0.0, 0.0
     duration = n_frames / float(framerate)
-    # audioop.rms on 16-bit PCM → scale to float -1..1
+    # PCM RMS → scale to float -1..1 (same scale as former audioop.rms).
     if not frames:
         return duration, 0.0
-    rms_int = audioop.rms(frames, sampwidth)
+    rms_int = _pcm_rms(frames, sampwidth)
     max_amp = float(1 << (8 * sampwidth - 1))
     rms = rms_int / max_amp if max_amp else 0.0
     # If stereo slipped through, still ok — ffmpeg forces mono
@@ -416,3 +440,78 @@ def generated_audio_ready(slugs: list[str] | None = None) -> bool:
     if slugs is None:
         return True
     return all(resolve_audio_slug(slug) is not None for slug in slugs)
+
+
+def proportional_word_timings(
+    text: str, duration_seconds: float
+) -> list[dict[str, float | str]]:
+    """Split duration evenly across tokens (fallback when Kokoro has no align)."""
+    import re
+
+    words = [w for w in re.findall(r"[A-Za-z']+", text or "") if w]
+    if not words:
+        return []
+    dur = max(0.05, float(duration_seconds))
+    # Leave a small lead-in for padded listen clips.
+    lead = min(0.12, dur * 0.08)
+    usable = max(0.05, dur - lead)
+    slot = usable / len(words)
+    out: list[dict[str, float | str]] = []
+    t = lead
+    for w in words:
+        start = round(t, 3)
+        end = round(min(dur, t + slot), 3)
+        out.append({"word": w, "start": start, "end": end})
+        t = end
+    if out:
+        out[-1]["end"] = round(dur, 3)
+    return out
+
+
+def timings_path_for_slug(slug: str) -> Path:
+    return config.AUDIO_GENERATED / f"{slug}.json"
+
+
+def load_or_build_timings(
+    slug: str,
+    text: str,
+    *,
+    force: bool = False,
+) -> list[dict[str, float | str]]:
+    """Return word timings; write proportional JSON beside the generated wav.
+
+    Pass ``force=True`` after a human override so duration matches the new clip.
+    """
+    import json
+
+    path = timings_path_for_slug(slug)
+    if path.is_file() and not force:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            words = data.get("words") if isinstance(data, dict) else data
+            if isinstance(words, list) and words:
+                return words
+        except (OSError, ValueError, TypeError):
+            pass
+    elif force and path.is_file():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+    wav = resolve_audio_slug(slug)
+    duration = 1.0
+    if wav is not None:
+        try:
+            duration, _ = wav_duration_and_rms(wav)
+        except Exception:  # noqa: BLE001
+            duration = 1.0
+    words = proportional_word_timings(text, duration)
+    try:
+        config.AUDIO_GENERATED.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"slug": slug, "words": words}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+    return words

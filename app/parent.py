@@ -154,6 +154,44 @@ def sound_heatmap(conn) -> dict[str, Any]:
     return {"tags": tags_out, "note": SOUND_NOTE}
 
 
+def pattern_heatmap(conn) -> dict[str, Any]:
+    """Accuracy by grapheme pattern (curriculum key; separate from sound_tags)."""
+    from app.events import known_ratio_by_pattern
+
+    rows = conn.execute(
+        """
+        SELECT i.pattern AS pattern, a.result
+        FROM attempts a
+        JOIN items i ON i.id = a.item_id
+        WHERE a.is_replay = 0 AND a.result != 'retry'
+          AND i.pattern IS NOT NULL AND i.pattern != ''
+        """
+    ).fetchall()
+    tallies: dict[str, dict[str, int]] = {}
+    for row in rows:
+        pat = str(row["pattern"])
+        bucket = tallies.setdefault(pat, {"correct": 0, "scored": 0})
+        bucket["scored"] += 1
+        if row["result"] == "correct":
+            bucket["correct"] += 1
+    known = known_ratio_by_pattern(conn)
+    patterns = [
+        {
+            "pattern": pat,
+            "correct": v["correct"],
+            "scored": v["scored"],
+            "known_ratio": round(known.get(pat, 0.0), 3),
+        }
+        for pat, v in sorted(
+            tallies.items(), key=lambda kv: (-kv[1]["scored"], kv[0])
+        )
+    ]
+    return {
+        "patterns": patterns,
+        "note": "Pattern is the phonics curriculum key. Practise the lowest known_ratio next.",
+    }
+
+
 def list_kept_clips(conn) -> dict[str, Any]:
     clips = []
     if not config.KEPT_DIR.exists():

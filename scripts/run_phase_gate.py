@@ -13,6 +13,7 @@ AGENTS = (
     "ux-consistency",
     "test-coverage",
     "code-review",
+    "drift-review",
 )
 
 

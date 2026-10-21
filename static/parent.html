@@ -113,6 +113,27 @@
       <ul data-tricky></ul>
     </section>
 
+    <section class="panel" aria-labelledby="voice-title">
+      <h2 id="voice-title">Record my voice</h2>
+      <p class="note">Record yourself reading a tricky word. Your clip replaces the computer voice for that word.</p>
+      <label>
+        Word
+        <select data-voice-slug></select>
+      </label>
+      <div class="form-actions">
+        <button type="button" class="btn primary" data-voice-record>Record</button>
+        <button type="button" class="btn ghost" data-voice-play hidden>Play saved</button>
+      </div>
+      <p class="form-status" data-voice-status aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="patterns-title">
+      <h2 id="patterns-title">Pattern heatmap</h2>
+      <p class="note" data-patterns-note></p>
+      <p class="note" data-patterns-unlocked></p>
+      <div class="heat" data-patterns></div>
+    </section>
+
     <section class="panel" aria-labelledby="sounds-title">
       <h2 id="sounds-title">Sound heatmap</h2>
       <p class="note" data-sounds-note></p>

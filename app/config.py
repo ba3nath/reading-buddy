@@ -204,7 +204,16 @@ DEFAULT_SETTINGS = {
     "day_streak": 0,
     "last_play_date": "",
     "badges_earned": [],  # list of badge ids
+    # Phase 1–2 learning
+    "scheduler_v2": True,  # Leitner mix + pattern unlock
+    "scheduler_shadow": False,  # log legacy vs v2 planned ids at session start
+    "unlocked_patterns": [],  # empty = derive from mastery
+    "effort_stars": True,  # at least one star for a locking try (correct/close)
 }
+
+# Leitner box → days until next review (box 1 is "due now"/same session).
+LEITNER_GAPS_DAYS = (0, 1, 3, 7, 14)
+LEITNER_MASTERED_BOX = 4
 
 BUDDIES = ("krishna", "unicorn")
 

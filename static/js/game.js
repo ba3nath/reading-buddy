@@ -505,15 +505,94 @@ function stopClip() {
   }
 }
 
-function playClip(url) {
+function clearReadAlong() {
+  const el = $("[data-word]");
+  if (!el) return;
+  el.querySelectorAll(".word-readalong").forEach((span) => {
+    span.classList.remove("is-active");
+  });
+}
+
+function normalizeReadAlongTimings(text, timings) {
+  let words = Array.isArray(timings) && timings.length
+    ? timings.map((t) => ({
+        word: t.word,
+        start: Number(t.start) || 0,
+        end: Number(t.end) || Number(t.start) || 0,
+      }))
+    : null;
+  if (!words || !words.length) {
+    const tokens = String(text || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!tokens.length) return [];
+    // Fallback until /timings loads: one span for the whole clip.
+    words = tokens.map((w, i) => ({
+      word: w,
+      start: i === 0 ? 0 : i,
+      end: i + 1,
+    }));
+  }
+  return words;
+}
+
+function setReadAlongWords(text, timings) {
+  const el = $("[data-word]");
+  if (!el) return [];
+  const words = normalizeReadAlongTimings(text, timings);
+  if (!words.length) {
+    el.textContent = text || "";
+    return [];
+  }
+  // Single words get a span too — visible pointer while listening (Phase 3).
+  el.textContent = "";
+  words.forEach((t, i) => {
+    if (i) el.appendChild(document.createTextNode(" "));
+    const span = document.createElement("span");
+    span.className = "word-readalong";
+    span.dataset.index = String(i);
+    span.textContent = t.word;
+    el.appendChild(span);
+  });
+  return words;
+}
+
+function syncReadAlong(audio, timings) {
+  if (!audio || !Array.isArray(timings) || !timings.length) return;
+  const t = audio.currentTime || 0;
+  const spans = document.querySelectorAll("[data-word] .word-readalong");
+  let active = -1;
+  for (let i = 0; i < timings.length; i++) {
+    const start = Number(timings[i].start) || 0;
+    const end = Number(timings[i].end) || start;
+    if (t >= start && t < end + 0.02) {
+      active = i;
+      break;
+    }
+    if (t >= start) active = i;
+  }
+  // Single-word clips: keep lit for the whole play once audio has started.
+  if (timings.length === 1 && t > 0.02) active = 0;
+  spans.forEach((span, i) => {
+    span.classList.toggle("is-active", i === active);
+  });
+}
+
+function playClip(url, { timings = null, text = "" } = {}) {
   return new Promise((resolve) => {
     stopClip();
+    clearReadAlong();
     const gen = state.clipGen;
     const audio = new Audio(url);
     state.audioEl = audio;
+    const wordTimings = setReadAlongWords(text, timings);
+    const onTime = () => syncReadAlong(audio, wordTimings);
     const done = () => {
       audio.removeEventListener("ended", done);
       audio.removeEventListener("error", done);
+      audio.removeEventListener("timeupdate", onTime);
+      clearReadAlong();
       // A newer stopClip/playClip won — do not keep the old element alive.
       if (gen !== state.clipGen) {
         resolve();
@@ -524,8 +603,37 @@ function playClip(url) {
     };
     audio.addEventListener("ended", done);
     audio.addEventListener("error", done);
+    if (wordTimings.length >= 1) {
+      audio.addEventListener("timeupdate", onTime);
+      // Light immediately so single-word listen always shows a pointer.
+      if (wordTimings.length === 1) {
+        document
+          .querySelectorAll("[data-word] .word-readalong")
+          .forEach((span) => span.classList.add("is-active"));
+      }
+    }
     audio.play().catch(done);
   });
+}
+
+function slugFromAudioUrl(url) {
+  if (!url) return "";
+  const m = String(url).match(/\/api\/audio\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+async function playItemClip(item) {
+  const slug = item?.slug || slugFromAudioUrl(item?.audio_url);
+  if (!slug) return;
+  const url = `/api/audio/${encodeURIComponent(slug)}`;
+  let timings = null;
+  try {
+    const data = await api(`/api/audio/${encodeURIComponent(slug)}/timings`);
+    timings = data?.words || null;
+  } catch {
+    timings = null;
+  }
+  await playClip(url, { timings, text: item.text || item.word || "" });
 }
 
 async function api(path, options = {}) {
@@ -963,7 +1071,7 @@ async function showListen() {
   setProgress();
   setMicEnabled(false);
   try {
-    await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
+    await playItemClip(item);
   } catch (err) {
     console.error(err);
   }
@@ -1026,7 +1134,15 @@ async function hearAgain() {
   if (btn) btn.disabled = true;
   setMicEnabled(false);
   try {
-    await playClip(url);
+    if (state.phase === "replay") {
+      const entry = currentReplay();
+      if (entry) await playItemClip(entry);
+      else await playClip(url);
+    } else {
+      const item = currentItem();
+      if (item?.slug) await playItemClip(item);
+      else await playClip(url);
+    }
   } catch (err) {
     console.error(err);
   }
@@ -1104,11 +1220,17 @@ async function onRecordComplete(blob) {
     form.append("item_id", String(item.id));
     form.append("queue_index", String(state.index));
   }
+  // Prior take's stop→response latency (FormData is already on the wire for this take).
+  if (typeof state._lastLatencyMs === "number") {
+    form.append("client_latency_ms", String(state._lastLatencyMs));
+  }
+  const scoreStarted = performance.now();
   try {
     const result = await api(`/api/sessions/${state.sessionId}/attempts`, {
       method: "POST",
       body: form,
     });
+    state._lastLatencyMs = Math.round(performance.now() - scoreStarted);
     handleAttempt(result);
   } catch (err) {
     console.error(err);
@@ -1443,9 +1565,8 @@ async function showReplayItem() {
   }
   setProgress();
   setMicEnabled(false);
-  const url = entry.audio_url || `/api/audio/${encodeURIComponent(entry.text)}`;
   try {
-    await playClip(url);
+    await playItemClip(entry);
   } catch (err) {
     console.error(err);
   }

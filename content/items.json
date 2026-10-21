@@ -6,36 +6,9 @@
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "sun",
-    "text": "sun",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ]
-  },
-  {
-    "slug": "pen",
-    "text": "pen",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "dog",
-    "text": "dog",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
   },
   {
     "slug": "hat",
@@ -44,65 +17,9 @@
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "bed",
-    "text": "bed",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "pig",
-    "text": "pig",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "cup",
-    "text": "cup",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "map",
-    "text": "map",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "bus",
-    "text": "bus",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ]
-  },
-  {
-    "slug": "fox",
-    "text": "fox",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ]
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
   },
   {
     "slug": "jam",
@@ -111,34 +28,20 @@
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
   },
   {
-    "slug": "kid",
-    "text": "kid",
+    "slug": "map",
+    "text": "map",
     "kind": "word",
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "log",
-    "text": "log",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "net",
-    "text": "net",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
   },
   {
     "slug": "rat",
@@ -149,7 +52,141 @@
     "pd_status": "n/a",
     "sound_tags": [
       "r"
-    ]
+    ],
+    "pattern": "cvc-a",
+    "sight_word": false
+  },
+  {
+    "slug": "tap",
+    "text": "tap",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
+  },
+  {
+    "slug": "van",
+    "text": "van",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-a",
+    "sight_word": false
+  },
+  {
+    "slug": "bed",
+    "text": "bed",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "leg",
+    "text": "leg",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "net",
+    "text": "net",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "pen",
+    "text": "pen",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "red",
+    "text": "red",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "wet",
+    "text": "wet",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-e",
+    "sight_word": false
+  },
+  {
+    "slug": "big",
+    "text": "big",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-i",
+    "sight_word": false
+  },
+  {
+    "slug": "bin",
+    "text": "bin",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-i",
+    "sight_word": false
+  },
+  {
+    "slug": "kid",
+    "text": "kid",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-i",
+    "sight_word": false
+  },
+  {
+    "slug": "pig",
+    "text": "pig",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-i",
+    "sight_word": false
   },
   {
     "slug": "sit",
@@ -160,7 +197,88 @@
     "pd_status": "n/a",
     "sound_tags": [
       "s"
-    ]
+    ],
+    "pattern": "cvc-i",
+    "sight_word": false
+  },
+  {
+    "slug": "win",
+    "text": "win",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-i",
+    "sight_word": false
+  },
+  {
+    "slug": "box",
+    "text": "box",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
+  },
+  {
+    "slug": "dog",
+    "text": "dog",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
+  },
+  {
+    "slug": "fox",
+    "text": "fox",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "pattern": "cvc-o",
+    "sight_word": false
+  },
+  {
+    "slug": "hop",
+    "text": "hop",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
+  },
+  {
+    "slug": "log",
+    "text": "log",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
+  },
+  {
+    "slug": "mop",
+    "text": "mop",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
   },
   {
     "slug": "top",
@@ -169,37 +287,248 @@
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "cvc-o",
+    "sight_word": false
   },
   {
-    "slug": "van",
-    "text": "van",
+    "slug": "bug",
+    "text": "bug",
     "kind": "word",
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "cvc-u",
+    "sight_word": false
   },
   {
-    "slug": "wet",
-    "text": "wet",
+    "slug": "bus",
+    "text": "bus",
     "kind": "word",
     "level": 1,
     "source": "cvc",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [
+      "s"
+    ],
+    "pattern": "cvc-u",
+    "sight_word": false
   },
   {
-    "slug": "the",
-    "text": "the",
+    "slug": "cup",
+    "text": "cup",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-u",
+    "sight_word": false
+  },
+  {
+    "slug": "mud",
+    "text": "mud",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-u",
+    "sight_word": false
+  },
+  {
+    "slug": "run",
+    "text": "run",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "cvc-u",
+    "sight_word": false
+  },
+  {
+    "slug": "sun",
+    "text": "sun",
+    "kind": "word",
+    "level": 1,
+    "source": "cvc",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "pattern": "cvc-u",
+    "sight_word": false
+  },
+  {
+    "slug": "all",
+    "text": "all",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "are",
+    "text": "are",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "but",
+    "text": "but",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "can",
+    "text": "can",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "for",
+    "text": "for",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "from",
+    "text": "from",
+    "kind": "word",
+    "level": 2,
+    "source": "fry",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "have",
+    "text": "have",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "her",
+    "text": "her",
     "kind": "word",
     "level": 2,
     "source": "dolch",
     "pd_status": "n/a",
     "sound_tags": [
-      "th"
+      "r"
     ],
-    "sounds_locked": true
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "him",
+    "text": "him",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "his",
+    "text": "his",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "into",
+    "text": "into",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "like",
+    "text": "like",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "make",
+    "text": "make",
+    "kind": "word",
+    "level": 2,
+    "source": "fry",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "not",
+    "text": "not",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "out",
+    "text": "out",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
   },
   {
     "slug": "said",
@@ -211,30 +540,48 @@
     "sound_tags": [
       "s"
     ],
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "was",
-    "text": "was",
+    "slug": "she",
+    "text": "she",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "sight",
     "pd_status": "n/a",
     "sound_tags": [],
-    "sounds_locked": true
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "you",
-    "text": "you",
+    "slug": "some",
+    "text": "some",
     "kind": "word",
     "level": 2,
     "source": "dolch",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [
+      "s"
+    ],
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "they",
-    "text": "they",
+    "slug": "that",
+    "text": "that",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "the",
+    "text": "the",
     "kind": "word",
     "level": 2,
     "source": "dolch",
@@ -242,76 +589,9 @@
     "sound_tags": [
       "th"
     ],
-    "sounds_locked": true
-  },
-  {
-    "slug": "have",
-    "text": "have",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "from",
-    "text": "from",
-    "kind": "word",
-    "level": 2,
-    "source": "fry",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ]
-  },
-  {
-    "slug": "what",
-    "text": "what",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "were",
-    "text": "were",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ]
-  },
-  {
-    "slug": "when",
-    "text": "when",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "your",
-    "text": "your",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ]
-  },
-  {
-    "slug": "can",
-    "text": "can",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
   },
   {
     "slug": "there",
@@ -324,29 +604,103 @@
       "th",
       "r"
     ],
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "some",
-    "text": "some",
+    "slug": "they",
+    "text": "they",
     "kind": "word",
     "level": 2,
     "source": "dolch",
     "pd_status": "n/a",
     "sound_tags": [
-      "s"
-    ]
+      "th"
+    ],
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "her",
-    "text": "her",
+    "slug": "this",
+    "text": "this",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "was",
+    "text": "was",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "were",
+    "text": "were",
     "kind": "word",
     "level": 2,
     "source": "dolch",
     "pd_status": "n/a",
     "sound_tags": [
       "r"
-    ]
+    ],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "what",
+    "text": "what",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "when",
+    "text": "when",
+    "kind": "word",
+    "level": 2,
+    "source": "dolch",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "will",
+    "text": "will",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
+  },
+  {
+    "slug": "with",
+    "text": "with",
+    "kind": "word",
+    "level": 2,
+    "source": "sight",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "sight",
+    "sight_word": true
   },
   {
     "slug": "would",
@@ -356,140 +710,33 @@
     "source": "dolch",
     "pd_status": "n/a",
     "sound_tags": [],
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "make",
-    "text": "make",
-    "kind": "word",
-    "level": 2,
-    "source": "fry",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "like",
-    "text": "like",
+    "slug": "you",
+    "text": "you",
     "kind": "word",
     "level": 2,
     "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "him",
-    "text": "him",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "into",
-    "text": "into",
-    "kind": "word",
-    "level": 2,
-    "source": "dolch",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "ship",
-    "text": "ship",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "sh"
-    ],
-    "hard": 1,
-    "sounds_locked": true
-  },
-  {
-    "slug": "frog",
-    "text": "frog",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ],
-    "hard": 1,
-    "sounds_locked": true
-  },
-  {
-    "slug": "thin",
-    "text": "thin",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "hard": 1,
-    "sounds_locked": true
-  },
-  {
-    "slug": "chop",
-    "text": "chop",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "ch"
-    ],
-    "hard": 1
-  },
-  {
-    "slug": "drum",
-    "text": "drum",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ],
-    "hard": 1
-  },
-  {
-    "slug": "flag",
-    "text": "flag",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [],
-    "hard": 1
+    "pattern": "sight",
+    "sight_word": true
   },
   {
-    "slug": "swim",
-    "text": "swim",
+    "slug": "your",
+    "text": "your",
     "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "hard": 1
-  },
-  {
-    "slug": "trap",
-    "text": "trap",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
+    "level": 2,
+    "source": "dolch",
     "pd_status": "n/a",
     "sound_tags": [
       "r"
     ],
-    "hard": 1
+    "pattern": "sight",
+    "sight_word": true
   },
   {
     "slug": "brush",
@@ -503,54 +750,74 @@
       "sh"
     ],
     "hard": 1,
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "digraph-sh",
+    "sight_word": false
   },
   {
-    "slug": "clock",
-    "text": "clock",
+    "slug": "fish",
+    "text": "fish",
     "kind": "word",
     "level": 3,
-    "source": "phonics",
+    "source": "blend",
     "pd_status": "n/a",
     "sound_tags": [],
-    "hard": 1
+    "pattern": "digraph-sh",
+    "sight_word": false
   },
   {
-    "slug": "grass",
-    "text": "grass",
+    "slug": "flash",
+    "text": "flash",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "r",
-      "s"
+      "sh"
     ],
-    "hard": 1
+    "hard": 1,
+    "pattern": "digraph-sh",
+    "sight_word": false
   },
   {
-    "slug": "slide",
-    "text": "slide",
+    "slug": "sheep",
+    "text": "sheep",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "s"
+      "sh"
     ],
-    "hard": 1
+    "hard": 1,
+    "pattern": "digraph-sh",
+    "sight_word": false
   },
   {
-    "slug": "truck",
-    "text": "truck",
+    "slug": "ship",
+    "text": "ship",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "r"
+      "sh"
     ],
-    "hard": 1
+    "hard": 1,
+    "sounds_locked": true,
+    "pattern": "digraph-sh",
+    "sight_word": false
+  },
+  {
+    "slug": "shop",
+    "text": "shop",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "digraph-sh",
+    "sight_word": false
   },
   {
     "slug": "chair",
@@ -564,68 +831,88 @@
       "r"
     ],
     "hard": 1,
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "digraph-ch",
+    "sight_word": false
   },
   {
-    "slug": "sheep",
-    "text": "sheep",
+    "slug": "chin",
+    "text": "chin",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "sh"
+      "ch"
     ],
-    "hard": 1
+    "pattern": "digraph-ch",
+    "sight_word": false
   },
   {
-    "slug": "bring",
-    "text": "bring",
+    "slug": "chip",
+    "text": "chip",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "r"
+      "ch"
     ],
-    "hard": 1
+    "pattern": "digraph-ch",
+    "sight_word": false
   },
   {
-    "slug": "flash",
-    "text": "flash",
+    "slug": "chop",
+    "text": "chop",
     "kind": "word",
     "level": 3,
     "source": "phonics",
     "pd_status": "n/a",
     "sound_tags": [
-      "sh"
-    ],
-    "hard": 1
-  },
-  {
-    "slug": "spoon",
-    "text": "spoon",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "hard": 1
-  },
-  {
-    "slug": "train",
-    "text": "train",
-    "kind": "word",
-    "level": 3,
-    "source": "phonics",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
+      "ch"
     ],
     "hard": 1,
-    "sounds_locked": true
+    "pattern": "digraph-ch",
+    "sight_word": false
+  },
+  {
+    "slug": "much",
+    "text": "much",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "ch"
+    ],
+    "pattern": "digraph-ch",
+    "sight_word": false
+  },
+  {
+    "slug": "path",
+    "text": "path",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "digraph-th",
+    "sight_word": false
+  },
+  {
+    "slug": "thin",
+    "text": "thin",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "hard": 1,
+    "sounds_locked": true,
+    "pattern": "digraph-th",
+    "sight_word": false
   },
   {
     "slug": "three",
@@ -639,7 +926,395 @@
       "r"
     ],
     "hard": 1,
-    "sounds_locked": true
+    "sounds_locked": true,
+    "pattern": "digraph-th",
+    "sight_word": false
+  },
+  {
+    "slug": "bring",
+    "text": "bring",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "clap",
+    "text": "clap",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "clock",
+    "text": "clock",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "drop",
+    "text": "drop",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "drum",
+    "text": "drum",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "duck",
+    "text": "duck",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "flag",
+    "text": "flag",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "frog",
+    "text": "frog",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "grass",
+    "text": "grass",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r",
+      "s"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "jump",
+    "text": "jump",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "plan",
+    "text": "plan",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "stop",
+    "text": "stop",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "swim",
+    "text": "swim",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "trap",
+    "text": "trap",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "truck",
+    "text": "truck",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "pattern": "blend",
+    "sight_word": false
+  },
+  {
+    "slug": "bike",
+    "text": "bike",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "silent-e",
+    "sight_word": false
+  },
+  {
+    "slug": "cake",
+    "text": "cake",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "silent-e",
+    "sight_word": false
+  },
+  {
+    "slug": "home",
+    "text": "home",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "silent-e",
+    "sight_word": false
+  },
+  {
+    "slug": "slide",
+    "text": "slide",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1,
+    "pattern": "silent-e",
+    "sight_word": false
+  },
+  {
+    "slug": "book",
+    "text": "book",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "vowel-team",
+    "sight_word": false
+  },
+  {
+    "slug": "rain",
+    "text": "rain",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "vowel-team",
+    "sight_word": false
+  },
+  {
+    "slug": "spoon",
+    "text": "spoon",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "hard": 1,
+    "pattern": "vowel-team",
+    "sight_word": false
+  },
+  {
+    "slug": "train",
+    "text": "train",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "hard": 1,
+    "sounds_locked": true,
+    "pattern": "vowel-team",
+    "sight_word": false
+  },
+  {
+    "slug": "tree",
+    "text": "tree",
+    "kind": "word",
+    "level": 3,
+    "source": "blend",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "vowel-team",
+    "sight_word": false
+  },
+  {
+    "slug": "bird",
+    "text": "bird",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "pattern": "r-controlled",
+    "sight_word": false
+  },
+  {
+    "slug": "car",
+    "text": "car",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "pattern": "r-controlled",
+    "sight_word": false
+  },
+  {
+    "slug": "fork",
+    "text": "fork",
+    "kind": "word",
+    "level": 3,
+    "source": "phonics",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "pattern": "r-controlled",
+    "sight_word": false
+  },
+  {
+    "slug": "a-hot-sun",
+    "text": "a hot sun",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "a hot sun",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "a-long-train",
+    "text": "a long train",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "a long train",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "a-quick-fox",
+    "text": "a quick fox",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "a quick fox",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "a-red-bus",
@@ -654,89 +1329,31 @@
     ],
     "sounds_locked": false,
     "normalized": "a red bus",
-    "hard": 0
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
-    "slug": "the-big-dog",
-    "text": "the big dog",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "the big dog",
-    "hard": 0
-  },
-  {
-    "slug": "my-blue-pen",
-    "text": "my blue pen",
+    "slug": "a-small-cup",
+    "text": "a small cup",
     "kind": "phrase",
     "level": 4,
     "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "sounds_locked": false,
-    "normalized": "my blue pen",
-    "hard": 0
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
-    "slug": "a-hot-sun",
-    "text": "a hot sun",
+    "slug": "a-soft-mop",
+    "text": "a soft mop",
     "kind": "phrase",
     "level": 4,
     "source": "decodable",
     "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "a hot sun",
-    "hard": 0
-  },
-  {
-    "slug": "the-fat-cat",
-    "text": "the fat cat",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "the fat cat",
-    "hard": 0
-  },
-  {
-    "slug": "one-small-pig",
-    "text": "one small pig",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "one small pig",
-    "hard": 0
-  },
-  {
-    "slug": "two-wet-ducks",
-    "text": "two wet ducks",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s"
-    ],
-    "sounds_locked": false,
-    "normalized": "two wet ducks",
-    "hard": 0
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "a-tall-ship",
@@ -750,22 +1367,52 @@
     ],
     "sounds_locked": false,
     "normalized": "a tall ship",
-    "hard": 0
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
-    "slug": "the-green-frog",
-    "text": "the green frog",
+    "slug": "a-wet-log",
+    "text": "a wet log",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "come-with-me",
+    "text": "come with me",
     "kind": "phrase",
     "level": 4,
     "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
-      "th",
-      "r"
+      "th"
     ],
     "sounds_locked": false,
-    "normalized": "the green frog",
-    "hard": 0
+    "normalized": "come with me",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "look-at-that",
+    "text": "look at that",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "look at that",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "my-best-friend",
@@ -780,11 +1427,49 @@
     ],
     "sounds_locked": false,
     "normalized": "my best friend",
-    "hard": 0
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
-    "slug": "a-quick-fox",
-    "text": "a quick fox",
+    "slug": "my-big-bag",
+    "text": "my big bag",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "my-blue-pen",
+    "text": "my blue pen",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "sounds_locked": false,
+    "normalized": "my blue pen",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "one-fast-van",
+    "text": "one fast van",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "one-small-pig",
+    "text": "one small pig",
     "kind": "phrase",
     "level": 4,
     "source": "decodable",
@@ -793,8 +1478,190 @@
       "s"
     ],
     "sounds_locked": false,
-    "normalized": "a quick fox",
-    "hard": 0
+    "normalized": "one small pig",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "open-the-book",
+    "text": "open the book",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "open the book",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "play-with-me",
+    "text": "play with me",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "run-and-jump",
+    "text": "run and jump",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "run and jump",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "run-to-him",
+    "text": "run to him",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "sit-and-read",
+    "text": "sit and read",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "s",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "sit and read",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "sit-on-top",
+    "text": "sit on top",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-big-dog",
+    "text": "the big dog",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the big dog",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-cold-wind",
+    "text": "the cold wind",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the cold wind",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-fat-cat",
+    "text": "the fat cat",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th"
+    ],
+    "sounds_locked": false,
+    "normalized": "the fat cat",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-green-frog",
+    "text": "the green frog",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [
+      "th",
+      "r"
+    ],
+    "sounds_locked": false,
+    "normalized": "the green frog",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-long-path",
+    "text": "the long path",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-old-map",
+    "text": "the old map",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
+  },
+  {
+    "slug": "the-red-box",
+    "text": "the red box",
+    "kind": "phrase",
+    "level": 4,
+    "source": "decodable",
+    "pd_status": "n/a",
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "the-soft-bed",
@@ -809,7 +1676,9 @@
     ],
     "sounds_locked": false,
     "normalized": "the soft bed",
-    "hard": 0
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "three-red-hats",
@@ -825,484 +1694,9 @@
     ],
     "sounds_locked": false,
     "normalized": "three red hats",
-    "hard": 0
-  },
-  {
-    "slug": "a-long-train",
-    "text": "a long train",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "a long train",
-    "hard": 0
-  },
-  {
-    "slug": "the-cold-wind",
-    "text": "the cold wind",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "the cold wind",
-    "hard": 0
-  },
-  {
-    "slug": "sit-and-read",
-    "text": "sit and read",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "s",
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "sit and read",
-    "hard": 0
-  },
-  {
-    "slug": "run-and-jump",
-    "text": "run and jump",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "r"
-    ],
-    "sounds_locked": false,
-    "normalized": "run and jump",
-    "hard": 0
-  },
-  {
-    "slug": "look-at-that",
-    "text": "look at that",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "look at that",
-    "hard": 0
-  },
-  {
-    "slug": "come-with-me",
-    "text": "come with me",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "come with me",
-    "hard": 0
-  },
-  {
-    "slug": "open-the-book",
-    "text": "open the book",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": [
-      "th"
-    ],
-    "sounds_locked": false,
-    "normalized": "open the book",
-    "hard": 0
-  },
-  {
-    "slug": "mop",
-    "text": "mop",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "tap",
-    "text": "tap",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "bin",
-    "text": "bin",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "mud",
-    "text": "mud",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "hop",
-    "text": "hop",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "red",
-    "text": "red",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "big",
-    "text": "big",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "run",
-    "text": "run",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "box",
-    "text": "box",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "win",
-    "text": "win",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "leg",
-    "text": "leg",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "bug",
-    "text": "bug",
-    "kind": "word",
-    "level": 1,
-    "source": "cvc",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "this",
-    "text": "this",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "that",
-    "text": "that",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "with",
-    "text": "with",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "for",
-    "text": "for",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "are",
-    "text": "are",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "but",
-    "text": "but",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "not",
-    "text": "not",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "all",
-    "text": "all",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "out",
-    "text": "out",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "she",
-    "text": "she",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "his",
-    "text": "his",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "will",
-    "text": "will",
-    "kind": "word",
-    "level": 2,
-    "source": "sight",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "stop",
-    "text": "stop",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "plan",
-    "text": "plan",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "clap",
-    "text": "clap",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "drop",
-    "text": "drop",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "fish",
-    "text": "fish",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "duck",
-    "text": "duck",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "path",
-    "text": "path",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "shop",
-    "text": "shop",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "tree",
-    "text": "tree",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "rain",
-    "text": "rain",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "book",
-    "text": "book",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "jump",
-    "text": "jump",
-    "kind": "word",
-    "level": 3,
-    "source": "blend",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "a-soft-mop",
-    "text": "a soft mop",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-red-box",
-    "text": "the red box",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "my-big-bag",
-    "text": "my big bag",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "a-wet-log",
-    "text": "a wet log",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-old-map",
-    "text": "the old map",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "one-fast-van",
-    "text": "one fast van",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "two-black-bugs",
@@ -1311,52 +1705,25 @@
     "level": 4,
     "source": "decodable",
     "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [],
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
-    "slug": "a-small-cup",
-    "text": "a small cup",
+    "slug": "two-wet-ducks",
+    "text": "two wet ducks",
     "kind": "phrase",
     "level": 4,
     "source": "decodable",
     "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "sit-on-top",
-    "text": "sit on top",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "run-to-him",
-    "text": "run to him",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "the-long-path",
-    "text": "the long path",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
-  },
-  {
-    "slug": "play-with-me",
-    "text": "play with me",
-    "kind": "phrase",
-    "level": 4,
-    "source": "decodable",
-    "pd_status": "n/a",
-    "sound_tags": []
+    "sound_tags": [
+      "s"
+    ],
+    "sounds_locked": false,
+    "normalized": "two wet ducks",
+    "hard": 0,
+    "pattern": "phrase",
+    "sight_word": false
   },
   {
     "slug": "l7-jack-1",
@@ -1372,7 +1739,9 @@
     "normalized": "jack and jill went up the hill",
     "hard": 0,
     "rhyme_group": "jack-and-jill",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-jack-2",
@@ -1389,7 +1758,9 @@
     "normalized": "to fetch a pail of water",
     "hard": 0,
     "rhyme_group": "jack-and-jill",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-jack-3",
@@ -1405,7 +1776,9 @@
     "normalized": "jack fell down and broke his crown",
     "hard": 0,
     "rhyme_group": "jack-and-jill",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-jack-4",
@@ -1421,7 +1794,9 @@
     "normalized": "and jill came tumbling after",
     "hard": 0,
     "rhyme_group": "jack-and-jill",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-humpty-1",
@@ -1437,7 +1812,9 @@
     "normalized": "humpty dumpty sat on a wall",
     "hard": 0,
     "rhyme_group": "humpty-dumpty",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-humpty-2",
@@ -1453,7 +1830,9 @@
     "normalized": "humpty dumpty had a great fall",
     "hard": 0,
     "rhyme_group": "humpty-dumpty",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-humpty-3",
@@ -1471,7 +1850,9 @@
     "normalized": "all the kings horses and all the kings men",
     "hard": 0,
     "rhyme_group": "humpty-dumpty",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-humpty-4",
@@ -1488,7 +1869,9 @@
     "normalized": "could not put humpty together again",
     "hard": 0,
     "rhyme_group": "humpty-dumpty",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-twinkle-1",
@@ -1505,7 +1888,9 @@
     "normalized": "twinkle twinkle little star",
     "hard": 0,
     "rhyme_group": "twinkle-star",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-twinkle-2",
@@ -1521,7 +1906,9 @@
     "normalized": "how i wonder what you are",
     "hard": 0,
     "rhyme_group": "twinkle-star",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-twinkle-3",
@@ -1539,7 +1926,9 @@
     "normalized": "up above the world so high",
     "hard": 0,
     "rhyme_group": "twinkle-star",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-twinkle-4",
@@ -1556,7 +1945,9 @@
     "normalized": "like a diamond in the sky",
     "hard": 0,
     "rhyme_group": "twinkle-star",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-baa-1",
@@ -1572,7 +1963,9 @@
     "normalized": "baa baa black sheep have you any wool",
     "hard": 0,
     "rhyme_group": "baa-baa",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-baa-2",
@@ -1590,7 +1983,9 @@
     "normalized": "yes sir yes sir three bags full",
     "hard": 0,
     "rhyme_group": "baa-baa",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-baa-3",
@@ -1608,7 +2003,9 @@
     "normalized": "one for the master and one for the dame",
     "hard": 0,
     "rhyme_group": "baa-baa",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "l7-baa-4",
@@ -1625,7 +2022,9 @@
     "normalized": "and one for the little boy who lives down the lane",
     "hard": 0,
     "rhyme_group": "baa-baa",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "hickory-l1",
@@ -1641,7 +2040,9 @@
     "normalized": "hickory dickory dock",
     "hard": 0,
     "rhyme_group": "hickory-dickory",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "hickory-l2",
@@ -1659,7 +2060,9 @@
     "normalized": "the mouse ran up the clock",
     "hard": 0,
     "rhyme_group": "hickory-dickory",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "hickory-l3",
@@ -1677,7 +2080,9 @@
     "normalized": "the clock struck one",
     "hard": 0,
     "rhyme_group": "hickory-dickory",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "hickory-l4",
@@ -1695,7 +2100,9 @@
     "normalized": "the mouse ran down",
     "hard": 0,
     "rhyme_group": "hickory-dickory",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "mary-l1",
@@ -1711,7 +2118,9 @@
     "normalized": "mary had a little lamb",
     "hard": 0,
     "rhyme_group": "mary-lamb",
-    "line_index": 0
+    "line_index": 0,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "mary-l2",
@@ -1727,7 +2136,9 @@
     "normalized": "its fleece was white as snow",
     "hard": 0,
     "rhyme_group": "mary-lamb",
-    "line_index": 1
+    "line_index": 1,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "mary-l3",
@@ -1744,7 +2155,9 @@
     "normalized": "and everywhere that mary went",
     "hard": 0,
     "rhyme_group": "mary-lamb",
-    "line_index": 2
+    "line_index": 2,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "mary-l4",
@@ -1762,7 +2175,9 @@
     "normalized": "the lamb was sure to go",
     "hard": 0,
     "rhyme_group": "mary-lamb",
-    "line_index": 3
+    "line_index": 3,
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "rain-rain-1",
@@ -1775,7 +2190,9 @@
     "hard": 0,
     "rhyme_group": "rain-rain",
     "line_index": 0,
-    "normalized": "rain rain go away"
+    "normalized": "rain rain go away",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "rain-rain-2",
@@ -1788,7 +2205,9 @@
     "hard": 0,
     "rhyme_group": "rain-rain",
     "line_index": 1,
-    "normalized": "come again another day"
+    "normalized": "come again another day",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "rain-rain-3",
@@ -1801,7 +2220,9 @@
     "hard": 0,
     "rhyme_group": "rain-rain",
     "line_index": 2,
-    "normalized": "little children want to play"
+    "normalized": "little children want to play",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "rain-rain-4",
@@ -1814,7 +2235,9 @@
     "hard": 0,
     "rhyme_group": "rain-rain",
     "line_index": 3,
-    "normalized": "rain rain go away"
+    "normalized": "rain rain go away",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "little-boy-blue-1",
@@ -1827,7 +2250,9 @@
     "hard": 0,
     "rhyme_group": "little-boy-blue",
     "line_index": 0,
-    "normalized": "little boy blue come blow your horn"
+    "normalized": "little boy blue come blow your horn",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "little-boy-blue-2",
@@ -1840,7 +2265,9 @@
     "hard": 0,
     "rhyme_group": "little-boy-blue",
     "line_index": 1,
-    "normalized": "the sheep are in the meadow"
+    "normalized": "the sheep are in the meadow",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "little-boy-blue-3",
@@ -1853,7 +2280,9 @@
     "hard": 0,
     "rhyme_group": "little-boy-blue",
     "line_index": 2,
-    "normalized": "the cow is in the corn"
+    "normalized": "the cow is in the corn",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "little-boy-blue-4",
@@ -1866,7 +2295,9 @@
     "hard": 0,
     "rhyme_group": "little-boy-blue",
     "line_index": 3,
-    "normalized": "where is the boy who looks after the sheep"
+    "normalized": "where is the boy who looks after the sheep",
+    "pattern": "rhyme",
+    "sight_word": false
   },
   {
     "slug": "dog-and-cat-1",
@@ -1878,7 +2309,9 @@
     "sound_tags": [],
     "story_id": "dog-and-cat",
     "line_index": 0,
-    "normalized": "the big dog ran to the cat"
+    "normalized": "the big dog ran to the cat",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "dog-and-cat-2",
@@ -1890,11 +2323,13 @@
     "sound_tags": [],
     "story_id": "dog-and-cat",
     "line_index": 1,
-    "normalized": "the fat cat sat on the bed"
+    "normalized": "the fat cat sat on the bed",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "dog-and-cat-3",
-    "text": "The dog said come and play.",
+    "text": "The dog can hop and run.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -1902,7 +2337,9 @@
     "sound_tags": [],
     "story_id": "dog-and-cat",
     "line_index": 2,
-    "normalized": "the dog said come and play"
+    "normalized": "the dog can hop and run",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "dog-and-cat-4",
@@ -1914,7 +2351,9 @@
     "sound_tags": [],
     "story_id": "dog-and-cat",
     "line_index": 3,
-    "normalized": "the cat and the dog can hop"
+    "normalized": "the cat and the dog can hop",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "dog-and-cat-5",
@@ -1926,7 +2365,9 @@
     "sound_tags": [],
     "story_id": "dog-and-cat",
     "line_index": 4,
-    "normalized": "they sit in the hot sun"
+    "normalized": "they sit in the hot sun",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "red-bus-1",
@@ -1938,7 +2379,9 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 0,
-    "normalized": "a red bus was on the path"
+    "normalized": "a red bus was on the path",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "red-bus-2",
@@ -1950,7 +2393,9 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 1,
-    "normalized": "the kid had a red hat"
+    "normalized": "the kid had a red hat",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "red-bus-3",
@@ -1962,11 +2407,13 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 2,
-    "normalized": "the kid sat on the big bus"
+    "normalized": "the kid sat on the big bus",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "red-bus-4",
-    "text": "Look at the long path.",
+    "text": "Sit by the long path.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -1974,7 +2421,9 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 3,
-    "normalized": "look at the long path"
+    "normalized": "sit by the long path",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "red-bus-5",
@@ -1986,11 +2435,13 @@
     "sound_tags": [],
     "story_id": "red-bus",
     "line_index": 4,
-    "normalized": "the fast bus can win"
+    "normalized": "the fast bus can win",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "wet-day-1",
-    "text": "The rain was wet and cold.",
+    "text": "The mud was wet and cold.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -1998,7 +2449,9 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 0,
-    "normalized": "the rain was wet and cold"
+    "normalized": "the mud was wet and cold",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "wet-day-2",
@@ -2010,7 +2463,9 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 1,
-    "normalized": "the dog ran in the wet mud"
+    "normalized": "the dog ran in the wet mud",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "wet-day-3",
@@ -2022,7 +2477,9 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 2,
-    "normalized": "the kid had a soft mop"
+    "normalized": "the kid had a soft mop",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "wet-day-4",
@@ -2034,11 +2491,13 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 3,
-    "normalized": "hop to the red box"
+    "normalized": "hop to the red box",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "wet-day-5",
-    "text": "They sit out of the rain.",
+    "text": "They sit on the red mat.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2046,11 +2505,13 @@
     "sound_tags": [],
     "story_id": "wet-day",
     "line_index": 4,
-    "normalized": "they sit out of the rain"
+    "normalized": "they sit on the red mat",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "pen-cup-1",
-    "text": "The kid had a blue pen.",
+    "text": "The kid had a red pen.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2058,11 +2519,13 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 0,
-    "normalized": "the kid had a blue pen"
+    "normalized": "the kid had a red pen",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "pen-cup-2",
-    "text": "The pen was in a small cup.",
+    "text": "The pen was in a big cup.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2070,11 +2533,13 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 1,
-    "normalized": "the pen was in a small cup"
+    "normalized": "the pen was in a big cup",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "pen-cup-3",
-    "text": "Sit on the bed and read.",
+    "text": "Sit on the bed with me.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2082,11 +2547,13 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 2,
-    "normalized": "sit on the bed and read"
+    "normalized": "sit on the bed with me",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "pen-cup-4",
-    "text": "Look at the red pen.",
+    "text": "The red pen is big.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2094,11 +2561,13 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 3,
-    "normalized": "look at the red pen"
+    "normalized": "the red pen is big",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "pen-cup-5",
-    "text": "The kid can read with the pen.",
+    "text": "The kid can sit with the pen.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2106,11 +2575,13 @@
     "sound_tags": [],
     "story_id": "pen-cup",
     "line_index": 4,
-    "normalized": "the kid can read with the pen"
+    "normalized": "the kid can sit with the pen",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "frog-ship-1",
-    "text": "A green frog sat on a ship.",
+    "text": "A red bug sat on a ship.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2118,7 +2589,9 @@
     "sound_tags": [],
     "story_id": "frog-ship",
     "line_index": 0,
-    "normalized": "a green frog sat on a ship"
+    "normalized": "a red bug sat on a ship",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "frog-ship-2",
@@ -2130,11 +2603,13 @@
     "sound_tags": [],
     "story_id": "frog-ship",
     "line_index": 1,
-    "normalized": "the tall ship was in the sun"
+    "normalized": "the tall ship was in the sun",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "frog-ship-3",
-    "text": "The frog can hop and swim.",
+    "text": "The bug can hop and run.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2142,7 +2617,9 @@
     "sound_tags": [],
     "story_id": "frog-ship",
     "line_index": 2,
-    "normalized": "the frog can hop and swim"
+    "normalized": "the bug can hop and run",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "frog-ship-4",
@@ -2154,11 +2631,13 @@
     "sound_tags": [],
     "story_id": "frog-ship",
     "line_index": 3,
-    "normalized": "run to the big ship"
+    "normalized": "run to the big ship",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "frog-ship-5",
-    "text": "The frog and the ship can play.",
+    "text": "The bug and the ship can hop.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2166,7 +2645,9 @@
     "sound_tags": [],
     "story_id": "frog-ship",
     "line_index": 4,
-    "normalized": "the frog and the ship can play"
+    "normalized": "the bug and the ship can hop",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "cat-bed-1",
@@ -2178,7 +2659,9 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 0,
-    "normalized": "the soft cat sat on the bed"
+    "normalized": "the soft cat sat on the bed",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "cat-bed-2",
@@ -2190,7 +2673,9 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 1,
-    "normalized": "the cat had a red hat"
+    "normalized": "the cat had a red hat",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "cat-bed-3",
@@ -2202,7 +2687,9 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 2,
-    "normalized": "sit on the bed with me"
+    "normalized": "sit on the bed with me",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "cat-bed-4",
@@ -2214,7 +2701,9 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 3,
-    "normalized": "the fat cat was in the sun"
+    "normalized": "the fat cat was in the sun",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "cat-bed-5",
@@ -2226,7 +2715,9 @@
     "sound_tags": [],
     "story_id": "cat-bed",
     "line_index": 4,
-    "normalized": "the soft cat sat with me"
+    "normalized": "the soft cat sat with me",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "quick-fox-1",
@@ -2238,7 +2729,9 @@
     "sound_tags": [],
     "story_id": "quick-fox",
     "line_index": 0,
-    "normalized": "a quick fox ran to the log"
+    "normalized": "a quick fox ran to the log",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "quick-fox-2",
@@ -2250,11 +2743,13 @@
     "sound_tags": [],
     "story_id": "quick-fox",
     "line_index": 1,
-    "normalized": "the dog ran with the fox"
+    "normalized": "the dog ran with the fox",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "quick-fox-3",
-    "text": "Look at the big log.",
+    "text": "Sit by the big log.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2262,7 +2757,9 @@
     "sound_tags": [],
     "story_id": "quick-fox",
     "line_index": 2,
-    "normalized": "look at the big log"
+    "normalized": "sit by the big log",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "quick-fox-4",
@@ -2274,11 +2771,13 @@
     "sound_tags": [],
     "story_id": "quick-fox",
     "line_index": 3,
-    "normalized": "the fox sat on top"
+    "normalized": "the fox sat on top",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "quick-fox-5",
-    "text": "The dog and the fox can play.",
+    "text": "The dog and the fox can hop.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2286,11 +2785,13 @@
     "sound_tags": [],
     "story_id": "quick-fox",
     "line_index": 4,
-    "normalized": "the dog and the fox can play"
+    "normalized": "the dog and the fox can hop",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "play-jump-1",
-    "text": "The kid can play with me.",
+    "text": "The kid can hop with me.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2298,7 +2799,9 @@
     "sound_tags": [],
     "story_id": "play-jump",
     "line_index": 0,
-    "normalized": "the kid can play with me"
+    "normalized": "the kid can hop with me",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "play-jump-2",
@@ -2310,11 +2813,13 @@
     "sound_tags": [],
     "story_id": "play-jump",
     "line_index": 1,
-    "normalized": "run and jump on the path"
+    "normalized": "run and jump on the path",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "play-jump-3",
-    "text": "Clap and hop to the box.",
+    "text": "Run and hop to the box.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2322,7 +2827,9 @@
     "sound_tags": [],
     "story_id": "play-jump",
     "line_index": 2,
-    "normalized": "clap and hop to the box"
+    "normalized": "run and hop to the box",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "play-jump-4",
@@ -2334,11 +2841,13 @@
     "sound_tags": [],
     "story_id": "play-jump",
     "line_index": 3,
-    "normalized": "a big bug was on the box"
+    "normalized": "a big bug was on the box",
+    "pattern": "story-mixed",
+    "sight_word": false
   },
   {
     "slug": "play-jump-5",
-    "text": "They can play and win.",
+    "text": "They can hop and win.",
     "kind": "sentence",
     "level": 5,
     "source": "decodable-story",
@@ -2346,6 +2855,8 @@
     "sound_tags": [],
     "story_id": "play-jump",
     "line_index": 4,
-    "normalized": "they can play and win"
+    "normalized": "they can hop and win",
+    "pattern": "story-mixed",
+    "sight_word": false
   }
 ]

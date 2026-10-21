@@ -98,6 +98,62 @@ function renderSounds(payload) {
   }
 }
 
+function renderPatterns(payload) {
+  const note = $("[data-patterns-note]");
+  const unlocked = $("[data-patterns-unlocked]");
+  const host = $("[data-patterns]");
+  const heat = payload?.heatmap || payload || {};
+  if (note) note.textContent = heat.note || "";
+  if (unlocked) {
+    const list = payload?.unlocked || [];
+    unlocked.textContent = list.length
+      ? `Unlocked: ${list.join(", ")}`
+      : "";
+  }
+  if (!host) return;
+  host.innerHTML = "";
+  const patterns = heat.patterns || [];
+  if (!patterns.length) {
+    host.textContent = "No pattern attempts yet.";
+    return;
+  }
+  for (const row of patterns) {
+    const scored = Number(row.scored) || 0;
+    const correct = Number(row.correct) || 0;
+    const pct = scored ? Math.round((100 * correct) / scored) : 0;
+    const known = Math.round((Number(row.known_ratio) || 0) * 100);
+    const chip = document.createElement("span");
+    chip.className = "heat-chip";
+    chip.style.opacity = String(0.45 + (pct / 100) * 0.55);
+    chip.textContent = `${row.pattern}: ${pct}% try · ${known}% known`;
+    host.appendChild(chip);
+  }
+}
+
+function fillVoiceChoices(trickyItems) {
+  const sel = $("[data-voice-slug]");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = "";
+  const items = (trickyItems || []).slice(0, 20);
+  if (!items.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No tricky words yet — play a few rounds first";
+    sel.appendChild(opt);
+    return;
+  }
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item.slug;
+    opt.textContent = item.text;
+    sel.appendChild(opt);
+  }
+  if (prev && [...sel.options].some((o) => o.value === prev)) {
+    sel.value = prev;
+  }
+}
+
 function syncBuddyThumb(buddy) {
   const thumb = $("[data-buddy-thumb]");
   if (!thumb) return;
@@ -157,13 +213,15 @@ async function loadKept(keepOn) {
 }
 
 async function refresh() {
-  const [settings, accuracy, mastered, tricky, sounds] = await Promise.all([
-    api("/api/parent/settings"),
-    api("/api/parent/accuracy"),
-    api("/api/parent/mastered"),
-    api("/api/parent/tricky"),
-    api("/api/parent/sounds"),
-  ]);
+  const [settings, accuracy, mastered, tricky, sounds, patterns] =
+    await Promise.all([
+      api("/api/parent/settings"),
+      api("/api/parent/accuracy"),
+      api("/api/parent/mastered"),
+      api("/api/parent/tricky"),
+      api("/api/parent/sounds"),
+      api("/api/parent/patterns"),
+    ]);
   fillSettings(settings);
   renderTomorrow(settings.tomorrow);
   renderAccuracy(accuracy.days || []);
@@ -182,7 +240,9 @@ async function refresh() {
     tricky.items || [],
     (t) => `${t.text} — recent ${t.recent_misses}, all ${t.all_misses}`
   );
+  fillVoiceChoices(tricky.items || []);
   renderSounds(sounds);
+  renderPatterns(patterns);
   await loadKept(Boolean(settings.keep_audio));
 }
 
@@ -221,6 +281,68 @@ function wire() {
   $("[data-export]").addEventListener("click", () => {
     window.location.href = "/api/parent/export";
   });
+
+  const recordBtn = $("[data-voice-record]");
+  const playBtn = $("[data-voice-play]");
+  const voiceStatus = $("[data-voice-status]");
+  let voiceRecorder = null;
+  if (recordBtn) {
+    recordBtn.addEventListener("click", async () => {
+      const sel = $("[data-voice-slug]");
+      const slug = sel?.value;
+      if (!slug) {
+        if (voiceStatus) voiceStatus.textContent = "Pick a word first.";
+        return;
+      }
+      try {
+        const { RecordingSession } = await import("./record.js");
+        if (!voiceRecorder) voiceRecorder = new RecordingSession();
+        if (voiceRecorder.isRecording) {
+          voiceRecorder.stop();
+          return;
+        }
+        if (voiceStatus) voiceStatus.textContent = "Recording… tap again when done.";
+        recordBtn.textContent = "Stop";
+        await voiceRecorder.start({
+          oncomplete: async (blob) => {
+            recordBtn.textContent = "Record";
+            if (voiceStatus) voiceStatus.textContent = "Saving…";
+            const body = new FormData();
+            body.append("audio", blob, "parent.webm");
+            try {
+              await api(`/api/parent/voice/${encodeURIComponent(slug)}`, {
+                method: "POST",
+                body,
+              });
+              if (voiceStatus) {
+                voiceStatus.textContent = `Saved your voice for “${sel.selectedOptions[0]?.text || slug}”.`;
+              }
+              if (playBtn) {
+                playBtn.hidden = false;
+                playBtn.onclick = () => {
+                  new Audio(`/api/audio/${encodeURIComponent(slug)}?t=${Date.now()}`).play();
+                };
+              }
+            } catch (err) {
+              if (voiceStatus) {
+                voiceStatus.textContent = err.message || "Could not save recording.";
+              }
+            }
+          },
+          onerror: (err) => {
+            recordBtn.textContent = "Record";
+            if (voiceStatus) {
+              voiceStatus.textContent = err?.message || "Microphone error.";
+            }
+          },
+        });
+      } catch (err) {
+        if (voiceStatus) {
+          voiceStatus.textContent = err.message || "Could not start recording.";
+        }
+      }
+    });
+  }
 }
 
 wire();

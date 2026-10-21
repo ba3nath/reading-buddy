@@ -133,6 +133,12 @@ def main() -> int:
             )
             sf.write(str(raw), samples, sr)
             postprocess_generated_wav(raw, dest)
+            try:
+                from app.audio_files import load_or_build_timings
+
+                load_or_build_timings(slug, text)
+            except Exception as exc:  # noqa: BLE001
+                print(f"  timings skipped for {slug}: {exc}", file=sys.stderr)
             extra = f" voice={use_voice}" if voice_over else ""
             print(f"  wrote {dest.relative_to(ROOT)}  ({spoken!r} @ {speed}{extra})")
 

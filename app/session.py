@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from typing import Any
 
@@ -13,7 +14,11 @@ from app.adaptive import (
     build_adaptive_queue,
     maybe_reinsert_miss,
     set_progress,
+    shadow_queue_ids,
 )
+from app.events import log_event
+
+logger = logging.getLogger(__name__)
 from app.db import (
     credit_mastery_correct,
     ensure_mastery_row,
@@ -143,6 +148,22 @@ def start_session(
     )
     session_id = int(cur.lastrowid)
     conn.commit()
+    if bool(settings.get("scheduler_shadow", False)):
+        try:
+            both = shadow_queue_ids(conn, target_level, length, stage)
+            log_event(
+                conn,
+                session_id=session_id,
+                item_id=None,
+                pattern="",
+                sight_word=False,
+                result="shadow",
+                phase="schedule",
+                counts_for_mastery=False,
+                meta={"queues": both, "chosen": planned_ids},
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("shadow schedule event failed", exc_info=True)
     return {
         "session_id": session_id,
         "level": target_level,
@@ -377,6 +398,7 @@ def missed_replay_entries(conn: sqlite3.Connection, session_id: int) -> list[dic
                     {
                         "item_id": int(row["item_id"]),
                         "text": word,
+                        "slug": slug,
                         "audio_url": f"/api/audio/{slug}",
                         "word": word,
                     }
@@ -392,6 +414,7 @@ def missed_replay_entries(conn: sqlite3.Connection, session_id: int) -> list[dic
                 {
                     "item_id": int(row["item_id"]),
                     "text": word,
+                    "slug": slug,
                     "audio_url": f"/api/audio/{slug}",
                     "word": word,
                 }
@@ -526,6 +549,29 @@ def validate_attempt_access(
     return item
 
 
+def _effort_stars(
+    words_correct: int,
+    *,
+    result: str,
+    again: bool,
+    hard_bonus: bool,
+) -> int:
+    """Stars for a locking try; effort_stars awards at least one on correct/close."""
+    if again:
+        return 0
+    awarded = int(words_correct)
+    settings = load_settings()
+    if (
+        bool(settings.get("effort_stars", True))
+        and result in ("correct", "close")
+        and awarded < 1
+    ):
+        awarded = 1
+    if hard_bonus and result == "correct":
+        awarded += 1
+    return awarded
+
+
 def apply_attempt(
     conn: sqlite3.Connection,
     session_id: int,
@@ -536,6 +582,7 @@ def apply_attempt(
     is_silence_path: bool = False,
     queue_index: int | None = None,
     replay_word: str = "",
+    latency_ms: int | None = None,
 ) -> dict[str, Any]:
     if phase not in ("read", "replay"):
         raise SessionError("bad_request", "phase must be read or replay", 400)
@@ -728,7 +775,12 @@ def apply_attempt(
 
     if is_replay:
         # Replay: one non-retry take locks and advances. No close re-ask.
-        stars_awarded = words_correct
+        stars_awarded = _effort_stars(
+            words_correct,
+            result=result,
+            again=False,
+            hard_bonus=False,
+        )
         if result == "correct":
             message = config.MSG_CORRECT
             credit_mastery_correct(conn, item_id)
@@ -773,9 +825,17 @@ def apply_attempt(
             if replacing_close:
                 flip_prior_lock(conn, session_id, queue_index)
 
-            stars_awarded = words_correct
-            if item["hard"] == 1 and result == "correct" and not replacing_close:
-                stars_awarded += 1
+            hard_bonus = (
+                int(item["hard"] or 0) == 1
+                and result == "correct"
+                and not replacing_close
+            )
+            stars_awarded = _effort_stars(
+                words_correct,
+                result=result,
+                again=False,
+                hard_bonus=hard_bonus,
+            )
 
             play = play_ids(session)
             flags = ratio_flags(session)
@@ -839,8 +899,32 @@ def apply_attempt(
         is_replay=is_replay,
         queue_index=queue_index if not is_replay else None,
         replay_word=stored_replay_word,
+        latency_ms=latency_ms,
     )
     touch_mastery(conn, item_id, result)
+    try:
+        log_event(
+            conn,
+            session_id=session_id,
+            item_id=item_id,
+            pattern=str(item["pattern"] or "") if "pattern" in item.keys() else "",
+            sight_word=bool(int(item["sight_word"] or 0))
+            if "sight_word" in item.keys()
+            else False,
+            result=result if not again else "retry",
+            phase="replay" if is_replay else phase,
+            latency_ms=latency_ms,
+            counts_for_mastery=bool(counts_for_session) and not again,
+            meta={"again": again, "words_correct": words_correct},
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "event log failed session=%s item=%s result=%s",
+            session_id,
+            item_id,
+            result,
+            exc_info=True,
+        )
     conn.commit()
 
     payload: dict[str, Any] = {
@@ -885,13 +969,15 @@ def _insert_attempt(
     is_replay: int,
     queue_index: int | None,
     replay_word: str,
+    latency_ms: int | None = None,
 ) -> int:
     cur = conn.execute(
         """
         INSERT INTO attempts (
           session_id, item_id, heard, confidence, word_scores, result,
-          counts_for_session, is_replay, queue_index, replay_word, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          counts_for_session, is_replay, queue_index, replay_word, created_at,
+          latency_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             session_id,
@@ -905,6 +991,7 @@ def _insert_attempt(
             queue_index,
             replay_word or "",
             local_now_iso(),
+            latency_ms,
         ),
     )
     return int(cur.lastrowid)

@@ -21,7 +21,7 @@ def test_whisper_keeps_short_words_without_vad():
 
 
 def test_recorder_gives_trail_pad_and_tap_finish():
-    assert "SILENCE_GAP_MS = 1800" in RECORD_JS
+    assert "SILENCE_GAP_MS = 1200" in RECORD_JS
     assert "TRAIL_PAD_MS = 350" in RECORD_JS
     assert "noiseSuppression: false" in RECORD_JS
     assert "get isRecording" in RECORD_JS or "isRecording" in RECORD_JS

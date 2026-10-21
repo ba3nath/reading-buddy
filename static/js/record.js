@@ -1,7 +1,8 @@
 /** MediaRecorder + silence-stop (+ optional tap-to-finish). No UI strings. */
 
 // Tuned for short kids words: keep final plosives; prefer one clear take.
-const SILENCE_GAP_MS = 1800;
+// Tighter silence end keeps record→score median closer to ~1.5s (Phase 0).
+const SILENCE_GAP_MS = 1200;
 const NO_SPEECH_MS = 6000;
 const MAX_MS = 20000;
 const MIN_SPEECH_MS = 350;
