@@ -4,12 +4,34 @@ from __future__ import annotations
 
 import array
 import math
+import os
+import shutil
 import subprocess
 import wave
+from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
 
 from app import config
+
+# LaunchAgent / minimal PATH often omits Homebrew. Prefer PATH, then known installs.
+_FFMPEG_CANDIDATES = (
+    "/opt/homebrew/bin/ffmpeg",
+    "/usr/local/bin/ffmpeg",
+    "/usr/bin/ffmpeg",
+)
+
+
+@lru_cache(maxsize=1)
+def resolve_ffmpeg() -> str | None:
+    """Absolute path to ffmpeg, or None if not found."""
+    which = shutil.which("ffmpeg")
+    if which:
+        return which
+    for candidate in _FFMPEG_CANDIDATES:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
 
 
 def _pcm_rms(frames: bytes, sampwidth: int) -> float:
@@ -42,9 +64,12 @@ class AudioError(Exception):
 
 
 def ffmpeg_available() -> bool:
+    ffmpeg = resolve_ffmpeg()
+    if not ffmpeg:
+        return False
     try:
         result = subprocess.run(
-            ["ffmpeg", "-version"],
+            [ffmpeg, "-version"],
             capture_output=True,
             check=False,
             timeout=10,
@@ -69,8 +94,11 @@ def write_bytes(path: Path, data: bytes) -> None:
 
 
 def convert_to_wav(src: Path, dest: Path) -> None:
+    ffmpeg = resolve_ffmpeg()
+    if not ffmpeg:
+        raise AudioError("ffmpeg not found on PATH or in common install locations")
     cmd = [
-        "ffmpeg",
+        ffmpeg,
         "-y",
         "-i",
         str(src),
@@ -174,14 +202,15 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "all": ('all.', 0.94),
     "are": ('are!', 1.0),
     "bed": ('bed.', 0.88),
-    "big": ('big.', 0.82),
+    "big": ('big', 0.86),
+    "bird": ('bird.', 0.86),
     "bike": ('bike.', 0.88),
     "bin": ('bin.', 0.88),
     "book": ('book.', 0.82),
     "box": ('box', 0.88),
     "bring": ('bring', 0.92),
     "brush": ('brush!', 0.95),
-    "bug": ('bug.', 0.82),
+    "bug": ('bug', 0.82),
     "bus": ('bus', 1.0),
     "can": ('can!', 0.95),
     "car": ('car.', 0.94),
@@ -192,7 +221,7 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "clap": ('clap.', 0.94),
     "clock": ('clock!', 0.95),
     "cup": ('cup!', 1.0),
-    "dog": ('dog.', 0.88),
+    "dog": ('dog.', 0.86),
     "drop": ('drop!', 0.95),
     "drum": ('drum.', 0.94),
     "duck": ('duck.', 0.94),
@@ -214,8 +243,9 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "into": ('into.', 0.88),
     "jam": ('jam.', 0.82),
     "kid": ('kid!', 1.0),
+    "leg": ('leg.', 0.86),
     "like": ('like.', 0.94),
-    "log": ('log.', 0.78),
+    "log": ('log', 0.82),
     "mop": ('mop.', 0.88),
     "much": ('much!', 0.95),
     "mud": ('mud.', 0.88),
@@ -223,7 +253,7 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "out": ('out.', 0.94),
     "path": ('path!', 1.0),
     "pen": ('pen.', 0.94),
-    "pig": ('pig', 0.88),
+    "pig": ('pig', 0.86),
     "plan": ('plan', 0.94),
     "rain": ('rain.', 0.88),
     "rat": ('rat?', 0.92),
@@ -268,14 +298,15 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "all": ('bf_emma', 'en-gb'),
     "are": ('af_alloy', 'en-us'),
     "bed": ('bf_emma', 'en-gb'),
-    "big": ('bf_emma', 'en-gb'),
+    "big": ('bf_alice', 'en-gb'),
+    "bird": ('bf_emma', 'en-gb'),
     "bike": ('bf_emma', 'en-gb'),
     "bin": ('bf_alice', 'en-gb'),
     "book": ('bf_emma', 'en-gb'),
     "box": ('bf_emma', 'en-gb'),
     "bring": ('bf_emma', 'en-gb'),
     "brush": ('bf_emma', 'en-gb'),
-    "bug": ('bf_emma', 'en-gb'),
+    "bug": ('bf_alice', 'en-gb'),
     "bus": ('bf_emma', 'en-gb'),
     "can": ('bf_emma', 'en-gb'),
     "cat": ('bf_emma', 'en-gb'),
@@ -285,12 +316,12 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "clap": ('bf_emma', 'en-gb'),
     "clock": ('bf_emma', 'en-gb'),
     "cup": ('bf_emma', 'en-gb'),
-    "dog": ('bf_emma', 'en-gb'),
+    "dog": ('bf_alice', 'en-gb'),
     "drop": ('bf_emma', 'en-gb'),
     "drum": ('bf_emma', 'en-gb'),
     "duck": ('bf_emma', 'en-gb'),
     "fish": ('bf_emma', 'en-gb'),
-    "flag": ('bf_emma', 'en-gb'),
+    "flag": ('bf_alice', 'en-gb'),
     "flash": ('bf_emma', 'en-gb'),
     "for": ('af_heart', 'en-us'),
     "fork": ('af_alloy', 'en-us'),
@@ -306,13 +337,14 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "into": ('bf_emma', 'en-gb'),
     "kid": ('bf_emma', 'en-gb'),
     "like": ('bf_emma', 'en-gb'),
-    "log": ('bf_emma', 'en-gb'),
+    "log": ('bf_alice', 'en-gb'),
     "much": ('bf_emma', 'en-gb'),
     "mud": ('bf_emma', 'en-gb'),
     "out": ('bf_emma', 'en-gb'),
     "path": ('bm_lewis', 'en-gb'),
     "pen": ('bf_emma', 'en-gb'),
     "pig": ('bf_emma', 'en-gb'),
+    "red": ('bf_emma', 'en-gb'),
     "plan": ('bf_emma', 'en-gb'),
     "rain": ('bm_lewis', 'en-gb'),
     "run": ('bf_emma', 'en-gb'),
@@ -349,11 +381,32 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     # Default bf_isabella when absent (batch Whisper winners).
 }
 
-# Isabella turns a final "sun" into "sunge" / "sandy". Alice keeps the /n/.
+# Short phrases: default voice is Emma (see tts_voice). Isabella + a trailing
+# period often adds junk syllables ("duckses", "pig eh", "bookie", "moppy").
 _TTS_PHRASE_VOICES: dict[str, tuple[str, str]] = {
+    # Isabella turns a final "sun" into "sunge" / "sandy". Alice keeps the /n/.
     "the hot sun": ("bf_alice", "en-gb"),
     "a hot sun": ("bf_alice", "en-gb"),
+    # Emma pluralizes "pen" → pens; Lewis keeps singular.
+    "my blue pen": ("bm_lewis", "en-gb"),
 }
+
+# Explicit phrase spoken + speed when the default phrase rule is not enough.
+# Spoken must keep the same on-screen words (optional trailing . ! ? only).
+_TTS_PHRASE_RENDERS: dict[str, tuple[str, float]] = {
+    "a quick fox": ("a quick fox", 0.90),
+    "my blue pen": ("my blue pen", 0.78),
+    "one fast van": ("one fast van", 0.78),
+    "sit and read": ("sit and read", 0.82),
+    "sit on top": ("sit on top", 0.90),
+    "the cold wind": ("the cold wind", 0.82),
+    "the long path": ("the long path.", 0.90),
+    "the red box": ("the red box", 0.82),
+    "three red hats": ("three red hats", 0.78),
+    # /g/-final phrases use Alice @ 1.0 via tts_voice + _phrase_final_speed.
+}
+
+_DEFAULT_PHRASE_VOICE: tuple[str, str] = ("bf_emma", "en-gb")
 
 
 def _single_word_core(text: str) -> str | None:
@@ -380,14 +433,52 @@ def _phrase_key(text: str) -> str:
     return " ".join(stripped.lower().split())
 
 
+def _last_word_slow_plosive(word: str) -> bool:
+    """True when a final /b d g/ (not /ŋ/) needs extra time so it doesn't smear.
+
+    Used for *single-word* cards only. On phrases, slowing a final /g/ often
+    invents an audible schwa ("frog"→"frogeh"); those use a fast release.
+    """
+    core = (word or "").rstrip(".!?").lower()
+    if not core or core.endswith("ng"):
+        return False
+    if core[-1:] in "bdg":
+        return True
+    return len(core) >= 2 and core.endswith("e") and core[-2] in "bdgkpt"
+
+
+def _ends_hard_g(word: str) -> bool:
+    """Final /g/ (frog/dog/pig/log), not /ŋ/ (bring/long)."""
+    core = (word or "").rstrip(".!?").lower()
+    return bool(core) and core.endswith("g") and not core.endswith("ng")
+
+
+def _phrase_final_speed(word: str) -> float:
+    """Phrase-final speed: keep /g/ fast so Kokoro does not add a schwa."""
+    core = (word or "").rstrip(".!?").lower()
+    if _ends_hard_g(core):
+        return 1.0
+    if _last_word_slow_plosive(core):
+        return 0.94  # /b d/ — slight hold, not the slow 0.78 schwa trap
+    return 0.86
+
+
 def tts_voice(text: str) -> tuple[str | None, str | None]:
     """Optional (voice_id, lang) override for one word or a known phrase."""
     core = _single_word_core(text)
     if core and core in _TTS_VOICE_OVERRIDES:
         return _TTS_VOICE_OVERRIDES[core]
-    phrase = _TTS_PHRASE_VOICES.get(_phrase_key(text))
+    key = _phrase_key(text)
+    phrase = _TTS_PHRASE_VOICES.get(key)
     if phrase:
         return phrase
+    words = (text or "").strip().split()
+    if 2 <= len(words) <= 3:
+        # Alice cuts a clean /g/ release; Emma often leaves "frogeh"/"pigee".
+        if _ends_hard_g(words[-1]):
+            return ("bf_alice", "en-gb")
+        # Short phrases: Emma avoids Isabella's trailing-syllable smear.
+        return _DEFAULT_PHRASE_VOICE
     return None, None
 
 
@@ -400,6 +491,11 @@ def tts_render(text: str) -> tuple[str, float]:
 
     Some words need explicit overrides (see _TTS_WORD_OVERRIDES). Overrides
     must never invent extra words — the child hears exactly the on-screen token.
+
+    Short phrases (2–3 words) must not get a forced trailing period: with the
+    default Isabella voice that often invents an extra syllable on the last
+    word (ducks→duckses, mop→moppy, book→bookie). Emma + bare text is cleaner.
+    Phrase-final /g/ is rendered *faster* (Alice @ 1.0) — slowing it adds "eh".
     """
     stripped = (text or "").strip()
     if not stripped:
@@ -418,14 +514,15 @@ def tts_render(text: str) -> tuple[str, float]:
             return override_spoken, override_speed
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
-        # Final b/d/g plosives (and silent-e forms like "like"/"slide") fade
-        # at 0.88. Do NOT treat -ng as /g/ — that's /ŋ/ (bring/long/reading).
-        ends_ng = core.endswith("ng")
-        slow_plosive = (not ends_ng) and (
-            core[-1:] in "bdg"
-            or (len(core) >= 2 and core.endswith("e") and core[-2] in "bdgkpt")
-        )
-        if slow_plosive:
+        # Final /b d g/ (not /ŋ/): moderate period — bang@1.0 → "froggy"/"biggie",
+        # crawl@0.78 → "frogeh". Prefer overrides above when Whisper-tuned.
+        if core[-1:] in "bdg" and not core.endswith("ng"):
+            return core + ".", 0.86
+        if (
+            len(core) >= 2
+            and core.endswith("e")
+            and core[-2] in "bdgkpt"
+        ):
             return spoken, 0.78
         # Tiny function words (sir/the/you) and CVC kid words need more time
         # so the body is not a clipped blip — still only the one on-screen word.
@@ -434,10 +531,13 @@ def tts_render(text: str) -> tuple[str, float]:
         if len(core) <= 4:
             return spoken, 0.86
         return spoken, 0.88
-    # Short kid phrases ("a long train"): period + slight slowdown for clarity.
+    # Short kid phrases: bare text (no forced period) + Emma/Alice via tts_voice.
     if 2 <= len(words) <= 3:
-        spoken = stripped if stripped[-1] in ".!?" else stripped + "."
-        return spoken, 0.90
+        key = _phrase_key(stripped)
+        if key in _TTS_PHRASE_RENDERS:
+            return _TTS_PHRASE_RENDERS[key]
+        spoken = stripped.rstrip(".!?")
+        return spoken, _phrase_final_speed(words[-1])
     return stripped, 0.95
 
 
@@ -466,8 +566,11 @@ def postprocess_generated_wav(src: Path, dest: Path) -> None:
         f"adelay={_LISTEN_LEAD_MS}|{_LISTEN_LEAD_MS},"
         f"apad=pad_dur={_LISTEN_TRAIL_SEC}"
     )
+    ffmpeg = resolve_ffmpeg()
+    if not ffmpeg:
+        raise AudioError("ffmpeg not found on PATH or in common install locations")
     cmd = [
-        "ffmpeg",
+        ffmpeg,
         "-y",
         "-i",
         str(src),

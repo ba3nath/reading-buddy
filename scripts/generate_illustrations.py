@@ -523,6 +523,140 @@ DRAWINGS: dict[str, str] = {
         <line x1="46" y1="72" x2="46" y2="96"/>
       </g>
     """,
+    # Concrete words that previously fell back to _default
+    "car": """
+      <rect x="18" y="50" width="84" height="28" rx="10" fill="#3aa0d0"/>
+      <path d="M28 50 Q40 28 60 28 Q80 28 92 50 Z" fill="#5eb8e0"/>
+      <rect x="34" y="34" width="22" height="16" rx="3" fill="#cfeeff"/>
+      <rect x="64" y="34" width="22" height="16" rx="3" fill="#cfeeff"/>
+      <circle cx="36" cy="82" r="9" fill="#2c241c"/>
+      <circle cx="86" cy="82" r="9" fill="#2c241c"/>
+      <circle cx="36" cy="82" r="4" fill="#bbb"/>
+      <circle cx="86" cy="82" r="4" fill="#bbb"/>
+      <rect x="88" y="58" width="8" height="6" rx="2" fill="#ffd56a"/>
+    """,
+    "fork": """
+      <rect x="54" y="48" width="12" height="52" rx="4" fill="#a8b0b8"/>
+      <rect x="40" y="18" width="8" height="42" rx="3" fill="#c5ced6"/>
+      <rect x="56" y="18" width="8" height="42" rx="3" fill="#c5ced6"/>
+      <rect x="72" y="18" width="8" height="42" rx="3" fill="#c5ced6"/>
+      <ellipse cx="60" cy="48" rx="22" ry="8" fill="#a8b0b8"/>
+    """,
+    "home": """
+      <path d="M20 58 L60 24 L100 58 Z" fill="#ff8f6b"/>
+      <rect x="32" y="58" width="56" height="40" fill="#7ec8e8"/>
+      <rect x="50" y="70" width="20" height="28" rx="2" fill="#fff6e8"/>
+      <rect x="38" y="66" width="12" height="12" rx="2" fill="#cfeeff"/>
+      <rect x="70" y="66" width="12" height="12" rx="2" fill="#cfeeff"/>
+      <rect x="54" y="18" width="12" height="16" fill="#e09b45"/>
+    """,
+    "chin": """
+      <circle cx="60" cy="48" r="28" fill="#f4c27a"/>
+      <ellipse cx="60" cy="78" rx="22" ry="14" fill="#f4c27a"/>
+      <circle cx="50" cy="46" r="3" fill="#2c241c"/>
+      <circle cx="70" cy="46" r="3" fill="#2c241c"/>
+      <path d="M50 58 Q60 64 70 58" stroke="#2c241c" stroke-width="2.5" fill="none"/>
+      <path d="M48 72 Q60 86 72 72" stroke="#e09b45" stroke-width="4" fill="none" stroke-linecap="round"/>
+    """,
+    "chip": """
+      <ellipse cx="60" cy="60" rx="36" ry="28" fill="#ffd56a" transform="rotate(-18 60 60)"/>
+      <ellipse cx="52" cy="52" rx="6" ry="4" fill="#e09b45" transform="rotate(-18 52 52)"/>
+      <ellipse cx="70" cy="64" rx="5" ry="3" fill="#e09b45" transform="rotate(-18 70 64)"/>
+      <ellipse cx="58" cy="70" rx="4" ry="3" fill="#e09b45" transform="rotate(-18 58 70)"/>
+      <path d="M34 48 Q48 40 62 46" stroke="#f4c27a" stroke-width="3" fill="none" transform="rotate(-18 60 60)"/>
+    """,
+    "much": """
+      <circle cx="36" cy="70" r="16" fill="#7ec8e8"/>
+      <circle cx="60" cy="54" r="20" fill="#3aa0d0"/>
+      <circle cx="86" cy="68" r="14" fill="#ffb0c8"/>
+      <circle cx="48" cy="40" r="10" fill="#ffd56a"/>
+      <circle cx="78" cy="42" r="8" fill="#7bc47f"/>
+    """,
+    "what": """
+      <circle cx="60" cy="54" r="34" fill="#7ec8e8"/>
+      <path d="M46 44 Q46 30 60 30 Q74 30 74 44 Q74 54 60 58 V68" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <circle cx="60" cy="80" r="5" fill="#fff"/>
+    """,
+    "trophy": """
+      <path d="M36 28 h48 v8 c0 22 -12 34 -24 38 c-12 -4 -24 -16 -24 -38 Z" fill="#ffd56a"/>
+      <path d="M36 34 h-12 c0 18 8 26 16 28" fill="none" stroke="#ffb020" stroke-width="6" stroke-linecap="round"/>
+      <path d="M84 34 h12 c0 18 -8 26 -16 28" fill="none" stroke="#ffb020" stroke-width="6" stroke-linecap="round"/>
+      <rect x="52" y="70" width="16" height="14" fill="#e09b45"/>
+      <rect x="42" y="84" width="36" height="10" rx="3" fill="#ffb020"/>
+      <circle cx="60" cy="48" r="6" fill="#fff6e8"/>
+    """,
+    # Sight / function words (single-token cards must not use the star default)
+    "you": """
+      <circle cx="60" cy="36" r="16" fill="#f4c27a"/>
+      <path d="M40 58 Q60 48 80 58 L86 96 L34 96 Z" fill="#7bc47f"/>
+      <circle cx="54" cy="34" r="2.5" fill="#2c241c"/>
+      <circle cx="66" cy="34" r="2.5" fill="#2c241c"/>
+      <path d="M54 42 Q60 46 66 42" stroke="#2c241c" stroke-width="2" fill="none"/>
+      <polygon points="96,28 108,40 96,40" fill="#ff8f6b"/>
+      <rect x="88" y="36" width="10" height="6" rx="2" fill="#ff8f6b"/>
+    """,
+    "they": """
+      <circle cx="40" cy="40" r="12" fill="#f4c27a"/>
+      <path d="M26 56 Q40 48 54 56 L56 88 L24 88 Z" fill="#7ec8e8"/>
+      <circle cx="80" cy="40" r="12" fill="#f4c27a"/>
+      <path d="M66 56 Q80 48 94 56 L96 88 L64 88 Z" fill="#ffb0c8"/>
+    """,
+    "she": """
+      <circle cx="60" cy="34" r="16" fill="#f4c27a"/>
+      <path d="M36 54 Q60 44 84 54 L88 96 L32 96 Z" fill="#ffb0c8"/>
+      <path d="M42 30 Q60 12 78 30" stroke="#e09b45" stroke-width="6" fill="none"/>
+      <circle cx="54" cy="32" r="2.5" fill="#2c241c"/>
+      <circle cx="66" cy="32" r="2.5" fill="#2c241c"/>
+    """,
+    "this": """
+      <circle cx="42" cy="70" r="22" fill="#7ec8e8"/>
+      <circle cx="42" cy="70" r="10" fill="#fff6e8"/>
+      <path d="M58 54 L92 28" stroke="#ff8f6b" stroke-width="8" stroke-linecap="round"/>
+      <polygon points="92,28 100,48 78,40" fill="#ff8f6b"/>
+    """,
+    "that": """
+      <rect x="22" y="48" width="40" height="40" rx="8" fill="#d4a574"/>
+      <path d="M62 42 L96 24" stroke="#3aa0d0" stroke-width="8" stroke-linecap="round"/>
+      <polygon points="96,24 104,44 82,36" fill="#3aa0d0"/>
+    """,
+    "when": """
+      <circle cx="60" cy="60" r="36" fill="#fff6e8" stroke="#7ec8e8" stroke-width="5"/>
+      <circle cx="60" cy="60" r="4" fill="#2c241c"/>
+      <line x1="60" y1="60" x2="60" y2="36" stroke="#2c241c" stroke-width="5" stroke-linecap="round"/>
+      <line x1="60" y1="60" x2="82" y2="60" stroke="#ff8f6b" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "not": """
+      <circle cx="60" cy="60" r="34" fill="none" stroke="#e74c6f" stroke-width="8"/>
+      <line x1="36" y1="36" x2="84" y2="84" stroke="#e74c6f" stroke-width="8" stroke-linecap="round"/>
+    """,
+    "all": """
+      <circle cx="36" cy="64" r="14" fill="#7ec8e8"/>
+      <circle cx="60" cy="48" r="14" fill="#ffd56a"/>
+      <circle cx="84" cy="64" r="14" fill="#ffb0c8"/>
+      <circle cx="48" cy="78" r="12" fill="#7bc47f"/>
+      <circle cx="72" cy="78" r="12" fill="#3aa0d0"/>
+    """,
+    "have": """
+      <path d="M30 58 Q30 36 48 36 Q60 36 60 48 Q60 36 72 36 Q90 36 90 58 Q90 84 60 98 Q30 84 30 58 Z" fill="#ffb0c8"/>
+      <circle cx="48" cy="56" r="4" fill="#fff"/>
+      <circle cx="72" cy="56" r="4" fill="#fff"/>
+    """,
+    "can": """
+      <rect x="38" y="28" width="44" height="64" rx="8" fill="#7bc47f"/>
+      <ellipse cx="60" cy="28" rx="22" ry="8" fill="#a8d5c5"/>
+      <rect x="46" y="48" width="28" height="10" rx="3" fill="#fff6e8"/>
+      <path d="M50 70 h20" stroke="#fff6e8" stroke-width="4" stroke-linecap="round"/>
+    """,
+    "will": """
+      <path d="M28 70 L60 30 L92 70" fill="none" stroke="#3aa0d0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <polygon points="60,22 72,40 48,40" fill="#3aa0d0"/>
+      <rect x="40" y="78" width="40" height="12" rx="4" fill="#7ec8e8"/>
+    """,
+    "are": """
+      <circle cx="36" cy="60" r="16" fill="#7ec8e8"/>
+      <circle cx="84" cy="60" r="16" fill="#ffb0c8"/>
+      <rect x="48" y="54" width="24" height="12" rx="4" fill="#ffd56a"/>
+    """,
 }
 
 # Aliases → canonical drawing key
@@ -589,7 +723,7 @@ ALIASES: dict[str, str] = {
     "mud": "wet",
     "hop": "jump",
     "box": "bag",
-    "win": "star",
+    "win": "trophy",
     "leg": "kid",
     "bug": "frog",
     "bugs": "frog",
@@ -650,6 +784,21 @@ ALIASES: dict[str, str] = {
     "boy": "kid",
     "day": "sun",
     "again": "sparkle",
+    # Sight words previously falling back to _default
+    "the": "book",
+    "was": "are",
+    "were": "are",
+    "but": "soft",
+    "for": "bag",
+    "from": "park",
+    "her": "she",
+    "him": "kid",
+    "his": "kid",
+    "into": "house",
+    "out": "park",
+    "with": "friend",
+    "would": "will",
+    "your": "you",
 }
 
 

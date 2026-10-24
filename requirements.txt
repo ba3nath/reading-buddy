@@ -6,6 +6,9 @@ fastapi>=0.115.0,<1
 uvicorn[standard]>=0.32.0,<1
 python-multipart>=0.0.12,<1
 faster-whisper>=1.0.3,<2
+# PyAV 19 dropped av.open(metadata_errors=...); faster-whisper 1.2.1 still passes it
+# (fixed upstream in SYSTRAN/faster-whisper#1495, not released yet). Pin until then.
+av>=11,<19
 ctranslate2>=4.0,<5
 onnxruntime>=1.16.0,<2
 metaphone>=0.6

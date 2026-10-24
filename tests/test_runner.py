@@ -54,6 +54,8 @@ def test_launchd_plist_body_contains_uvicorn_bind():
     assert str(config.PORT) in body
     assert "0.0.0.0" in body
     assert "HF_HUB_OFFLINE" in body
+    assert "<key>PATH</key>" in body
+    assert "/opt/homebrew/bin" in body or "/usr/local/bin" in body
 
 
 def test_parse_args_localhost_only_and_force_deps():

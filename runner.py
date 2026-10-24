@@ -605,11 +605,32 @@ def launchd_plist_path() -> Path:
     return Path.home() / "Library" / "LaunchAgents" / f"{LAUNCHD_LABEL}.plist"
 
 
+def _launchd_path_env() -> str:
+    """PATH for LaunchAgent — include Homebrew so ffmpeg/espeak resolve."""
+    extras = [
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+    ]
+    # Keep any existing PATH entries (deduped, extras first).
+    seen: set[str] = set()
+    parts: list[str] = []
+    for chunk in extras + os.environ.get("PATH", "").split(":"):
+        if chunk and chunk not in seen:
+            seen.add(chunk)
+            parts.append(chunk)
+    return ":".join(parts)
+
+
 def launchd_plist_body(python: Path, *, bind_host: str) -> str:
     log_dir = LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
     stdout = log_dir / "uvicorn.out.log"
     stderr = log_dir / "uvicorn.err.log"
+    path_env = _launchd_path_env()
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -631,6 +652,8 @@ def launchd_plist_body(python: Path, *, bind_host: str) -> str:
   </array>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>PATH</key>
+    <string>{path_env}</string>
     <key>HF_HUB_OFFLINE</key>
     <string>1</string>
     <key>PYTHONUNBUFFERED</key>

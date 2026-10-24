@@ -52,14 +52,24 @@ def test_tts_render_lengthens_short_words():
     assert spoken == "cup!"
     assert speed == 1.0
     spoken_the, speed_the = tts_render("the")
-    assert spoken_the == "the."
-    assert speed_the == 0.88
+    assert spoken_the == "the!"
+    assert speed_the == 0.95
     pig, pig_speed = tts_render("pig")
-    assert pig == "pig."
-    assert pig_speed == 0.78
+    assert pig == "pig"
+    assert pig_speed == 0.86
     line, line_speed = tts_render("the cat sat")
-    assert line == "the cat sat."
-    assert line_speed == 0.90
+    # Short phrases: no forced period (avoids trailing-syllable smear).
+    assert line == "the cat sat"
+    assert line_speed == 0.86
+    assert tts_voice("the cat sat") == ("bf_emma", "en-gb")
+    pig_phrase, pig_phrase_speed = tts_render("one small pig")
+    assert pig_phrase == "one small pig"
+    assert pig_phrase_speed == 1.0  # phrase-final /g/ — Alice, fast release
+    assert tts_voice("one small pig") == ("bf_alice", "en-gb")
+    assert tts_render("the green frog") == ("the green frog", 1.0)
+    assert tts_voice("the green frog") == ("bf_alice", "en-gb")
+    assert tts_render("frog") == ("frog.", 0.94)
+    assert tts_voice("frog") == ("bf_emma", "en-gb")
     long_line, long_line_speed = tts_render("Jack and Jill went up the hill")
     assert long_line == "Jack and Jill went up the hill"
     assert long_line_speed == 0.95
@@ -70,16 +80,16 @@ def test_hot_sun_phrase_uses_alice_so_sun_stays_sun():
     for text in ("The hot sun", "A hot sun", "a hot sun"):
         spoken, speed = tts_render(text)
         assert spoken.rstrip(".!?").lower() == text.lower()
-        assert speed == 0.90
+        assert speed == 0.86
         assert tts_voice(text) == ("bf_alice", "en-gb")
 
 
 def test_tts_render_log_and_net_whisper_winners():
-    """Batch A/B: log. @0.78 emma; net. @0.82 isabella — still single tokens."""
+    """log bare @0.82 alice (no vlog/logger); net keeps prior winner."""
     log, log_speed = tts_render("log")
-    assert log == "log."
-    assert log_speed == 0.78
-    assert tts_voice("log") == ("bf_emma", "en-gb")
+    assert log == "log"
+    assert log_speed == 0.82
+    assert tts_voice("log") == ("bf_alice", "en-gb")
     net, net_speed = tts_render("net")
     assert net == "net."
     assert net_speed == 0.82
@@ -108,12 +118,14 @@ def test_tts_render_ng_is_not_treated_as_plosive_g():
     assert long == "long."
     assert long_speed >= 0.84
     pig, pig_speed = tts_render("pig")
-    assert pig == "pig."
-    assert pig_speed == 0.78
+    assert pig == "pig"
+    assert pig_speed == 0.86
     dog, dog_speed = tts_render("dog")
     assert dog == "dog."
     assert spoken_matches_target("dog", dog)
-    assert dog_speed == 0.88
+    assert dog_speed == 0.86
+    assert tts_voice("frog") == ("bf_emma", "en-gb")
+    assert tts_render("frog") == ("frog.", 0.94)
 
 
 def test_tts_render_sit_keeps_unvoiced_s():
@@ -136,11 +148,11 @@ def test_tts_voice_top_avoids_topi_release():
 
 
 def test_tts_render_can_whisper_winner():
-    """Batch A/B: 'can.' @0.82 emma — still only the on-screen word."""
+    """Batch A/B: 'can!' @0.95 emma — still only the on-screen word."""
     spoken, speed = tts_render("can")
-    assert spoken == "can."
+    assert spoken == "can!"
     assert spoken_matches_target("can", spoken)
-    assert speed == 0.82
+    assert speed == 0.95
     assert tts_voice("can") == ("bf_emma", "en-gb")
 
 
@@ -149,8 +161,8 @@ def test_tts_render_were_stays_single_word():
     spoken, speed = tts_render("were")
     assert spoken == "were."
     assert spoken_matches_target("were", spoken)
-    assert speed == 0.82
-    assert tts_voice("were") == ("bf_emma", "en-gb")
+    assert speed == 0.78
+    assert tts_voice("were") == ("bm_lewis", "en-gb")
 
 
 def test_tts_render_cat_is_only_cat():
@@ -164,7 +176,7 @@ def test_tts_render_cat_is_only_cat():
 
 def test_tts_overrides_for_whisper_clear_words():
     """Spot-check single-word overrides from the batch Whisper A/B winners."""
-    assert tts_render("sheep") == ("sheep.", 0.78)
+    assert tts_render("sheep") == ("sheep.", 0.94)
     assert tts_render("truck") == ("truck.", 0.88)
     assert tts_voice("truck") == ("bm_lewis", "en-gb")
     assert tts_render("thin") == ("thin!", 1.0)
@@ -178,10 +190,10 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_render("net") == ("net.", 0.82)
     assert tts_render("bed") == ("bed.", 0.88)
     assert tts_voice("bed") == ("bf_emma", "en-gb")
-    assert tts_render("clock") == ("clock!", 1.0)
+    assert tts_render("clock") == ("clock!", 0.95)
     assert tts_render("jam") == ("jam.", 0.82)
-    assert tts_render("trap") == ("trap.", 0.82)
-    assert tts_voice("trap") == ("bm_lewis", "en-gb")
+    assert tts_render("trap") == ("trap", 0.94)
+    assert tts_voice("trap") == ("bf_emma", "en-gb")
     assert tts_render("bus") == ("bus", 1.0)
     assert tts_voice("bus") == ("bf_emma", "en-gb")
     assert tts_render("spoon") == ("spoon?", 0.92)
@@ -192,19 +204,17 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_voice("all") == ("bf_emma", "en-gb")
     assert tts_render("win") == ("win!", 0.95)
     assert tts_voice("win") == ("bf_alice", "en-gb")
-    assert tts_render("what") == ("what.", 0.78)
+    assert tts_render("what") == ("what.", 0.88)
     assert tts_render("your") == ("your.", 0.78)
     assert tts_render("would") == ("would", 0.88)
     assert tts_voice("would") == ("bf_emma", "en-gb")
     assert tts_render("drum") == ("drum.", 0.94)
     assert tts_voice("drum") == ("bf_emma", "en-gb")
-    # Default session voice (no override) for isabella winners.
-    assert tts_voice("clock") == (None, None)
-    assert tts_voice("jam") == (None, None)
-    assert tts_voice("net") == (None, None)
-    assert tts_voice("rat") == (None, None)
-    assert tts_voice("the") == (None, None)
-    assert tts_voice("your") == (None, None)
-    assert tts_voice("hat") == (None, None)
+    assert tts_voice("clock") == ("bf_emma", "en-gb")
     assert tts_voice("chair") == ("bm_lewis", "en-gb")
-    assert tts_voice("fox") == (None, None)
+    assert tts_voice("fox") == ("bf_emma", "en-gb")
+    # Short phrases use Emma by default (avoids trailing-syllable smear).
+    assert tts_voice("two wet ducks") == ("bf_emma", "en-gb")
+    assert tts_render("two wet ducks") == ("two wet ducks", 0.86)
+    assert tts_render("one small pig") == ("one small pig", 1.0)
+    assert tts_voice("one small pig") == ("bf_alice", "en-gb")
