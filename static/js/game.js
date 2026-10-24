@@ -132,6 +132,9 @@ function syncHomeControls() {
   }
 }
 
+/** Child session UI states (Phase 7): home, listen, recording, scoring,
+ *  result-correct | result-miss | result-retry | result-close | result-hint |
+ *  result-skip, session-replay, session-end, boot-error. */
 function setState(id) {
   state.id = id;
   document.body.dataset.state = id;
@@ -160,7 +163,8 @@ function buddyAnimForState(id) {
     id === "result-miss" ||
     id === "result-retry" ||
     id === "result-skip" ||
-    id === "result-close"
+    id === "result-close" ||
+    id === "result-hint"
   ) {
     return "encourage";
   }
@@ -337,7 +341,10 @@ function setHeard(transcript) {
   el.textContent = `I heard "${text}"`;
 }
 
-function setWord(text, { highlight = false, kind = "word", scores = null } = {}) {
+function setWord(
+  text,
+  { highlight = false, kind = "word", scores = null, spans = null } = {}
+) {
   const el = $("[data-word]");
   const multi = Array.isArray(scores) && scores.length > 1;
   if (multi) {
@@ -349,10 +356,32 @@ function setWord(text, { highlight = false, kind = "word", scores = null } = {})
       span.textContent = ws.word || "";
       el.appendChild(span);
     });
+  } else if (Array.isArray(spans) && spans.length && text) {
+    el.textContent = "";
+    const sorted = [...spans]
+      .filter((s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start)
+      .sort((a, b) => a.start - b.start);
+    let cursor = 0;
+    sorted.forEach((s) => {
+      const start = Math.max(0, Math.min(text.length, s.start));
+      const end = Math.max(start, Math.min(text.length, s.end));
+      if (start > cursor) {
+        el.appendChild(document.createTextNode(text.slice(cursor, start)));
+      }
+      const mark = document.createElement("span");
+      mark.className = "coach-hl";
+      mark.textContent = text.slice(start, end);
+      if (s.cue) mark.title = String(s.cue);
+      el.appendChild(mark);
+      cursor = end;
+    });
+    if (cursor < text.length) {
+      el.appendChild(document.createTextNode(text.slice(cursor)));
+    }
   } else {
     el.textContent = text || "";
   }
-  el.classList.toggle("highlight", Boolean(highlight));
+  el.classList.toggle("highlight", Boolean(highlight) && !(spans && spans.length));
   setWordArt(text, { kind });
 }
 
@@ -910,6 +939,7 @@ function applyOpenSession(open) {
   state.difficultyLabel = open.stage_label || "";
   state.paused = true;
   state.phase = "read";
+  state.closeAgainPending = Boolean(open.hint_pending);
   try {
     sessionStorage.setItem(OPEN_KEY, String(open.session_id));
   } catch {
@@ -1315,6 +1345,24 @@ function needsReadThrough() {
   return state.items.some((item) => item && (item.rhyme_group || item.story_id));
 }
 
+function applyCoachHint(result, item) {
+  const spans = Array.isArray(result.highlight_spans) ? result.highlight_spans : [];
+  const line = (result.coach_line || "").trim();
+  if (item && spans.length) {
+    setWord(item.text, {
+      kind: item.kind || "word",
+      spans,
+      highlight: true,
+    });
+  }
+  if (line && (result.again || result.retry || result.hint_level > 0)) {
+    // Prefer coach_line when it adds pattern/miscue guidance; keep try-count msgs for silence.
+    if (result.outcome === "uncertain" || (result.hint_level || 0) >= 2) {
+      setMessage(line);
+    }
+  }
+}
+
 function handleAttempt(result) {
   state.stars = result.stars_total;
   showPhraseScore(result);
@@ -1324,6 +1372,7 @@ function handleAttempt(result) {
   if (item && result.word_scores && result.word_scores.length > 1) {
     setWord(item.text, { kind: item.kind || "word", scores: result.word_scores });
   }
+  applyCoachHint(result, item);
   if (state.phase === "passage") {
     if (result.retry || result.result === "retry") {
       setMessage(result.message || "Please read it again");
@@ -1362,7 +1411,7 @@ function handleAttempt(result) {
     }, 1600);
     return;
   }
-  // Close second-chance only when again/read_again is true — never on locked close.
+  // Hint ladder / second-chance only when again/read_again is true — never on locked close.
   if (
     (result.result === "close" || result.result === "missed") &&
     needsAnotherRead(result)
@@ -1372,11 +1421,12 @@ function handleAttempt(result) {
     setReadAgain({
       tryNumber: Number(result.try_number) || 2,
       triesMax: Number(result.tries_max) || 2,
-      reason: "close",
+      reason: "hint",
     });
-    setMessage(result.message || "Almost — read it one more time!");
+    const coach = (result.coach_line || "").trim();
+    setMessage(coach || result.message || "Almost — read it one more time!");
     setMicLabel("Tap to read again");
-    setState("result-close");
+    setState(result.hint_level >= 2 ? "result-hint" : "result-close");
     state.closeAgainPending = true;
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();

@@ -31,6 +31,13 @@ from app.db import (
     save_settings,
     touch_mastery,
 )
+from app.coach.hints import (
+    HINT_HIGHLIGHT,
+    HINT_LISTEN,
+    build_hint,
+    empty_hint,
+    next_hint_level,
+)
 from app.matching import (
     MatchResult,
     attempt_contract,
@@ -250,6 +257,19 @@ def word_audio_slug(conn: sqlite3.Connection, word: str, fallback_slug: str) -> 
     # Safe slug: letters/digits/hyphen only
     slug = "".join(ch if ch.isalnum() else "-" for ch in norm).strip("-")
     return slug or fallback_slug
+
+
+def _merge_hint(payload: dict[str, Any], hint: dict[str, Any] | None) -> dict[str, Any]:
+    """Attach optional coach fields (old clients ignore them)."""
+    h = hint or empty_hint()
+    payload["hint_level"] = int(h.get("hint_level") or 0)
+    payload["coach_line"] = str(h.get("coach_line") or "")
+    payload["highlight_spans"] = list(h.get("highlight_spans") or [])
+    payload["play_model"] = bool(h.get("play_model"))
+    # Uncertain: never show “wrong word” copy — coach_line is the message.
+    if payload.get("coach_line") and payload.get("outcome") == "uncertain":
+        payload["message"] = payload["coach_line"]
+    return payload
 
 
 def consecutive_retries(
@@ -628,29 +648,32 @@ def apply_attempt(
                 )
                 touch_mastery(conn, item_id, "skipped")
                 conn.commit()
-                return {
-                    "result": "skipped",
-                    "transcript": "",
-                    "word_scores": [],
-                    "words_correct": 0,
-                    "words_total": words_total,
-                    "stars_awarded": 0,
-                    "stars_total": stars_total,
-                    "message": config.MSG_SKIP,
-                    "retry": False,
-                    "again": False,
-                    "read_again": False,
-                    "try_number": None,
-                    "tries_max": None,
-                    "skipped": True,
-                    "attempt_id": attempt_id,
-                    **attempt_contract(
-                        outcome="skipped",
-                        reason_code="max_retries",
-                        assisted=False,
-                        mastery_eligible=False,
-                    ),
-                }
+                return _merge_hint(
+                    {
+                        "result": "skipped",
+                        "transcript": "",
+                        "word_scores": [],
+                        "words_correct": 0,
+                        "words_total": words_total,
+                        "stars_awarded": 0,
+                        "stars_total": stars_total,
+                        "message": config.MSG_SKIP,
+                        "retry": False,
+                        "again": False,
+                        "read_again": False,
+                        "try_number": None,
+                        "tries_max": None,
+                        "skipped": True,
+                        "attempt_id": attempt_id,
+                        **attempt_contract(
+                            outcome="skipped",
+                            reason_code="max_retries",
+                            assisted=False,
+                            mastery_eligible=False,
+                        ),
+                    },
+                    empty_hint(),
+                )
             # prior = retries already stored; this insert is +1; next read is +2.
             next_try = prior + 2
             attempt_id = _insert_attempt(
@@ -668,29 +691,38 @@ def apply_attempt(
             )
             touch_mastery(conn, item_id, "retry")
             conn.commit()
-            return {
-                "result": "retry",
-                "transcript": "",
-                "word_scores": [],
-                "words_correct": 0,
-                "words_total": words_total,
-                "stars_awarded": 0,
-                "stars_total": stars_total,
-                "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
-                "retry": True,
-                "again": True,
-                "read_again": True,
-                "try_number": next_try,
-                "tries_max": config.MAX_RETRIES_PER_ITEM,
-                "skipped": False,
-                "attempt_id": attempt_id,
-                **attempt_contract(
-                    outcome=retry_outcome,  # type: ignore[arg-type]
-                    reason_code=retry_reason,
-                    assisted=False,
-                    mastery_eligible=False,
-                ),
-            }
+            hint = build_hint(
+                target=str(item["text"]),
+                pattern=str(item["pattern"] or "") if "pattern" in item.keys() else "",
+                level=HINT_LISTEN,
+                outcome=retry_outcome,
+            )
+            return _merge_hint(
+                {
+                    "result": "retry",
+                    "transcript": "",
+                    "word_scores": [],
+                    "words_correct": 0,
+                    "words_total": words_total,
+                    "stars_awarded": 0,
+                    "stars_total": stars_total,
+                    "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
+                    "retry": True,
+                    "again": True,
+                    "read_again": True,
+                    "try_number": next_try,
+                    "tries_max": config.MAX_RETRIES_PER_ITEM,
+                    "skipped": False,
+                    "attempt_id": attempt_id,
+                    **attempt_contract(
+                        outcome=retry_outcome,  # type: ignore[arg-type]
+                        reason_code=retry_reason,
+                        assisted=False,
+                        mastery_eligible=False,
+                    ),
+                },
+                hint,
+            )
 
         assert queue_index is not None
         prior_retries = consecutive_retries(conn, session_id, queue_index)
@@ -719,29 +751,32 @@ def apply_attempt(
             )
             touch_mastery(conn, item_id, "skipped")
             conn.commit()
-            return {
-                "result": "skipped",
-                "transcript": "",
-                "word_scores": [],
-                "words_correct": 0,
-                "words_total": words_total,
-                "stars_awarded": 0,
-                "stars_total": stars_total,
-                "message": config.MSG_SKIP,
-                "retry": False,
-                "again": False,
-                "read_again": False,
-                "try_number": None,
-                "tries_max": None,
-                "skipped": True,
-                "attempt_id": attempt_id,
-                **attempt_contract(
-                    outcome="skipped",
-                    reason_code="max_retries",
-                    assisted=False,
-                    mastery_eligible=False,
-                ),
-            }
+            return _merge_hint(
+                {
+                    "result": "skipped",
+                    "transcript": "",
+                    "word_scores": [],
+                    "words_correct": 0,
+                    "words_total": words_total,
+                    "stars_awarded": 0,
+                    "stars_total": stars_total,
+                    "message": config.MSG_SKIP,
+                    "retry": False,
+                    "again": False,
+                    "read_again": False,
+                    "try_number": None,
+                    "tries_max": None,
+                    "skipped": True,
+                    "attempt_id": attempt_id,
+                    **attempt_contract(
+                        outcome="skipped",
+                        reason_code="max_retries",
+                        assisted=False,
+                        mastery_eligible=False,
+                    ),
+                },
+                empty_hint(),
+            )
 
         # prior_retries = retries already stored; this insert is +1; next read is +2.
         next_try = prior_retries + 2
@@ -760,29 +795,38 @@ def apply_attempt(
         )
         touch_mastery(conn, item_id, "retry")
         conn.commit()
-        return {
-            "result": "retry",
-            "transcript": "",
-            "word_scores": [],
-            "words_correct": 0,
-            "words_total": words_total,
-            "stars_awarded": 0,
-            "stars_total": stars_total,
-            "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
-            "retry": True,
-            "again": True,
-            "read_again": True,
-            "try_number": next_try,
-            "tries_max": config.MAX_RETRIES_PER_ITEM,
-            "skipped": False,
-            "attempt_id": attempt_id,
-            **attempt_contract(
-                outcome=retry_outcome,  # type: ignore[arg-type]
-                reason_code=retry_reason,
-                assisted=False,
-                mastery_eligible=False,
-            ),
-        }
+        hint = build_hint(
+            target=str(item["text"]),
+            pattern=str(item["pattern"] or "") if "pattern" in item.keys() else "",
+            level=HINT_LISTEN,
+            outcome=retry_outcome,
+        )
+        return _merge_hint(
+            {
+                "result": "retry",
+                "transcript": "",
+                "word_scores": [],
+                "words_correct": 0,
+                "words_total": words_total,
+                "stars_awarded": 0,
+                "stars_total": stars_total,
+                "message": config.msg_retry(next_try, config.MAX_RETRIES_PER_ITEM),
+                "retry": True,
+                "again": True,
+                "read_again": True,
+                "try_number": next_try,
+                "tries_max": config.MAX_RETRIES_PER_ITEM,
+                "skipped": False,
+                "attempt_id": attempt_id,
+                **attempt_contract(
+                    outcome=retry_outcome,  # type: ignore[arg-type]
+                    reason_code=retry_reason,
+                    assisted=False,
+                    mastery_eligible=False,
+                ),
+            },
+            hint,
+        )
 
     result = match.result
     word_scores = [ws.to_dict() for ws in match.word_scores]
@@ -797,6 +841,7 @@ def apply_attempt(
     message = config.MSG_CORRECT
 
     reinsert_info: dict[str, Any] | None = None
+    hint_bundle: dict[str, Any] = empty_hint()
 
     assisted = False
     if is_replay:
@@ -836,16 +881,34 @@ def apply_attempt(
             and not replacing_miss
             and not replacing_close
         )
+        item_pattern = (
+            str(item["pattern"] or "") if "pattern" in item.keys() else ""
+        )
+        item_text = str(item["text"])
         if ask_close_again:
             again = True
             stars_awarded = 0
             message = config.MSG_CLOSE
             counts_for_session = 1
+            hint_bundle = build_hint(
+                target=item_text,
+                heard=transcript,
+                pattern=item_pattern,
+                level=next_hint_level(0, kind="close"),
+                outcome="incorrect",
+            )
         elif ask_miss_again:
             again = True
             stars_awarded = 0
             message = config.MSG_MISS_AGAIN
             counts_for_session = 0
+            hint_bundle = build_hint(
+                target=item_text,
+                heard=transcript,
+                pattern=item_pattern,
+                level=next_hint_level(0, kind="missed"),
+                outcome="incorrect",
+            )
         else:
             if replacing_close:
                 flip_prior_lock(conn, session_id, queue_index)
@@ -892,9 +955,25 @@ def apply_attempt(
                 # Beginner first close, or strict second close — lock & move on.
                 message = config.MSG_CLOSE_OK
                 again = False
+                # Still offer a gentle highlight for learning (no second try).
+                hint_bundle = build_hint(
+                    target=item_text,
+                    heard=transcript,
+                    pattern=item_pattern,
+                    level=HINT_HIGHLIGHT,
+                    outcome="incorrect",
+                )
             else:
                 message = config.MSG_MISS
                 again = False
+                prior = HINT_HIGHLIGHT if replacing_miss else 0
+                hint_bundle = build_hint(
+                    target=item_text,
+                    heard=transcript,
+                    pattern=item_pattern,
+                    level=next_hint_level(prior, kind="lock"),
+                    outcome="incorrect",
+                )
                 if counts_for_session == 1:
                     apply_day_ladder(conn, item_id, "missed")
                     new_play, new_flags, reinsert_info = maybe_reinsert_miss(
@@ -964,6 +1043,7 @@ def apply_attempt(
                 "outcome": outcome,
                 "assisted": assisted,
                 "reason_code": reason_code,
+                "hint_level": int(hint_bundle.get("hint_level") or 0),
             },
         )
     except Exception:  # noqa: BLE001
@@ -1008,7 +1088,7 @@ def apply_attempt(
         payload["tries_max"] = None
         if result == "close" and message == config.MSG_CLOSE:
             payload["message"] = config.MSG_CLOSE_OK
-    return payload
+    return _merge_hint(payload, hint_bundle)
 
 
 def _insert_attempt(
@@ -1079,9 +1159,15 @@ def open_session_view(conn: sqlite3.Connection) -> dict[str, Any]:
     level = int(session["level"])
     by_diff = settings.get("stage_by_difficulty") or {}
     stage = config.normalize_stage(by_diff.get(str(level), settings.get("stage", 1)))
+    sid = int(session["id"])
+    hint_pending = False
+    if index < len(ids):
+        hint_pending = has_provisional_miss(conn, sid, index) or has_provisional_close(
+            conn, sid, index
+        )
     return {
         "open": True,
-        "session_id": int(session["id"]),
+        "session_id": sid,
         "index": index,
         "items": items,
         "stars": int(session["stars"]),
@@ -1091,6 +1177,7 @@ def open_session_view(conn: sqlite3.Connection) -> dict[str, Any]:
         "planned_count": int(session["planned_count"]),
         "mode": session["mode"],
         "buddy": settings.get("buddy", "krishna"),
+        "hint_pending": hint_pending,
     }
 
 
