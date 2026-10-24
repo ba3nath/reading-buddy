@@ -30,9 +30,11 @@ MIN_AUDIO_SECONDS = 0.3
 NO_SPEECH_PROB_MAX = 0.60
 LOW_TOKEN_PROB = 0.25
 STRICT_CORRECT_MIN_PROB = 0.85
-# Multi-word exact matches (nursery lines): Whisper often scores nonsense
-# words like hickory/dickory ~0.4–0.7 even when the transcript is perfect.
-STRICT_MULTIWORD_EXACT_MIN_MEAN = 0.50
+# Multi-word exact matches (phrases / nursery lines): Whisper often scores
+# short words ~0.35–0.55 even when the transcript is perfect ("three red hats"
+# still showed as heard, then asked to read again). Keep a floor so mumbled
+# exact lines can get a second chance, but do not punish clear readings.
+STRICT_MULTIWORD_EXACT_MIN_MEAN = 0.35
 
 WHISPER_MODEL = "small.en"
 WHISPER_DEVICE = "cpu"

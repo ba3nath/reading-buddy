@@ -389,6 +389,13 @@ _TTS_PHRASE_VOICES: dict[str, tuple[str, str]] = {
     "a hot sun": ("bf_alice", "en-gb"),
     # Emma pluralizes "pen" → pens; Lewis keeps singular.
     "my blue pen": ("bm_lewis", "en-gb"),
+    # Emma @0.78 can onset like "the three…"; Alice keeps bare "three".
+    "three red hats": ("bf_alice", "en-gb"),
+    # Isabella can release "away" with a /t/-like stop ("await").
+    "rain rain go away": ("bf_emma", "en-gb"),
+    # Alice @1.0 on final /g/ makes Whisper invent a leading "It's".
+    "a wet log": ("bf_emma", "en-gb"),
+    "my big bag": ("bf_emma", "en-gb"),
 }
 
 # Explicit phrase spoken + speed when the default phrase rule is not enough.
@@ -402,7 +409,16 @@ _TTS_PHRASE_RENDERS: dict[str, tuple[str, float]] = {
     "the cold wind": ("the cold wind", 0.82),
     "the long path": ("the long path.", 0.90),
     "the red box": ("the red box", 0.82),
-    "three red hats": ("three red hats", 0.78),
+    "three red hats": ("three red hats", 0.90),
+    "rain rain go away": ("rain rain go away", 0.90),
+    "a wet log": ("a wet log", 0.95),
+    "my big bag": ("my big bag", 0.90),
+    # Whisper A/B winners for leftover smears after Emma default.
+    "hop to the red box": ("Hop to the red box", 0.82),
+    "the red pen is big": ("The red pen is big", 0.82),
+    "the dog and the fox can hop": ("The dog and the fox can hop", 0.82),
+    "the cat and the dog can hop": ("The cat and the dog can hop", 0.90),
+    "the bug and the ship can hop": ("The bug and the ship can hop", 0.95),
     # /g/-final phrases use Alice @ 1.0 via tts_voice + _phrase_final_speed.
 }
 
@@ -473,11 +489,16 @@ def tts_voice(text: str) -> tuple[str | None, str | None]:
     if phrase:
         return phrase
     words = (text or "").strip().split()
-    if 2 <= len(words) <= 3:
-        # Alice cuts a clean /g/ release; Emma often leaves "frogeh"/"pigee".
-        if _ends_hard_g(words[-1]):
+    if len(words) >= 2:
+        last = words[-1].rstrip(".!?").lower()
+        # Alice cuts a clean /g/ release on short phrases; Emma often leaves
+        # "frogeh"/"pigee". Longer lines stay on Emma — Isabella smears
+        # endings (away→await, baa→bar, path→pass).
+        if 2 <= len(words) <= 3 and _ends_hard_g(last):
             return ("bf_alice", "en-gb")
-        # Short phrases: Emma avoids Isabella's trailing-syllable smear.
+        # Long "… can hop" lines: Emma turns hop→help; Alice keeps hop.
+        if len(words) >= 4 and last == "hop":
+            return ("bf_alice", "en-gb")
         return _DEFAULT_PHRASE_VOICE
     return None, None
 
@@ -531,13 +552,17 @@ def tts_render(text: str) -> tuple[str, float]:
         if len(core) <= 4:
             return spoken, 0.86
         return spoken, 0.88
-    # Short kid phrases: bare text (no forced period) + Emma/Alice via tts_voice.
-    if 2 <= len(words) <= 3:
-        key = _phrase_key(stripped)
-        if key in _TTS_PHRASE_RENDERS:
-            return _TTS_PHRASE_RENDERS[key]
+    # Multi-word clips: honor explicit phrase renders at any length, then
+    # bare text (no forced extra period) + phrase-final speed. Longer story
+    # lines keep a steady ~0.90 so endings stay clear under Emma.
+    key = _phrase_key(stripped)
+    if key in _TTS_PHRASE_RENDERS:
+        return _TTS_PHRASE_RENDERS[key]
+    if len(words) >= 2:
         spoken = stripped.rstrip(".!?")
-        return spoken, _phrase_final_speed(words[-1])
+        if len(words) <= 3:
+            return spoken, _phrase_final_speed(words[-1])
+        return spoken, 0.90
     return stripped, 0.95
 
 

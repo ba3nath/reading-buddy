@@ -45,6 +45,56 @@ FUNCTION_WORDS = frozenset(
     }
 )
 
+# Whisper often emits digits for kid number words ("3" for "three").
+_DIGIT_TO_WORD = {
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+    "10": "ten",
+}
+
+# Common ASR near-misses that are not close by edit/metaphone (away→await is
+# two edits and different metaphones) but kids said the right word. Only map
+# forms that are not themselves on-screen vocabulary (pass/baa/lane/… are not
+# word cards), so we never treat a real different word as a free pass.
+_ASR_TOKEN_ALIASES = {
+    "await": "away",
+    "pass": "path",
+    "bar": "baa",
+    "lake": "lane",
+    # Kokoro/Whisper smear on short CVC endings (not on-screen vocab).
+    "help": "hop",
+    "hope": "hop",
+    "biggie": "big",
+}
+
+
+def canonical_token(token: str) -> str:
+    """Map digit / ASR-alias forms onto the on-screen token for equality."""
+    t = (token or "").lower()
+    if t in _DIGIT_TO_WORD:
+        return _DIGIT_TO_WORD[t]
+    return _ASR_TOKEN_ALIASES.get(t, t)
+
+
+def tokens_equivalent(a: list[str], b: list[str]) -> bool:
+    if len(a) != len(b):
+        return False
+    return all(canonical_token(x) == canonical_token(y) for x, y in zip(a, b))
+
+
+def is_number_pair(a: str, b: str) -> bool:
+    if not a or not b:
+        return False
+    return canonical_token(a) == canonical_token(b)
+
 
 @dataclass
 class WordScore:
@@ -254,11 +304,14 @@ def score_word(
     mode: Mode,
 ) -> WordResult:
     conf = confidence if confidence is not None else 0.0
+    exact_heard = bool(heard) and (
+        heard == target or is_number_pair(target, heard)
+    )
 
     if mode == "strict":
-        if heard == target and conf >= config.STRICT_CORRECT_MIN_PROB:
+        if exact_heard and conf >= config.STRICT_CORRECT_MIN_PROB:
             return "correct"
-        if heard == target and conf < config.STRICT_CORRECT_MIN_PROB:
+        if exact_heard and conf < config.STRICT_CORRECT_MIN_PROB:
             return "close"
         return "missed"
 
@@ -277,6 +330,8 @@ def score_word(
     if not heard:
         return "missed"
     if is_plural_pair(target, heard):
+        return "correct"
+    if is_number_pair(target, heard):
         return "correct"
     dist = levenshtein(target, heard)
     if dist == 0:
@@ -384,24 +439,29 @@ def score_attempt(
         )
 
     # Strict: extras / missing / reorder make the item not exact.
-    exact_seq = target_tokens == hyp_tokens
+    exact_seq = tokens_equivalent(target_tokens, hyp_tokens)
     if mode == "strict" and exact_seq:
         # Exact full-line match: use mean confidence so one soft "the"/"big"
         # under 0.85 does not force a pointless second try on a clear reading.
-        # Multi-word nursery lines get a lower bar — Whisper under-confidences
-        # hickory/dickory even when the words are right.
+        # Multi-word lines get a lower bar — Whisper under-confidences
+        # hickory/dickory / three/red even when the words are right.
         present = [
             float(ws.confidence)
             for ws in word_scores
             if ws.confidence is not None
         ]
-        mean_conf = (sum(present) / len(present)) if present else 0.0
         threshold = (
             config.STRICT_MULTIWORD_EXACT_MIN_MEAN
             if words_total >= 2
             else config.STRICT_CORRECT_MIN_PROB
         )
-        verdict: WordResult = "correct" if mean_conf >= threshold else "close"
+        if not present:
+            # Missing ASR probs must not invent mean 0.0 → "close" when the
+            # transcript already matches token-for-token (UI shows "I heard…").
+            verdict: WordResult = "correct"
+        else:
+            mean_conf = sum(present) / len(present)
+            verdict = "correct" if mean_conf >= threshold else "close"
         word_scores = [
             WordScore(ws.word, ws.heard, ws.confidence, verdict)
             for ws in word_scores
@@ -410,7 +470,8 @@ def score_attempt(
         # Re-score: any non-exact token is missed unless exact+low-conf → close
         revised: list[WordScore] = []
         for ws in word_scores:
-            if ws.heard == ws.word:
+            exact = ws.heard == ws.word or is_number_pair(ws.word, ws.heard)
+            if exact:
                 conf = ws.confidence if ws.confidence is not None else 0.0
                 if conf >= config.STRICT_CORRECT_MIN_PROB:
                     revised.append(

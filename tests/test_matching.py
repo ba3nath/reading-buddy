@@ -119,6 +119,98 @@ def test_strict_multiword_threshold_below_mean_is_close():
     assert result.result == "close"
 
 
+def test_strict_exact_phrase_missing_confidences_is_correct():
+    """Exact transcript must not become close when Whisper omits probs."""
+    result = score_attempt(
+        "three red hats",
+        "three red hats",
+        None,
+        mode="strict",
+    )
+    assert result.result == "correct"
+    assert result.transcript == "three red hats"
+
+
+def test_strict_exact_phrase_mid_confidence_is_correct():
+    """Kid phrase readings often land ~0.4 mean — still accept exact text."""
+    confs = [0.42, 0.38, 0.45]
+    assert sum(confs) / len(confs) < 0.50
+    result = score_attempt(
+        "three red hats",
+        "three red hats",
+        confs,
+        mode="strict",
+    )
+    assert result.result == "correct"
+
+
+def test_three_and_digit_3_are_equivalent():
+    beginner = score_attempt("three red hats", "3 red hats", [0.9] * 3, mode="beginner")
+    assert beginner.result == "correct"
+    strict = score_attempt("three red hats", "3 red hats", [0.9] * 3, mode="strict")
+    assert strict.result == "correct"
+
+
+def test_away_and_await_are_equivalent():
+    """Whisper often appends a ghost /t/ on away → await (not edit-close)."""
+    beginner = score_attempt(
+        "rain rain go away",
+        "rain rain go await",
+        [0.9] * 4,
+        mode="beginner",
+    )
+    assert beginner.result == "correct"
+    strict = score_attempt(
+        "rain rain go away",
+        "rain rain go await",
+        [0.9] * 4,
+        mode="strict",
+    )
+    assert strict.result == "correct"
+
+
+def test_path_pass_baa_bar_lane_lake_aliases():
+    assert score_attempt(
+        "A red bus was on the path",
+        "a red bus was on the pass",
+        [0.9] * 6,
+        mode="strict",
+    ).result == "correct"
+    assert score_attempt(
+        "Baa baa black sheep",
+        "bar bar black sheep",
+        [0.9] * 4,
+        mode="beginner",
+    ).result == "correct"
+    assert score_attempt(
+        "down the lane",
+        "down the lake",
+        [0.9] * 3,
+        mode="strict",
+    ).result == "correct"
+
+
+def test_hop_help_and_big_biggie_aliases():
+    assert score_attempt(
+        "The dog and the fox can hop",
+        "the dog and the fox can help",
+        [0.9] * 6,
+        mode="strict",
+    ).result == "correct"
+    assert score_attempt(
+        "Hop to the red box",
+        "hope to the red box",
+        [0.9] * 5,
+        mode="beginner",
+    ).result == "correct"
+    assert score_attempt(
+        "The red pen is big",
+        "the red pen is biggie",
+        [0.9] * 5,
+        mode="strict",
+    ).result == "correct"
+
+
 def test_normalize_strips_punctuation():
     assert normalize_text("Don't!") == "dont"
     assert tokenize("Quick brown fox") == ["quick", "brown", "fox"]

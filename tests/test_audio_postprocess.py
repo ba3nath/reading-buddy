@@ -72,7 +72,8 @@ def test_tts_render_lengthens_short_words():
     assert tts_voice("frog") == ("bf_emma", "en-gb")
     long_line, long_line_speed = tts_render("Jack and Jill went up the hill")
     assert long_line == "Jack and Jill went up the hill"
-    assert long_line_speed == 0.95
+    assert long_line_speed == 0.90
+    assert tts_voice("Jack and Jill went up the hill") == ("bf_emma", "en-gb")
 
 
 def test_hot_sun_phrase_uses_alice_so_sun_stays_sun():
@@ -218,3 +219,5 @@ def test_tts_overrides_for_whisper_clear_words():
     assert tts_render("two wet ducks") == ("two wet ducks", 0.86)
     assert tts_render("one small pig") == ("one small pig", 1.0)
     assert tts_voice("one small pig") == ("bf_alice", "en-gb")
+    assert tts_voice("Rain rain go away") == ("bf_emma", "en-gb")
+    assert tts_render("Rain rain go away") == ("rain rain go away", 0.90)
