@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <rect width="120" height="120" rx="28" fill="#fffaf2"/>
+  <!-- Question mark  not the default star placeholder -->
+  <circle cx="60" cy="60" r="38" fill="#7ec8e8"/>
+  <text x="60" y="78" text-anchor="middle" font-family="Georgia, serif"
+        font-size="56" font-weight="700" fill="#1a4a66">?</text>
+</svg>

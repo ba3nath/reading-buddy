@@ -52,6 +52,7 @@ ALIASES: dict[str, set[str]] = {
     "sun": {"sun", "son"},
     "your": {"your", "yours"},
     "chair": {"chair", "chairs"},
+    "car": {"car", "cars"},
     "were": {"were", "where"},
     "truck": {"truck", "track"},
     "three": {"three", "3"},
@@ -129,9 +130,19 @@ def hit_word(word: str, tokens: list[str]) -> bool:
     return bool(set(tokens) & ALIASES.get(word, {word}))
 
 
+def clean_hit(word: str, tokens: list[str]) -> bool:
+    """True when Whisper heard only the target (no 'Who what?' / 'A sheep')."""
+    aliases = ALIASES.get(word, {word})
+    if len(tokens) != 1:
+        return False
+    tok = tokens[0]
+    return tok in aliases or tok.rstrip("s") in aliases
+
+
 def filler_count(word: str, tokens: list[str]) -> int:
-    fillers = {"the", "a", "an", "and"} - {word}
-    return sum(1 for t in tokens if t in fillers)
+    """Count non-target tokens (junk kids hear around the word)."""
+    aliases = ALIASES.get(word, {word})
+    return sum(1 for t in tokens if t not in aliases and t.rstrip("s") not in aliases)
 
 
 def candidates(word: str) -> list[tuple[str, float, str]]:
@@ -147,8 +158,16 @@ def candidates(word: str) -> list[tuple[str, float, str]]:
         (word, 1.0),
         (f"{word}?", 0.92),
     ]
+    # Prefer British voices; fall back to a few US voices for stubborn words.
+    voices: list[str] = [
+        *VOICES,
+        "af_alloy",
+        "af_bella",
+        "af_heart",
+        "am_adam",
+    ]
     out: list[tuple[str, float, str]] = []
-    for voice in VOICES:
+    for voice in voices:
         for spoken, speed in spoken_speeds:
             if spoken_matches_target(word, spoken):
                 out.append((spoken, speed, voice))
@@ -284,8 +303,13 @@ def cmd_ab_tune(args: argparse.Namespace) -> int:
             best: dict | None = None
             print(f"\n=== {word} ===", flush=True)
             for spoken, speed, voice in candidates(word):
+                lang = (
+                    "en-us"
+                    if str(voice).startswith(("af_", "am_"))
+                    else config.KOKORO_LANG
+                )
                 samples, sr = kokoro.create(
-                    spoken, voice=voice, speed=speed, lang=config.KOKORO_LANG
+                    spoken, voice=voice, speed=speed, lang=lang
                 )
                 raw = tmp_path / "r.wav"
                 out_wav = tmp_path / "o.wav"
@@ -293,6 +317,7 @@ def cmd_ab_tune(args: argparse.Namespace) -> int:
                 postprocess_generated_wav(raw, out_wav)
 
                 hits = 0
+                clean = 0
                 filler_hits = 0
                 samples_h: list[str] = []
                 for _ in range(args.passes):
@@ -301,31 +326,43 @@ def cmd_ab_tune(args: argparse.Namespace) -> int:
                     t = toks(u)
                     if hit_word(word, t):
                         hits += 1
+                    if clean_hit(word, t):
+                        clean += 1
                     filler_hits += filler_count(word, t)
 
+                # Prefer clean single-token clips over "Who what?" style hits.
+                lang_bonus = 1 if voice.startswith(("bf_", "bm_")) else 0
                 score = (
-                    hits * 10
-                    - filler_hits * 2
-                    + (1 if voice == "bf_emma" else 0)
+                    clean * 20
+                    + hits * 5
+                    - filler_hits * 3
+                    + lang_bonus
                 )
-                if hits >= 2:
+                if clean >= 2 or hits >= 2:
                     print(
                         f"  {spoken!r:10} {speed} {voice:12} "
-                        f"hits={hits}/{args.passes} filler={filler_hits} {samples_h}",
+                        f"clean={clean}/{args.passes} hits={hits}/{args.passes} "
+                        f"junk={filler_hits} {samples_h}",
                         flush=True,
                     )
                 rec = {
                     "score": score,
                     "hits": hits,
+                    "clean": clean,
                     "filler": filler_hits,
                     "spoken": spoken,
                     "speed": speed,
                     "voice": voice,
+                    "lang": (
+                        "en-us"
+                        if voice.startswith(("af_", "am_"))
+                        else config.KOKORO_LANG
+                    ),
                     "samples": samples_h,
                 }
                 if best is None or rec["score"] > best["score"]:
                     best = rec
-                    if hits == args.passes and filler_hits == 0:
+                    if clean == args.passes:
                         print(
                             f"  early perfect {spoken!r} {speed} {voice}",
                             flush=True,
@@ -335,15 +372,17 @@ def cmd_ab_tune(args: argparse.Namespace) -> int:
             winners[word] = best
             print(
                 f"  >> WIN {best['spoken']!r} {best['speed']} {best['voice']} "
-                f"hits={best['hits']}/{args.passes} filler={best['filler']}",
+                f"clean={best.get('clean', 0)}/{args.passes} "
+                f"hits={best['hits']}/{args.passes} junk={best['filler']}",
                 flush=True,
             )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(winners, indent=2) + "\n", encoding="utf-8")
-    good = sum(1 for b in winners.values() if b["hits"] >= 2)
+    good = sum(1 for b in winners.values() if int(b.get("clean") or 0) >= 2)
     print(
-        f"\nSUMMARY winners with >=2/{args.passes}: {good}/{len(winners)} → {args.out}",
+        f"\nSUMMARY clean winners (>=2/{args.passes} single-token): "
+        f"{good}/{len(winners)} → {args.out}",
         flush=True,
     )
     return 0
@@ -423,10 +462,18 @@ def cmd_apply_winners(args: argparse.Namespace) -> int:
                 f"Refusing carrier for {word!r}: spoken={spoken!r}"
             )
         words[word] = (spoken, speed)
-        if voice == DEFAULT_VOICE:
+        lang = str(
+            rec.get("lang")
+            or (
+                "en-us"
+                if str(voice).startswith(("af_", "am_"))
+                else "en-gb"
+            )
+        )
+        if voice == DEFAULT_VOICE and lang == config.KOKORO_LANG:
             voices.pop(word, None)
         else:
-            voices[word] = (voice, "en-gb")
+            voices[word] = (voice, lang)
         applied.append(word)
 
     new_src = WORD_OVERRIDE_RE.sub(
