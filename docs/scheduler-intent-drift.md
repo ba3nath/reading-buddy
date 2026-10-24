@@ -25,11 +25,23 @@ Written after the “every set starts with cat” bug. Intent is the product con
 
 4. **Weak stage test** — `test_queue_stays_inside_current_and_earlier_sets` only required `>= 1` overlap; would pass the cat bug. Tightened to opener-in-set + ≥4 from set + no later sets.
 
+## Roles (unlock vs set-pick vs map)
+
+| Layer | Owns | Does not |
+| --- | --- | --- |
+| **Pattern unlock (~80%)** | Which *new* ladder patterns may appear in earlier-review padding | Which set the child practises today |
+| **Set picker** | Current-set membership for opener + primary fill | Long-term spacing intervals |
+| **Leitner box / gaps** | When an item is due (`next_review_on`) | Order among due items |
+| **Phonics map + plan** (`app/coach/`) | Order among due / earlier rows (weak skills first) | Leaving the chosen set; replacing Leitner |
+
+Map bias stays inside `stage ∪ earlier` (same set-scoped rules as above).
+
 ## Remaining intentional tensions
 
 - **Dual unlock models:** stage pick vs mastery ladder. Stage pick wins for the current set; ladder still matters for review padding and future auto-advance.
 - **Closer slot:** last item may still be earlier review if the set is short; tests allow ≤1 Set‑1 item when Set 1 is all due.
 - **Set 1 opener may still be `cat`** — that is correct when `cat` is in Set 1 and easiest there.
+- **Same-day box guard:** at most one Leitner box advance per item per calendar day (correct_count still increments).
 
 ## Drift pass follow-ups (fixed)
 

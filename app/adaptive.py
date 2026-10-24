@@ -183,12 +183,13 @@ def apply_day_ladder(
         )
         return
 
-    # correct
+    # correct — at most one Leitner box advance per calendar day (Phase 6).
     days = json.loads(row["days_json"] or "[]")
-    if today_s not in days:
+    already_today = today_s in days
+    if not already_today:
         days.append(today_s)
     correct_count = int(row["correct_count"]) + 1
-    new_box = min(5, box + 1)
+    new_box = box if already_today else min(5, box + 1)
     distinct_days = len(set(days))
     # Mastered = box >= 4 with passes on separate days (Phase 2).
     mastered = (
@@ -723,6 +724,15 @@ def _build_scheduler_v2_queue(
         """,
         (*content_levels, today),
     ).fetchall()
+    # Bias review toward weak phonics skills (Phase 6 map) without leaving the set.
+    from app.coach.map import weak_item_ids
+    from app.coach.plan import prefer_rows
+
+    try:
+        weak_ids = weak_item_ids(conn)
+        due = prefer_rows(due, weak_ids)
+    except Exception:  # noqa: BLE001 — queue must still build if map fails
+        weak_ids = []
     # This set first (due + curriculum order), then earlier review — never let
     # Set 1 due-reviews crowd out the set the child just picked.
     _take(due, id_filter=stage_ids, require_pattern=False, stop_at=fill_cap)
@@ -735,6 +745,8 @@ def _build_scheduler_v2_queue(
         stop_at=fill_cap,
     )
     earlier_rows = [r for r in tier_rows if int(r["id"]) in earlier_ids]
+    if weak_ids:
+        earlier_rows = prefer_rows(earlier_rows, weak_ids)
     _take(
         earlier_rows,
         require_pattern=True,

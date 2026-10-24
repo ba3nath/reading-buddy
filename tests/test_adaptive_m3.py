@@ -406,12 +406,18 @@ def test_day_ladder_and_mastery(tmp_env):
     )
     conn.commit()
     apply_day_ladder(conn, item_id, "correct")
+    # Simulate prior days so each correct can advance the box (one bump / day).
     conn.execute(
         "UPDATE mastery SET days_json=? WHERE item_id=?",
         (json.dumps(["2020-01-01"]), item_id),
     )
     conn.commit()
     apply_day_ladder(conn, item_id, "correct")
+    conn.execute(
+        "UPDATE mastery SET days_json=? WHERE item_id=?",
+        (json.dumps(["2020-01-01", "2020-01-02"]), item_id),
+    )
+    conn.commit()
     apply_day_ladder(conn, item_id, "correct")
     row = conn.execute("SELECT * FROM mastery WHERE item_id=?", (item_id,)).fetchone()
     assert int(row["box"]) >= 4
