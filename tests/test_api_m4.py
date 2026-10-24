@@ -37,7 +37,8 @@ def test_parent_json_routes(client):
 
 def test_sounds_note(client):
     body = client.get("/api/parent/sounds").json()
-    assert body["note"] == SOUND_NOTE
+    assert body["note"].startswith(SOUND_NOTE)
+    assert "independent" in body["note"].lower()
     assert "tags" in body
 
 

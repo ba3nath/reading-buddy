@@ -369,14 +369,22 @@ def kokoro_ready() -> bool:
 
 
 def whisper_files_ready() -> bool:
-    """True when a local Whisper small.en tree exists under ``models/``."""
+    """True when a non-empty Whisper ``model.bin`` exists under ``models/``.
+
+    Empty dirs / partial downloads (config only) do not count as ready.
+    """
     local = config.MODELS_DIR / "whisper-small.en"
-    if local.is_dir() and any(local.iterdir()):
-        return True
+    if local.is_dir():
+        for bin_path in local.rglob("model.bin"):
+            if bin_path.is_file() and bin_path.stat().st_size > 0:
+                return True
     # faster-whisper / HF hub layout under download_root
     for path in config.MODELS_DIR.glob("models--*whisper*"):
-        if path.is_dir() and any(path.rglob("model.bin")):
-            return True
+        if not path.is_dir():
+            continue
+        for bin_path in path.rglob("model.bin"):
+            if bin_path.is_file() and bin_path.stat().st_size > 0:
+                return True
     for path in config.MODELS_DIR.glob("**/faster-whisper-small.en/**/model.bin"):
         if path.is_file() and path.stat().st_size > 0:
             return True

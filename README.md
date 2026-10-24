@@ -137,7 +137,7 @@ python test-coverage/check.py --phase runner
 - Tablets on Wi‑Fi need `./run --lan` (default is this computer only).  
 - Parent CSV zip is analytics; use `./run --backup` to restore progress + voice clips.  
 - Mini story coach packs are planned later; the Stories tier already works.  
-- See `CHANGELOG.md` for the 0.2.0 platform matrix.
+- See `CHANGELOG.md` for the 0.2.0 platform matrix and open debt.
 
 ## Layout
 

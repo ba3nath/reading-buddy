@@ -46,7 +46,7 @@ def test_skill_map_from_events(tmp_env):
         sight_word=False,
         result="missed",
         counts_for_mastery=True,
-        meta={"outcome": "missed"},
+        meta={"outcome": "incorrect"},
     )
     log_event(
         conn,
@@ -66,6 +66,28 @@ def test_skill_map_from_events(tmp_env):
     assert item["pattern"] in weak
     ids = weak_item_ids(conn, limit=10)
     assert int(item["id"]) in ids
+
+
+def test_skill_map_provisional_again_is_miss_not_uncertain(tmp_env):
+    """Second-chance is stored as result=retry but meta.outcome=incorrect."""
+    conn = tmp_env["conn"]
+    item = conn.execute(
+        "SELECT id, pattern FROM items WHERE pattern='cvc-a' LIMIT 1"
+    ).fetchone()
+    log_event(
+        conn,
+        session_id=None,
+        item_id=int(item["id"]),
+        pattern=item["pattern"],
+        sight_word=False,
+        result="retry",
+        counts_for_mastery=False,
+        meta={"outcome": "incorrect", "again": True, "reason_code": "reading_mismatch"},
+    )
+    sm = skill_map(conn, days=30)[item["pattern"]]
+    assert sm["misses"] >= 1
+    assert sm["uncertain"] == 0
+    assert sm["status"] == "needs_practice"
 
 
 def test_prefer_rows_orders_by_weak_ids():

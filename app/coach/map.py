@@ -64,10 +64,23 @@ def skill_map(conn: sqlite3.Connection, *, days: int = 30) -> dict[str, dict[str
         meta = _meta(row["meta_json"] if "meta_json" in row.keys() else None)
         outcome = str(meta.get("outcome") or "")
         assisted = bool(meta.get("assisted"))
+        again = bool(meta.get("again"))
+        reason = str(meta.get("reason_code") or "")
         result = str(row["result"] or "")
         mastery = int(row["counts_for_mastery"] or 0) == 1
 
-        if outcome == "uncertain" or result == "retry":
+        # Prefer outcome flags: provisional second-chance is logged as result=retry
+        # but meta.outcome stays incorrect — never treat that as ASR fog.
+        if outcome in ("silence", "uncertain"):
+            bucket["uncertain"] += 1
+            continue
+        if again or outcome == "incorrect":
+            if result == "close" or reason == "soft_mismatch":
+                bucket["assisted_ok"] += 1
+            else:
+                bucket["misses"] += 1
+            continue
+        if result == "retry":
             bucket["uncertain"] += 1
             continue
         if result == "missed":

@@ -74,7 +74,6 @@ def accuracy_by_day(conn, *, days: int = 30) -> dict[str, Any]:
                ) AS independent_correct,
                SUM(
                  CASE WHEN result = 'correct' AND counts_for_mastery = 0
-                       AND instr(meta_json, '"assisted": true') > 0
                  THEN 1 ELSE 0 END
                ) AS assisted_correct,
                SUM(
@@ -276,12 +275,17 @@ def tricky_words(conn) -> dict[str, Any]:
 
 
 def sound_heatmap(conn) -> dict[str, Any]:
+    """Sound accuracy from events — independent corrects only (not assisted)."""
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
     rows = conn.execute(
         """
-        SELECT i.sound_tags, a.result
-        FROM attempts a
-        JOIN items i ON i.id = a.item_id
-        WHERE a.is_replay = 0 AND a.result != 'retry'
+        SELECT i.sound_tags, e.result, e.counts_for_mastery
+        FROM events e
+        JOIN items i ON i.id = e.item_id
+        WHERE e.phase != 'replay'
+          AND e.result IN ('correct', 'close', 'missed')
         """
     ).fetchall()
     tallies: dict[str, dict[str, int]] = {}
@@ -289,28 +293,36 @@ def sound_heatmap(conn) -> dict[str, Any]:
         tags = json.loads(row["sound_tags"] or "[]")
         if not tags:
             continue
+        independent = (
+            row["result"] == "correct" and int(row["counts_for_mastery"] or 0) == 1
+        )
         for tag in tags:
             bucket = tallies.setdefault(tag, {"correct": 0, "scored": 0})
             bucket["scored"] += 1
-            if row["result"] == "correct":
+            if independent:
                 bucket["correct"] += 1
     tags_out = [
         {"tag": tag, "correct": v["correct"], "scored": v["scored"]}
         for tag, v in sorted(tallies.items(), key=lambda kv: (-kv[1]["scored"], kv[0]))
     ]
-    return {"tags": tags_out, "note": SOUND_NOTE}
+    return {
+        "tags": tags_out,
+        "note": SOUND_NOTE + " Correct% uses independent reads only.",
+    }
 
 
 def pattern_heatmap(conn) -> dict[str, Any]:
-    """Accuracy by grapheme pattern (curriculum key; separate from sound_tags)."""
-    from app.events import known_ratio_by_pattern
+    """Accuracy by grapheme pattern — independent corrects only (not assisted)."""
+    from app.events import ensure_events_table, known_ratio_by_pattern
 
+    ensure_events_table(conn)
     rows = conn.execute(
         """
-        SELECT i.pattern AS pattern, a.result
-        FROM attempts a
-        JOIN items i ON i.id = a.item_id
-        WHERE a.is_replay = 0 AND a.result != 'retry'
+        SELECT i.pattern AS pattern, e.result, e.counts_for_mastery
+        FROM events e
+        JOIN items i ON i.id = e.item_id
+        WHERE e.phase != 'replay'
+          AND e.result IN ('correct', 'close', 'missed')
           AND i.pattern IS NOT NULL AND i.pattern != ''
         """
     ).fetchall()
@@ -319,7 +331,7 @@ def pattern_heatmap(conn) -> dict[str, Any]:
         pat = str(row["pattern"])
         bucket = tallies.setdefault(pat, {"correct": 0, "scored": 0})
         bucket["scored"] += 1
-        if row["result"] == "correct":
+        if row["result"] == "correct" and int(row["counts_for_mastery"] or 0) == 1:
             bucket["correct"] += 1
     known = known_ratio_by_pattern(conn)
     patterns = [
@@ -335,7 +347,10 @@ def pattern_heatmap(conn) -> dict[str, Any]:
     ]
     return {
         "patterns": patterns,
-        "note": "Pattern is the phonics curriculum key. Practise the lowest known_ratio next.",
+        "note": (
+            "Pattern is the phonics curriculum key. Correct% is independent only; "
+            "practise the lowest known_ratio next."
+        ),
     }
 
 

@@ -292,6 +292,8 @@ def test_models_ready_requires_kokoro_and_whisper(tmp_path, monkeypatch):
     whisper = tmp_path / "whisper-small.en"
     whisper.mkdir()
     (whisper / "config.json").write_text("{}", encoding="utf-8")
+    assert runner.whisper_files_ready() is False  # config alone ≠ ready
+    (whisper / "model.bin").write_bytes(b"weights")
     assert runner.whisper_files_ready() is True
     assert runner.models_ready() is True
 
