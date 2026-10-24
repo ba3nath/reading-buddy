@@ -128,6 +128,26 @@ def delete_quiet(*paths: Path | None) -> None:
             pass
 
 
+def sweep_temp_dir(*, keep_names: frozenset[str] | None = None) -> int:
+    """Remove orphaned mic temps under ``data/tmp`` (e.g. after a crash).
+
+    Keeps warmup silence by default so lifespan can reuse it.
+    """
+    keep = keep_names if keep_names is not None else frozenset({"warmup-silence.wav"})
+    if not config.TEMP_DIR.is_dir():
+        return 0
+    removed = 0
+    for path in config.TEMP_DIR.iterdir():
+        if not path.is_file() or path.name in keep:
+            continue
+        try:
+            path.unlink()
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
 def resolve_audio_slug(slug: str) -> Path | None:
     """Prefer human override, else generated. Returns path or None."""
     if not slug or "/" in slug or "\\" in slug or ".." in slug:

@@ -43,8 +43,10 @@ def test_readme_documents_runner():
     assert "launchctl" in README
     assert "--force-audio" in README
     assert "--localhost-only" in README
+    assert "--lan" in README
     assert "--force-deps" in README
     assert "0.0.0.0" in README
+    assert "127.0.0.1" in README
     assert (ROOT / "run").is_file()
 
 

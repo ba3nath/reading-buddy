@@ -1,0 +1,253 @@
+[
+  {
+    "id": "cat-exact-beg",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "cat",
+    "word_confidences": [0.95],
+    "reading_label": "reading_ok",
+    "bucket": "cvc",
+    "baseline_result": "correct"
+  },
+  {
+    "id": "cat-exact-strict",
+    "mode": "strict",
+    "target_text": "cat",
+    "heard_text": "cat",
+    "word_confidences": [0.95],
+    "reading_label": "reading_ok",
+    "bucket": "cvc",
+    "baseline_result": "correct"
+  },
+  {
+    "id": "cat-plural-beg",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "cats",
+    "word_confidences": [0.94],
+    "reading_label": "reading_ok",
+    "bucket": "cvc",
+    "baseline_result": "correct"
+  },
+  {
+    "id": "cat-plural-strict",
+    "mode": "strict",
+    "target_text": "cat",
+    "heard_text": "cats",
+    "word_confidences": [0.94],
+    "reading_label": "reading_ok",
+    "bucket": "cvc",
+    "baseline_result": "missed",
+    "notes": "Strict does not forgive plural; known FN risk if parents expect plural OK"
+  },
+  {
+    "id": "cat-dog-beg",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "dog",
+    "word_confidences": [0.92],
+    "reading_label": "reading_mistake",
+    "bucket": "cvc",
+    "baseline_result": "missed"
+  },
+  {
+    "id": "cat-dog-strict",
+    "mode": "strict",
+    "target_text": "cat",
+    "heard_text": "dog",
+    "word_confidences": [0.92],
+    "reading_label": "reading_mistake",
+    "bucket": "cvc",
+    "baseline_result": "missed"
+  },
+  {
+    "id": "cat-cot-beg",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "cot",
+    "word_confidences": [0.9],
+    "reading_label": "reading_mistake",
+    "bucket": "cvc",
+    "baseline_result": "close"
+  },
+  {
+    "id": "ship-chip-beg",
+    "mode": "beginner",
+    "target_text": "ship",
+    "heard_text": "chip",
+    "word_confidences": [0.91],
+    "reading_label": "reading_mistake",
+    "bucket": "digraph",
+    "baseline_result": "close"
+  },
+  {
+    "id": "ship-chip-strict",
+    "mode": "strict",
+    "target_text": "ship",
+    "heard_text": "chip",
+    "word_confidences": [0.91],
+    "reading_label": "reading_mistake",
+    "bucket": "digraph",
+    "baseline_result": "missed"
+  },
+  {
+    "id": "sit-sat-beg",
+    "mode": "beginner",
+    "target_text": "sit",
+    "heard_text": "sat",
+    "word_confidences": [0.9],
+    "reading_label": "reading_mistake",
+    "bucket": "cvc",
+    "baseline_result": "close"
+  },
+  {
+    "id": "silence-forced",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "",
+    "word_confidences": [],
+    "force_retry": true,
+    "reading_label": "silence",
+    "bucket": "silence",
+    "baseline_result": "retry"
+  },
+  {
+    "id": "silence-empty-heard",
+    "mode": "beginner",
+    "target_text": "cat",
+    "heard_text": "",
+    "word_confidences": [],
+    "reading_label": "silence",
+    "bucket": "silence",
+    "baseline_result": "retry"
+  },
+  {
+    "id": "all-low-garbage-beg",
+    "mode": "beginner",
+    "target_text": "ship",
+    "heard_text": "zzz",
+    "word_confidences": [0.1],
+    "reading_label": "asr_uncertain",
+    "bucket": "soft_conf",
+    "baseline_result": "retry"
+  },
+  {
+    "id": "low-conf-exact-strict",
+    "mode": "strict",
+    "target_text": "cat",
+    "heard_text": "cat",
+    "word_confidences": [0.2],
+    "reading_label": "reading_ok",
+    "bucket": "soft_conf",
+    "baseline_result": "close",
+    "notes": "Strict soft-conf on exact match → close, not missed (soft path)"
+  },
+  {
+    "id": "punct-normalize-beg",
+    "mode": "beginner",
+    "target_text": "Cat!",
+    "heard_text": "cat",
+    "word_confidences": [0.93],
+    "reading_label": "reading_ok",
+    "bucket": "normalize",
+    "baseline_result": "correct"
+  },
+  {
+    "id": "function-drop-phrase-beg",
+    "mode": "beginner",
+    "target_text": "the cat",
+    "heard_text": "cat",
+    "word_confidences": [0.9],
+    "reading_label": "reading_ok",
+    "bucket": "phrase",
+    "baseline_result": "correct"
+  },
+  {
+    "id": "big-red-bus-omit-beg",
+    "mode": "beginner",
+    "target_text": "a big red bus",
+    "heard_text": "a big red",
+    "word_confidences": [0.95, 0.94, 0.93],
+    "reading_label": "reading_mistake",
+    "bucket": "phrase",
+    "baseline_result": "missed",
+    "source_fixture": "big-red-bus"
+  },
+  {
+    "id": "fox-content-miss-beg",
+    "mode": "beginner",
+    "target_text": "Quick brown fox jumped over the box",
+    "heard_text": "Quick down fox jump over the dox",
+    "word_confidences": [0.95, 0.91, 0.94, 0.9, 0.93, 0.96, 0.88],
+    "reading_label": "reading_mistake",
+    "bucket": "phrase",
+    "baseline_result": "missed",
+    "source_fixture": "fox-beginner"
+  },
+  {
+    "id": "fox-content-miss-strict",
+    "mode": "strict",
+    "target_text": "Quick brown fox jumped over the box",
+    "heard_text": "Quick down fox jump over the dox",
+    "word_confidences": [0.95, 0.91, 0.94, 0.9, 0.93, 0.96, 0.88],
+    "reading_label": "reading_mistake",
+    "bucket": "phrase",
+    "baseline_result": "missed",
+    "source_fixture": "fox-strict"
+  },
+  {
+    "id": "story-function-drops-beg",
+    "mode": "beginner",
+    "target_text": "The big dog ran to the cat.",
+    "heard_text": "big dog ran to cat",
+    "word_confidences": [0.95, 0.94, 0.93, 0.92, 0.91],
+    "reading_label": "reading_ok",
+    "bucket": "story",
+    "baseline_result": "correct",
+    "source_fixture": "story-line-function-drops"
+  },
+  {
+    "id": "story-content-miss-beg",
+    "mode": "beginner",
+    "target_text": "The big dog ran to the cat.",
+    "heard_text": "big fox ran to cat",
+    "word_confidences": [0.95, 0.94, 0.93, 0.92, 0.91],
+    "reading_label": "reading_mistake",
+    "bucket": "story",
+    "baseline_result": "missed",
+    "source_fixture": "story-line-content-miss"
+  },
+  {
+    "id": "humpty-content-miss-beg",
+    "mode": "beginner",
+    "target_text": "Could not put Humpty together again",
+    "heard_text": "Could not put dumpty together again",
+    "word_confidences": [0.95, 0.95, 0.95, 0.95, 0.95, 0.95],
+    "reading_label": "reading_mistake",
+    "bucket": "rhyme",
+    "baseline_result": "missed",
+    "source_fixture": "humpty-dumpty-beginner"
+  },
+  {
+    "id": "jill-hill-beg",
+    "mode": "beginner",
+    "target_text": "Jill",
+    "heard_text": "hill",
+    "word_confidences": [0.95],
+    "reading_label": "reading_mistake",
+    "bucket": "rhyme",
+    "baseline_result": "missed",
+    "source_fixture": "jill-hill-beginner"
+  },
+  {
+    "id": "strict-exact-multiword-soft-mean",
+    "mode": "strict",
+    "target_text": "hickory dickory dock",
+    "heard_text": "hickory dickory dock",
+    "word_confidences": [0.55, 0.52, 0.6],
+    "reading_label": "reading_ok",
+    "bucket": "soft_conf",
+    "baseline_result": "correct",
+    "notes": "Mean conf above STRICT_MULTIWORD_EXACT_MIN_MEAN"
+  }
+]

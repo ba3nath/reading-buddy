@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "notes": "Phase 5a budgets against labeled reading intent. Raise only with an explicit matching change review (Phase 5c).",
+  "overall": {
+    "max_false_accept_rate": 0.0,
+    "max_false_reject_rate": 0.15,
+    "max_baseline_drift": 0
+  },
+  "by_mode": {
+    "beginner": {
+      "max_false_accept_rate": 0.0,
+      "max_false_reject_rate": 0.05
+    },
+    "strict": {
+      "max_false_accept_rate": 0.0,
+      "max_false_reject_rate": 0.25
+    }
+  }
+}

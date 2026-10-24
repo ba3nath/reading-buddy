@@ -24,6 +24,7 @@ from app.audio_files import (
     load_or_build_timings,
     new_temp_paths,
     resolve_audio_slug,
+    sweep_temp_dir,
     wav_duration_and_rms,
     write_bytes,
 )
@@ -83,6 +84,9 @@ def error_body(code: str, message: str) -> dict[str, Any]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config.ensure_dirs()
+    swept = sweep_temp_dir()
+    if swept:
+        logger.info("Removed %s orphaned temp audio file(s)", swept)
     conn = get_conn()
     init_schema(conn)
     count = upsert_items_from_json(conn)

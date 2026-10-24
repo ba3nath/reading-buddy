@@ -36,6 +36,6 @@ An item is **known** when `mastery.box >= 2` or `mastery.mastered = 1`. Pattern 
 4. Read-along timings JSON + parent voice upload + effort stars for locking correct/close.
 5. Stories rewritten so early-ladder audit is clean (`docs/story-decodability.md`); backup includes `audio/human/`.
 
-## Still later (Phases 4–5)
+## Still later
 
-Mini-rounds, story comprehension checks, fluency charts, weekly printable summary, parent custom word lists.
+See **`docs/roadmap-full.md`** (Phases 4–10): reliability & family install, speech outcomes & benchmark, phonics map & mastery evidence, graduated hints & child UX, parent report, story mode & adventures, family release. Legacy notes (mini-rounds, fluency charts, weekly printable, parent custom lists) fold into those phases where relevant.

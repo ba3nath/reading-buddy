@@ -22,18 +22,20 @@ The runner will:
 ```text
 This computer:  http://127.0.0.1:8765
 Parent page:    http://127.0.0.1:8765/parent
-Same Wi‑Fi:     http://192.168.x.x:8765
 ```
+
+With `./run --lan`, a Wi‑Fi device line is also printed (e.g. `http://192.168.x.x:8765`).
 
 Use Chrome or Edge (needed for the microphone).
 
 | Command | What it does |
 | --- | --- |
-| `./run` | Bootstrap + audio if needed + restart |
+| `./run` | Bootstrap + audio if needed + restart (binds localhost) |
 | `./run --stop` | Stop the server |
 | `./run --force-audio` | Rebuild all listen clips |
 | `./run --force-deps` | Re-run `pip install -r requirements.txt` |
-| `./run --localhost-only` | Bind `127.0.0.1` only (no phone/tablet) |
+| `./run --lan` | Bind `0.0.0.0` so a phone/tablet on Wi‑Fi can connect |
+| `./run --localhost-only` | Same as default bind (kept for older scripts) |
 | `./run --foreground` | Keep uvicorn in this terminal |
 
 On macOS, the default start path installs a LaunchAgent via `launchctl` (`com.readingbuddy.server`) so the app can come back after reboot. Elsewhere, uvicorn runs in the foreground unless you pass `--background`.
@@ -83,6 +85,8 @@ After that, day-to-day is just `./run`.
 - **Beginner** — forgiving on short slips; drops of tiny words (`the`, `a`, `to`, …) on longer lines do not fail a clear reading.  
 - **Strict** — needs the full word sequence. Exact multi-word lines use mean Whisper confidence (nursery words like *hickory* are often soft), so a correct reading is not failed by one low token score.
 
+Whisper estimates what was spoken; it is not a definitive reading assessment. Labeled FP/FN for both modes live under `eval/matching/` (`python scripts/eval_matching_benchmark.py`).
+
 ## Offline play
 
 After models and clips exist, the network can be off. `./run` sets `HF_HUB_OFFLINE=1` for the server. Manual equivalent:
@@ -90,7 +94,8 @@ After models and clips exist, the network can be off. `./run` sets `HF_HUB_OFFLI
 ```bash
 source .venv/bin/activate
 export HF_HUB_OFFLINE=1
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8765
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+# Wi‑Fi devices: use --host 0.0.0.0 (same as ./run --lan)
 ```
 
 ## Optional / advanced
@@ -123,7 +128,7 @@ python test-coverage/check.py --phase runner
 - Temp mic audio is deleted after scoring.  
 - `keep_audio` defaults to off; when on, wavs go to `data/kept/{attempt_id}.wav` for the parent page.  
 - SQLite stores transcripts and results, never audio bytes.  
-- Default bind is `0.0.0.0` so a tablet on Wi‑Fi works; use `./run --localhost-only` for loopback only.  
+- Default bind is `127.0.0.1` (this computer only). Use `./run --lan` for a tablet on Wi‑Fi.  
 - No visible timers, no lost stars or garden growth, no red fail screens, no buzzers.
 
 ## Layout

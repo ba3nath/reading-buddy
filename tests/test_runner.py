@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 import runner
 from app import config
 
@@ -57,8 +59,47 @@ def test_launchd_plist_body_contains_uvicorn_bind():
 def test_parse_args_localhost_only_and_force_deps():
     args = runner.parse_args(["--localhost-only", "--force-deps", "--skip-deps"])
     assert args.localhost_only
+    assert not args.lan
     assert args.force_deps
     assert args.skip_deps
+    assert runner.resolve_bind_host(args) == "127.0.0.1"
+
+
+def test_default_bind_is_localhost():
+    args = runner.parse_args([])
+    assert not args.lan
+    assert not args.localhost_only
+    assert runner.resolve_bind_host(args) == "127.0.0.1"
+
+
+def test_lan_bind_opens_all_interfaces():
+    args = runner.parse_args(["--lan"])
+    assert args.lan
+    assert runner.resolve_bind_host(args) == "0.0.0.0"
+
+
+def test_lan_and_localhost_only_are_mutually_exclusive():
+    with pytest.raises(SystemExit):
+        runner.parse_args(["--lan", "--localhost-only"])
+
+
+def test_free_port_handles_missing_lsof(monkeypatch):
+    def boom(*_a, **_k):  # noqa: ANN001
+        raise FileNotFoundError("lsof")
+
+    monkeypatch.setattr(runner.subprocess, "run", boom)
+    runner._free_port()  # must not raise
+
+
+def test_stop_all_warns_when_port_still_healthy(monkeypatch, capsys):
+    monkeypatch.setattr(runner, "stop_launchd", lambda: None)
+    monkeypatch.setattr(runner, "stop_pidfile", lambda: None)
+    monkeypatch.setattr(runner, "_free_port", lambda: None)
+    monkeypatch.setattr(runner.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(runner, "health_ok", lambda timeout=0.5: True)
+    runner.stop_all()
+    out = capsys.readouterr().out
+    assert "still answering on port" in out
 
 
 def test_find_system_python_returns_usable_interpreter():
@@ -237,13 +278,36 @@ def test_ensure_deps_runs_when_forced(monkeypatch, tmp_path):
     assert stamp["requirements_sha256"] == runner.file_digest(req)
 
 
-def test_models_ready_requires_kokoro_files(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "KOKORO_MODEL_PATH", tmp_path / "m.onnx")
-    monkeypatch.setattr(config, "KOKORO_VOICES_PATH", tmp_path / "v.bin")
+def test_models_ready_requires_kokoro_and_whisper(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "KOKORO_MODEL_PATH", tmp_path / "kokoro" / "m.onnx")
+    monkeypatch.setattr(config, "KOKORO_VOICES_PATH", tmp_path / "kokoro" / "v.bin")
+    monkeypatch.setattr(config, "MODELS_DIR", tmp_path)
     assert runner.models_ready() is False
-    (tmp_path / "m.onnx").write_bytes(b"x")
-    (tmp_path / "v.bin").write_bytes(b"y")
+    (tmp_path / "kokoro").mkdir()
+    (tmp_path / "kokoro" / "m.onnx").write_bytes(b"x")
+    (tmp_path / "kokoro" / "v.bin").write_bytes(b"y")
+    assert runner.kokoro_ready() is True
+    assert runner.whisper_files_ready() is False
+    assert runner.models_ready() is False
+    whisper = tmp_path / "whisper-small.en"
+    whisper.mkdir()
+    (whisper / "config.json").write_text("{}", encoding="utf-8")
+    assert runner.whisper_files_ready() is True
     assert runner.models_ready() is True
+
+
+def test_whisper_files_ready_detects_hf_cache_layout(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "MODELS_DIR", tmp_path)
+    assert runner.whisper_files_ready() is False
+    snap = (
+        tmp_path
+        / "models--Systran--faster-whisper-small.en"
+        / "snapshots"
+        / "abc"
+    )
+    snap.mkdir(parents=True)
+    (snap / "model.bin").write_bytes(b"weights")
+    assert runner.whisper_files_ready() is True
 
 
 def test_lan_ips_returns_list():
@@ -307,6 +371,13 @@ def test_print_ready_banner_mentions_parent_and_stop(capsys):
     assert "127.0.0.1" in out
     assert "/parent" in out
     assert "./run --stop" in out
+
+
+def test_print_ready_banner_localhost_mentions_lan_flag(capsys):
+    runner.print_ready_banner(bind_host="127.0.0.1")
+    out = capsys.readouterr().out
+    assert "--lan" in out
+    assert "Same Wi‑Fi" not in out
 
 
 def test_main_stop_returns_zero(monkeypatch):

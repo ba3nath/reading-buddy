@@ -8,11 +8,11 @@ Typical use (from the repo root):
     python3 runner.py --stop
     python3 runner.py --foreground
     python3 runner.py --force-audio
-    python3 runner.py --localhost-only
+    python3 runner.py --lan
 
 Creates/uses ``.venv``, installs requirements when they change, downloads
 models if missing, regenerates listen clips when needed, restarts the server,
-and prints localhost + LAN URLs.
+and prints URLs. Default bind is localhost; pass ``--lan`` for Wi‑Fi devices.
 """
 
 from __future__ import annotations
@@ -359,7 +359,7 @@ def ensure_deps(*, force: bool = False) -> bool:
     return True
 
 
-def models_ready() -> bool:
+def kokoro_ready() -> bool:
     return (
         config.KOKORO_MODEL_PATH.is_file()
         and config.KOKORO_VOICES_PATH.is_file()
@@ -368,18 +368,51 @@ def models_ready() -> bool:
     )
 
 
+def whisper_files_ready() -> bool:
+    """True when a local Whisper small.en tree exists under ``models/``."""
+    local = config.MODELS_DIR / "whisper-small.en"
+    if local.is_dir() and any(local.iterdir()):
+        return True
+    # faster-whisper / HF hub layout under download_root
+    for path in config.MODELS_DIR.glob("models--*whisper*"):
+        if path.is_dir() and any(path.rglob("model.bin")):
+            return True
+    for path in config.MODELS_DIR.glob("**/faster-whisper-small.en/**/model.bin"):
+        if path.is_file() and path.stat().st_size > 0:
+            return True
+    return False
+
+
+def models_ready() -> bool:
+    """Kokoro listen clips + Whisper ASR weights both present (non-empty)."""
+    return kokoro_ready() and whisper_files_ready()
+
+
 def ensure_models() -> bool:
     """Download Whisper + Kokoro once when model files are missing."""
     if models_ready():
-        # Whisper may still be in HF cache / models/; Kokoro is the hard gate for audio.
         print("Models present — skip download.", flush=True)
         return False
-    print("Downloading models (Whisper + Kokoro) — needs network once…", flush=True)
+    missing = []
+    if not kokoro_ready():
+        missing.append("Kokoro")
+    if not whisper_files_ready():
+        missing.append("Whisper")
+    print(
+        f"Downloading models ({', '.join(missing) or 'Whisper + Kokoro'}) — needs network once…",
+        flush=True,
+    )
     _run([str(_venv_python()), str(ROOT / "scripts" / "download_models.py")])
     if not models_ready():
+        parts = []
+        if not kokoro_ready():
+            parts.append(f"Kokoro at {config.KOKORO_MODEL_PATH}")
+        if not whisper_files_ready():
+            parts.append(f"Whisper under {config.MODELS_DIR}")
         raise RuntimeError(
-            "Model download finished but Kokoro files are still missing. "
-            f"Expected {config.KOKORO_MODEL_PATH}"
+            "Model download finished but files are still missing. "
+            "Run ./run again after checking the network. Expected: "
+            + "; ".join(parts)
         )
     return True
 
@@ -533,6 +566,13 @@ def lan_ips() -> list[str]:
     return found
 
 
+def resolve_bind_host(args: argparse.Namespace) -> str:
+    """Localhost by default; ``--lan`` opens Wi‑Fi. ``--localhost-only`` is a no-op alias."""
+    if bool(getattr(args, "lan", False)):
+        return "0.0.0.0"
+    return "127.0.0.1"
+
+
 def print_ready_banner(*, bind_host: str) -> None:
     port = config.PORT
     print("", flush=True)
@@ -547,7 +587,7 @@ def print_ready_banner(*, bind_host: str) -> None:
         else:
             print("  Same Wi‑Fi:     (could not detect LAN IP)", flush=True)
     else:
-        print("  (localhost only — pass nothing / omit --localhost-only for Wi‑Fi)", flush=True)
+        print("  (localhost only — pass ./run --lan for phone/tablet on Wi‑Fi)", flush=True)
     print(f"  Health:         {health_url()}", flush=True)
     print("  Stop later:     ./run --stop", flush=True)
     print("", flush=True)
@@ -824,10 +864,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Do not wait for /api/health after start",
     )
-    p.add_argument(
+    net = p.add_mutually_exclusive_group()
+    net.add_argument(
+        "--lan",
+        action="store_true",
+        help="Bind 0.0.0.0 so phones/tablets on Wi‑Fi can connect",
+    )
+    net.add_argument(
         "--localhost-only",
         action="store_true",
-        help="Bind 127.0.0.1 only (no phone/tablet on Wi‑Fi)",
+        help="Bind 127.0.0.1 only (default; kept for older scripts)",
     )
     p.add_argument(
         "--backup",
@@ -886,7 +932,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_audio:
         maybe_regenerate_audio(force=args.force_audio)
 
-    bind_host = "127.0.0.1" if args.localhost_only else "0.0.0.0"
+    bind_host = resolve_bind_host(args)
 
     # Always restart so a git pull + ./run picks up new code.
     print("Restarting server…", flush=True)

@@ -23,12 +23,29 @@ KOKORO_FILES = {
 
 
 def download_file(url: str, dest: Path) -> None:
+    """Download to a ``.partial`` file, then rename — safe to retry after interrupt."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists() and dest.stat().st_size > 0:
+    if dest.is_file() and dest.stat().st_size > 0:
         print(f"  already present: {dest}")
         return
-    print(f"  downloading {url} → {dest}")
-    urllib.request.urlretrieve(url, dest)
+    if dest.is_file() and dest.stat().st_size == 0:
+        dest.unlink(missing_ok=True)
+    partial = dest.with_name(dest.name + ".partial")
+    try:
+        if partial.exists():
+            partial.unlink()
+        print(f"  downloading {url} → {dest}")
+        urllib.request.urlretrieve(url, partial)
+        if not partial.is_file() or partial.stat().st_size <= 0:
+            raise RuntimeError(f"Empty download for {url}")
+        partial.replace(dest)
+    except Exception:
+        if partial.exists():
+            try:
+                partial.unlink()
+            except OSError:
+                pass
+        raise
 
 
 def download_whisper(model_id: str) -> None:
