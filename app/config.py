@@ -8,6 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# Keep in sync with pyproject.toml [project].version
+APP_VERSION = "0.2.0"
+
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
 AUDIO_GENERATED = ROOT / "audio" / "generated"

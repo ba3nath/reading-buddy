@@ -155,7 +155,7 @@ async def unhandled_handler(request: Request, exc: Exception):
 
 
 @app.get("/api/health")
-def health() -> dict[str, bool]:
+def health() -> dict[str, Any]:
     # Additive `audio` flag (M2): all content slugs have human or generated wav.
     audio_ok = False
     try:
@@ -165,6 +165,7 @@ def health() -> dict[str, bool]:
     except Exception:  # noqa: BLE001
         audio_ok = False
     return {
+        "version": config.APP_VERSION,
         "whisper": bool(engine.ready),
         "ffmpeg": ffmpeg_available(),
         "offline": config.is_offline_configured(),

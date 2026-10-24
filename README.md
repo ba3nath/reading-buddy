@@ -131,6 +131,14 @@ python test-coverage/check.py --phase runner
 - Default bind is `127.0.0.1` (this computer only). Use `./run --lan` for a tablet on Wi‑Fi.  
 - No visible timers, no lost stars or garden growth, no red fail screens, no buzzers.
 
+## Known limitations
+
+- Whisper may mis-hear quiet rooms; an “I didn’t catch that” retry is not a reading fail.  
+- Tablets on Wi‑Fi need `./run --lan` (default is this computer only).  
+- Parent CSV zip is analytics; use `./run --backup` to restore progress + voice clips.  
+- Mini story coach packs are planned later; the Stories tier already works.  
+- See `CHANGELOG.md` for the 0.2.0 platform matrix.
+
 ## Layout
 
 | Path | Role |

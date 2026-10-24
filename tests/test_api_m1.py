@@ -14,9 +14,12 @@ def _post_attempt(client, session_id: int, item_id: int, audio_bytes: bytes, *, 
 
 
 def test_health(client):
+    from app import config
+
     res = client.get("/api/health")
     assert res.status_code == 200
     body = res.json()
+    assert body["version"] == config.APP_VERSION
     assert body["whisper"] is True
     assert body["ffmpeg"] is True
     assert body["offline"] is True
