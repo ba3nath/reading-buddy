@@ -28,7 +28,13 @@ from app.audio_files import (
     wav_duration_and_rms,
     write_bytes,
 )
-from app.db import connect, init_schema, load_settings, upsert_items_from_json
+from app.db import (
+    active_item_slugs,
+    connect,
+    init_schema,
+    load_settings,
+    upsert_items_from_json,
+)
 from app.events import pattern_accuracy_by_day
 from app.matching import hypothesis_from_whisper_words, score_attempt
 from app.parent import (
@@ -156,11 +162,12 @@ async def unhandled_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    # Additive `audio` flag (M2): all content slugs have human or generated wav.
+    # Additive `audio` flag (M2): every *active* curriculum slug has a wav.
+    # Retired history rows (removed from items.json) must not block boot.
     audio_ok = False
     try:
         conn = get_conn()
-        slugs = [r["slug"] for r in conn.execute("SELECT slug FROM items").fetchall()]
+        slugs = active_item_slugs(conn)
         audio_ok = bool(slugs) and generated_audio_ready(slugs)
     except Exception:  # noqa: BLE001
         audio_ok = False

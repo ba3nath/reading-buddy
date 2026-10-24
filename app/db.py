@@ -121,6 +121,11 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _ensure_column(conn, "items", "story_id", "TEXT")
     _ensure_column(conn, "items", "pattern", "TEXT NOT NULL DEFAULT ''")
     _ensure_column(conn, "items", "sight_word", "INTEGER NOT NULL DEFAULT 0")
+    # Removed from content/items.json but kept for attempt history.
+    _ensure_column(conn, "items", "retired", "INTEGER NOT NULL DEFAULT 0")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_items_active ON items (retired, level, kind)"
+    )
     _ensure_column(conn, "attempts", "passage", "INTEGER NOT NULL DEFAULT 0")
     _ensure_column(conn, "attempts", "duration_seconds", "REAL")
     _ensure_column(conn, "attempts", "latency_ms", "INTEGER")
@@ -232,6 +237,7 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
     _ensure_column(conn, "items", "story_id", "TEXT")
     _ensure_column(conn, "items", "pattern", "TEXT NOT NULL DEFAULT ''")
     _ensure_column(conn, "items", "sight_word", "INTEGER NOT NULL DEFAULT 0")
+    _ensure_column(conn, "items", "retired", "INTEGER NOT NULL DEFAULT 0")
     path = items_path or config.CONTENT_ITEMS
     with path.open("r", encoding="utf-8") as f:
         payload = json.load(f)
@@ -297,6 +303,11 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
         count += 1
     keep = [raw["slug"] for raw in items]
     placeholders = ",".join("?" * len(keep)) if keep else "''"
+    if keep:
+        conn.execute(
+            f"UPDATE items SET retired = 0 WHERE slug IN ({placeholders})",
+            keep,
+        )
     stale = conn.execute(
         f"SELECT id, slug FROM items WHERE slug NOT IN ({placeholders})",
         keep,
@@ -307,6 +318,11 @@ def upsert_items_from_json(conn: sqlite3.Connection, items_path: Path | None = N
             (row["id"],),
         ).fetchone()
         if used:
+            # Keep the row for history, but never queue or require audio for it.
+            conn.execute(
+                "UPDATE items SET retired = 1 WHERE id = ?",
+                (row["id"],),
+            )
             continue
         conn.execute("DELETE FROM mastery WHERE item_id = ?", (row["id"],))
         conn.execute("DELETE FROM items WHERE id = ?", (row["id"],))
@@ -333,10 +349,24 @@ def get_session(conn: sqlite3.Connection, session_id: int) -> sqlite3.Row | None
 def list_items_for_level(conn: sqlite3.Connection, level: int) -> list[sqlite3.Row]:
     return list(
         conn.execute(
-            "SELECT * FROM items WHERE level = ? ORDER BY id ASC",
+            """
+            SELECT * FROM items
+            WHERE level = ? AND COALESCE(retired, 0) = 0
+            ORDER BY id ASC
+            """,
             (level,),
         ).fetchall()
     )
+
+
+def active_item_slugs(conn: sqlite3.Connection) -> list[str]:
+    """Curriculum slugs that need listen clips (excludes retired history rows)."""
+    return [
+        str(r["slug"])
+        for r in conn.execute(
+            "SELECT slug FROM items WHERE COALESCE(retired, 0) = 0 ORDER BY id"
+        ).fetchall()
+    ]
 
 
 def ensure_mastery_row(conn: sqlite3.Connection, item_id: int) -> None:

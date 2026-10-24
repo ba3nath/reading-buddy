@@ -286,6 +286,7 @@ def _rhyme_grouped(conn: sqlite3.Connection, content_levels: tuple[int, ...]) ->
         SELECT rhyme_group, MIN(line_index) AS mi
         FROM items
         WHERE level IN ({ph}) AND rhyme_group IS NOT NULL
+          AND COALESCE(retired, 0) = 0
         GROUP BY rhyme_group
         ORDER BY mi ASC, rhyme_group ASC
         """,
@@ -299,6 +300,7 @@ def _rhyme_grouped(conn: sqlite3.Connection, content_levels: tuple[int, ...]) ->
             FROM items i
             LEFT JOIN mastery m ON m.item_id = i.id
             WHERE i.level IN ({ph}) AND i.rhyme_group = ?
+              AND COALESCE(i.retired, 0) = 0
               AND COALESCE(m.mastered, 0) = 0
             ORDER BY i.level ASC, i.line_index ASC, i.id ASC
             """,
@@ -327,7 +329,7 @@ def _ordered_tier_items(
         f"""
         SELECT i.*
         FROM items i
-        WHERE i.level IN ({ph})
+        WHERE i.level IN ({ph}) AND COALESCE(i.retired, 0) = 0
         ORDER BY i.level ASC, i.id ASC
         """,
         content_levels,
@@ -347,6 +349,7 @@ def _one_group_queue(
             SELECT {column}
             FROM items
             WHERE {column} IS NOT NULL AND {column} != ''
+              AND COALESCE(retired, 0) = 0
             GROUP BY {column}
             ORDER BY MIN(level) ASC, MIN(id) ASC
             """
@@ -359,7 +362,7 @@ def _one_group_queue(
     return conn.execute(
         f"""
         SELECT * FROM items
-        WHERE {column} = ?
+        WHERE {column} = ? AND COALESCE(retired, 0) = 0
         ORDER BY line_index ASC, id ASC
         """,
         (chosen,),
@@ -541,6 +544,7 @@ def _build_legacy_queue(
         FROM items i
         JOIN mastery m ON m.item_id = i.id
         WHERE i.level IN ({ph})
+          AND COALESCE(i.retired, 0) = 0
           AND m.mastered = 0
           AND m.next_review_on IS NOT NULL
           AND m.next_review_on <= ?
@@ -560,6 +564,7 @@ def _build_legacy_queue(
             FROM items i
             LEFT JOIN mastery m ON m.item_id = i.id
             WHERE i.level IN ({ph})
+              AND COALESCE(i.retired, 0) = 0
               AND COALESCE(m.mastered, 0) = 0
             ORDER BY COALESCE(m.correct_count, 0) ASC, i.level ASC, i.id ASC
             """,
@@ -582,6 +587,7 @@ def _build_legacy_queue(
             FROM items i
             JOIN mastery m ON m.item_id = i.id
             WHERE m.mastered = 1 AND i.level IN ({ph})
+              AND COALESCE(i.retired, 0) = 0
             ORDER BY CASE WHEN m.last_seen_on IS NULL THEN 0 ELSE 1 END,
                      m.last_seen_on ASC, i.id ASC
             """,
@@ -697,7 +703,7 @@ def _build_scheduler_v2_queue(
         SELECT i.*
         FROM items i
         LEFT JOIN mastery m ON m.item_id = i.id
-        WHERE i.level IN ({ph})
+        WHERE i.level IN ({ph}) AND COALESCE(i.retired, 0) = 0
         ORDER BY COALESCE(m.mastered, 0) DESC,
                  COALESCE(m.box, 1) DESC,
                  COALESCE(m.correct_count, 0) DESC,
@@ -717,6 +723,7 @@ def _build_scheduler_v2_queue(
         FROM items i
         JOIN mastery m ON m.item_id = i.id
         WHERE i.level IN ({ph})
+          AND COALESCE(i.retired, 0) = 0
           AND m.mastered = 0
           AND m.next_review_on IS NOT NULL
           AND m.next_review_on <= ?

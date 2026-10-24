@@ -139,6 +139,7 @@ def weak_item_ids(
         f"""
         SELECT id FROM items
         WHERE pattern IN ({placeholders})
+          AND COALESCE(retired, 0) = 0
         ORDER BY id ASC
         LIMIT ?
         """,
