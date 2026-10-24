@@ -231,3 +231,25 @@ def test_level7_session_lines_have_unique_audio_slugs(tmp_env, client):
         res = client.get(f"/api/audio/{slug}")
         assert res.status_code == 200, slug
         assert res.headers["content-type"].startswith("audio/")
+
+
+def test_read_through_keeps_full_poem_visible_without_forced_replay():
+    """After line-by-line, the full rhyme must stay on screen for the read-through.
+
+    Auto-playing every line via playClip('') wiped setWord(full poem). Kids also
+    had to listen along a second time before reading. Hear again is optional.
+    """
+    assert "async function startReadThrough()" in JS
+    body = JS.split("async function startReadThrough()")[1].split(
+        "\nasync function finishSession"
+    )[0]
+    assert 'join("\\n")' in body or "join('\\n')" in body
+    assert 'setMessage("Your turn — read it all")' in body
+    assert "setMicEnabled(true)" in body
+    # Must not force a second listen-along of every line before the mic.
+    assert "Listen to the whole thing" not in body
+    assert "for (const item of state.items)" not in body
+    assert "preserveDisplay" in JS
+    assert "playPassageClips" in JS
+    assert "is-passage" in CSS
+    assert "white-space: pre-line" in CSS

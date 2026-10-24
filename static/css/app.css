@@ -491,6 +491,17 @@ body[data-state="result-close"] .prompt {
   min-height: 1.1em;
 }
 
+/* Full rhyme / story read-through: keep every line visible. */
+.word.is-passage {
+  white-space: pre-line;
+  font-size: clamp(1.55rem, 5.5vw, 2.6rem);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  text-align: left;
+  max-width: min(36rem, 100%);
+  margin-inline: auto;
+}
+
 body[data-state="listen"] .word-art,
 body[data-state="idle"] .word-art,
 body[data-state="recording"] .word-art,

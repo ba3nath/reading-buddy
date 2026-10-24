@@ -346,6 +346,9 @@ function setWord(
   { highlight = false, kind = "word", scores = null, spans = null } = {}
 ) {
   const el = $("[data-word]");
+  const raw = text == null ? "" : String(text);
+  const isPassage = raw.includes("\n");
+  el.classList.toggle("is-passage", isPassage);
   const multi = Array.isArray(scores) && scores.length > 1;
   if (multi) {
     el.textContent = "";
@@ -356,33 +359,35 @@ function setWord(
       span.textContent = ws.word || "";
       el.appendChild(span);
     });
-  } else if (Array.isArray(spans) && spans.length && text) {
+  } else if (Array.isArray(spans) && spans.length && raw) {
     el.textContent = "";
     const sorted = [...spans]
       .filter((s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start)
       .sort((a, b) => a.start - b.start);
     let cursor = 0;
     sorted.forEach((s) => {
-      const start = Math.max(0, Math.min(text.length, s.start));
-      const end = Math.max(start, Math.min(text.length, s.end));
+      const start = Math.max(0, Math.min(raw.length, s.start));
+      const end = Math.max(start, Math.min(raw.length, s.end));
       if (start > cursor) {
-        el.appendChild(document.createTextNode(text.slice(cursor, start)));
+        el.appendChild(document.createTextNode(raw.slice(cursor, start)));
       }
       const mark = document.createElement("span");
       mark.className = "coach-hl";
-      mark.textContent = text.slice(start, end);
+      mark.textContent = raw.slice(start, end);
       if (s.cue) mark.title = String(s.cue);
       el.appendChild(mark);
       cursor = end;
     });
-    if (cursor < text.length) {
-      el.appendChild(document.createTextNode(text.slice(cursor)));
+    if (cursor < raw.length) {
+      el.appendChild(document.createTextNode(raw.slice(cursor)));
     }
   } else {
-    el.textContent = text || "";
+    // Keep newlines for the full-rhyme / story read-through (CSS pre-line).
+    el.textContent = raw;
   }
   el.classList.toggle("highlight", Boolean(highlight) && !(spans && spans.length));
-  setWordArt(text, { kind });
+  // Passage cards are multi-line — hide the single-word pictogram.
+  setWordArt(isPassage ? "" : raw, { kind });
 }
 
 function popStarBurst() {
@@ -498,6 +503,18 @@ function setProgress() {
   if (total !== 5 && total !== 10) {
     total = state.items.length === 5 || state.items.length === 10 ? state.items.length : 10;
   }
+  if (state.phase === "passage") {
+    labelEl.textContent = "Read it all";
+    if (dots) {
+      dots.innerHTML = "";
+      for (let i = 0; i < total; i++) {
+        const d = document.createElement("span");
+        d.className = "dot done";
+        dots.appendChild(d);
+      }
+    }
+    return;
+  }
   const cur = Math.min(state.index + 1, total);
   const item = currentItem();
   labelEl.textContent =
@@ -608,14 +625,17 @@ function syncReadAlong(audio, timings) {
   });
 }
 
-function playClip(url, { timings = null, text = "" } = {}) {
+function playClip(url, { timings = null, text = "", preserveDisplay = false } = {}) {
   return new Promise((resolve) => {
     stopClip();
     clearReadAlong();
     const gen = state.clipGen;
     const audio = new Audio(url);
     state.audioEl = audio;
-    const wordTimings = setReadAlongWords(text, timings);
+    // Passage read-through already painted the full poem — never wipe it with "".
+    const wordTimings = preserveDisplay
+      ? []
+      : setReadAlongWords(text, timings);
     const onTime = () => syncReadAlong(audio, wordTimings);
     const done = () => {
       audio.removeEventListener("ended", done);
@@ -1131,6 +1151,11 @@ function enterIdle() {
 }
 
 function currentListenUrl() {
+  if (state.phase === "passage") {
+    const first = state.items?.[0];
+    if (!first?.slug) return null;
+    return `/api/audio/${encodeURIComponent(first.slug)}`;
+  }
   if (state.phase === "replay") {
     const entry = currentReplay();
     if (!entry) return null;
@@ -1144,7 +1169,10 @@ function currentListenUrl() {
 function syncHearAgain() {
   const btn = $("[data-hear-again]");
   if (!btn) return;
-  const hasClip = Boolean(currentListenUrl());
+  const hasClip =
+    state.phase === "passage"
+      ? Boolean(state.items?.length)
+      : Boolean(currentListenUrl());
   const canShow =
     hasClip &&
     (state.id === "idle" ||
@@ -1155,23 +1183,47 @@ function syncHearAgain() {
   btn.disabled = state.id !== "idle";
 }
 
+async function playPassageClips() {
+  for (const item of state.items || []) {
+    if (state.phase !== "passage") return;
+    const slug = item?.slug;
+    if (!slug) continue;
+    const url = `/api/audio/${encodeURIComponent(slug)}`;
+    let timings = null;
+    try {
+      const data = await api(`/api/audio/${encodeURIComponent(slug)}/timings`);
+      timings = data?.words || null;
+    } catch {
+      timings = null;
+    }
+    await playClip(url, {
+      timings,
+      text: item.text || "",
+      preserveDisplay: true,
+    });
+  }
+}
+
 async function hearAgain() {
-  const url = currentListenUrl();
-  if (!url || state.id !== "idle") return;
+  if (state.id !== "idle") return;
   // Don't steal a live take — only replay while waiting for the mic.
   if (state.recorder?.isRecording) return;
   const btn = $("[data-hear-again]");
   if (btn) btn.disabled = true;
   setMicEnabled(false);
   try {
-    if (state.phase === "replay") {
+    if (state.phase === "passage") {
+      await playPassageClips();
+    } else if (state.phase === "replay") {
       const entry = currentReplay();
+      const url = currentListenUrl();
       if (entry) await playItemClip(entry);
-      else await playClip(url);
+      else if (url) await playClip(url);
     } else {
       const item = currentItem();
+      const url = currentListenUrl();
       if (item?.slug) await playItemClip(item);
-      else await playClip(url);
+      else if (url) await playClip(url);
     }
   } catch (err) {
     console.error(err);
@@ -1492,21 +1544,12 @@ async function startReadThrough() {
   setHeard("");
   clearPhraseScore();
   stopClip();
+  // Keep the full poem/story on screen. Do not auto-replay every line —
+  // kids already listened line-by-line; forced replay wiped the text (empty
+  // playClip) and made them "read along" twice. Hear again is optional.
   const text = state.items.map((item) => item.text).join("\n");
   setWord(text, { kind: "line" });
-  setState("listen");
-  setMessage("Listen to the whole thing…");
-  setMicEnabled(false);
-  setMicLabel("Tap to read");
-  for (const item of state.items) {
-    if (state.phase !== "passage") return;
-    try {
-      await playClip(`/api/audio/${encodeURIComponent(item.slug)}`);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  if (state.phase !== "passage") return;
+  setProgress();
   setState("idle");
   setMessage("Your turn — read it all");
   setMicLabel("Tap to read");
