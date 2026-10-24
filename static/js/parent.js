@@ -30,9 +30,11 @@ function fillList(el, items, mapFn) {
 
 function renderTomorrow(note) {
   const stay = $("[data-tomorrow-stay]");
+  const tip = $("[data-tomorrow-tip]");
   const mode = $("[data-tomorrow-mode]");
   const through = $("[data-tomorrow-through]");
   if (stay) stay.textContent = note?.stay || "";
+  if (tip) tip.textContent = note?.practice_tip || "";
   if (mode) {
     mode.hidden = !note?.mode_change;
     mode.textContent = note?.mode_change || "";
@@ -55,21 +57,46 @@ function renderTomorrow(note) {
   );
 }
 
+function renderWeekStrip(accuracy, mastered, tomorrow) {
+  const el = $("[data-week-strip]");
+  if (!el) return;
+  const recent = (accuracy?.days || []).slice(-7);
+  let ind = 0;
+  let locks = 0;
+  for (const day of recent) {
+    ind += Number(day.independent_correct) || 0;
+    locks += Number(day.locking_reads) || 0;
+  }
+  const masteredN = (mastered?.this_week || []).length;
+  const due = Number(tomorrow?.due_count) || 0;
+  const pct = locks ? Math.round((100 * ind) / locks) : null;
+  const parts = [];
+  if (pct != null) parts.push(`This week: ${pct}% independent on first-pass locks`);
+  else parts.push("This week: no locking reads yet");
+  if (masteredN) parts.push(`${masteredN} newly mastered`);
+  if (due) parts.push(`${due} due tomorrow`);
+  el.textContent = parts.join(" · ");
+}
+
 function renderAccuracy(days) {
   const host = $("[data-accuracy]");
   if (!host) return;
   host.innerHTML = "";
   const recent = days.slice(-14);
   for (const day of recent) {
-    const scored = Number(day.scored) || 0;
-    const correct = Number(day.correct) || 0;
-    const pct = scored ? Math.round((100 * correct) / scored) : 0;
+    const locks = Number(day.locking_reads) || Number(day.scored) || 0;
+    const independent = Number(day.independent_correct) || 0;
+    const assisted = Number(day.assisted_correct) || 0;
+    const pct = locks ? Math.round((100 * independent) / locks) : 0;
     const row = document.createElement("div");
     row.className = "bar-row";
+    const detail = locks
+      ? `${pct}% ind · ${assisted} helped`
+      : "—";
     row.innerHTML = `
       <span>${day.date.slice(5)}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-      <span>${scored ? `${pct}%` : "—"}</span>
+      <span>${detail}</span>
     `;
     host.appendChild(row);
   }
@@ -219,17 +246,19 @@ async function loadKept(keepOn) {
 }
 
 async function refresh() {
-  const [settings, accuracy, mastered, tricky, sounds, patterns] =
+  const [settings, accuracy, mastered, retention, tricky, sounds, patterns] =
     await Promise.all([
       api("/api/parent/settings"),
       api("/api/parent/accuracy"),
       api("/api/parent/mastered"),
+      api("/api/parent/retention"),
       api("/api/parent/tricky"),
       api("/api/parent/sounds"),
       api("/api/parent/patterns"),
     ]);
   fillSettings(settings);
   renderTomorrow(settings.tomorrow);
+  renderWeekStrip(accuracy, mastered, settings.tomorrow);
   renderAccuracy(accuracy.days || []);
   fillList(
     $("[data-mastered-week]"),
@@ -237,9 +266,22 @@ async function refresh() {
     (m) => `${m.text} (L${m.level})`
   );
   fillList(
+    $("[data-independent]"),
+    mastered.independent || [],
+    (m) =>
+      `${m.text}${m.pattern ? ` · ${m.pattern}` : ""} — ${m.independent_oks} independent`
+  );
+  fillList(
     $("[data-mastered-all]"),
     mastered.mastered || [],
     (m) => `${m.text} (L${m.level})${m.mastered_on ? ` · ${m.mastered_on}` : ""}`
+  );
+  const retNote = $("[data-retention-note]");
+  if (retNote) retNote.textContent = retention?.note || "";
+  fillList(
+    $("[data-retention]"),
+    retention?.items || [],
+    (r) => `${r.text}: missed ${r.missed_on}, independent ${r.retained_on}`
   );
   fillList(
     $("[data-tricky]"),

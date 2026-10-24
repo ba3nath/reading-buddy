@@ -42,6 +42,14 @@ def keep_attempt_wav(attempt_id: int, wav_path: Path) -> Path | None:
 
 
 def accuracy_by_day(conn, *, days: int = 30) -> dict[str, Any]:
+    """Daily accuracy. ``correct``/``scored`` stay attempt-based (compat).
+
+    Phase 8 adds ``independent_correct`` / ``assisted_correct`` from events
+    (mastery-eligible vs assisted), so stars never stand in for reading proof.
+    """
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
     today = date.fromisoformat(local_today())
     start = today - timedelta(days=days - 1)
     rows = conn.execute(
@@ -57,17 +65,80 @@ def accuracy_by_day(conn, *, days: int = 30) -> dict[str, Any]:
         """,
         (start.isoformat(),),
     ).fetchall()
-    by = {r["d"]: {"date": r["d"], "correct": int(r["correct"]), "scored": int(r["scored"])} for r in rows}
+    ev = conn.execute(
+        """
+        SELECT substr(created_at, 1, 10) AS d,
+               SUM(
+                 CASE WHEN result = 'correct' AND counts_for_mastery = 1
+                 THEN 1 ELSE 0 END
+               ) AS independent_correct,
+               SUM(
+                 CASE WHEN result = 'correct' AND counts_for_mastery = 0
+                       AND instr(meta_json, '"assisted": true') > 0
+                 THEN 1 ELSE 0 END
+               ) AS assisted_correct,
+               SUM(
+                 CASE WHEN result IN ('correct', 'close', 'missed')
+                 THEN 1 ELSE 0 END
+               ) AS locking_reads
+        FROM events
+        WHERE substr(created_at, 1, 10) >= ?
+          AND phase != 'replay'
+        GROUP BY d
+        """,
+        (start.isoformat(),),
+    ).fetchall()
+    by = {
+        r["d"]: {
+            "date": r["d"],
+            "correct": int(r["correct"]),
+            "scored": int(r["scored"]),
+            "independent_correct": 0,
+            "assisted_correct": 0,
+            "locking_reads": 0,
+        }
+        for r in rows
+    }
+    for r in ev:
+        bucket = by.setdefault(
+            r["d"],
+            {
+                "date": r["d"],
+                "correct": 0,
+                "scored": 0,
+                "independent_correct": 0,
+                "assisted_correct": 0,
+                "locking_reads": 0,
+            },
+        )
+        bucket["independent_correct"] = int(r["independent_correct"] or 0)
+        bucket["assisted_correct"] = int(r["assisted_correct"] or 0)
+        bucket["locking_reads"] = int(r["locking_reads"] or 0)
     out = []
     cur = start
     while cur <= today:
         key = cur.isoformat()
-        out.append(by.get(key, {"date": key, "correct": 0, "scored": 0}))
+        out.append(
+            by.get(
+                key,
+                {
+                    "date": key,
+                    "correct": 0,
+                    "scored": 0,
+                    "independent_correct": 0,
+                    "assisted_correct": 0,
+                    "locking_reads": 0,
+                },
+            )
+        )
         cur += timedelta(days=1)
-    return {"days": out}
+    return {"days": out, "note": "Lead metric: independent_correct / locking_reads (not stars)."}
 
 
 def mastered_lists(conn) -> dict[str, Any]:
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
     today = date.fromisoformat(local_today())
     week_start = (today - timedelta(days=today.weekday())).isoformat()
     all_rows = conn.execute(
@@ -90,7 +161,83 @@ def mastered_lists(conn) -> dict[str, Any]:
         for r in all_rows
     ]
     this_week = [m for m in mastered if m["mastered_on"] and m["mastered_on"] >= week_start]
-    return {"mastered": mastered, "this_week": this_week}
+    # Independent evidence (Phase 5–7): mastery-eligible corrects, not stars.
+    ind_rows = conn.execute(
+        """
+        SELECT i.id, i.slug, i.text, i.pattern,
+               COUNT(*) AS independent_oks,
+               MAX(substr(e.created_at, 1, 10)) AS last_independent_on
+        FROM events e
+        JOIN items i ON i.id = e.item_id
+        WHERE e.counts_for_mastery = 1 AND e.result = 'correct'
+          AND e.phase != 'replay'
+        GROUP BY i.id
+        ORDER BY independent_oks DESC, i.id ASC
+        LIMIT 60
+        """
+    ).fetchall()
+    independent = [
+        {
+            "id": r["id"],
+            "slug": r["slug"],
+            "text": r["text"],
+            "pattern": r["pattern"],
+            "independent_oks": int(r["independent_oks"]),
+            "last_independent_on": r["last_independent_on"],
+        }
+        for r in ind_rows
+    ]
+    return {
+        "mastered": mastered,
+        "this_week": this_week,
+        "independent": independent,
+    }
+
+
+def retention_after_delay(conn) -> dict[str, Any]:
+    """Words missed then later read independently on a different calendar day."""
+    from app.events import ensure_events_table
+
+    ensure_events_table(conn)
+    rows = conn.execute(
+        """
+        SELECT i.id, i.slug, i.text, i.pattern,
+               miss.d AS missed_on,
+               ok.d AS retained_on
+        FROM items i
+        JOIN (
+          SELECT item_id, MIN(substr(created_at, 1, 10)) AS d
+          FROM events
+          WHERE result = 'missed' AND phase != 'replay'
+          GROUP BY item_id
+        ) miss ON miss.item_id = i.id
+        JOIN (
+          SELECT item_id, MIN(substr(created_at, 1, 10)) AS d
+          FROM events
+          WHERE result = 'correct' AND counts_for_mastery = 1
+            AND phase != 'replay'
+          GROUP BY item_id
+        ) ok ON ok.item_id = i.id
+        WHERE ok.d > miss.d
+        ORDER BY ok.d DESC, i.id ASC
+        LIMIT 40
+        """
+    ).fetchall()
+    return {
+        "items": [
+            {
+                "id": r["id"],
+                "slug": r["slug"],
+                "text": r["text"],
+                "pattern": r["pattern"],
+                "missed_on": r["missed_on"],
+                "retained_on": r["retained_on"],
+            }
+            for r in rows
+        ],
+        "count": len(rows),
+        "note": "Independent success on a later day after a miss (retention signal).",
+    }
 
 
 def tricky_words(conn) -> dict[str, Any]:
@@ -291,6 +438,12 @@ def export_zip_bytes(conn) -> bytes:
             "README.txt",
             (
                 "Reading Buddy CSV export (analytics).\n"
+                "schema_version: 2\n"
+                "\n"
+                "events.meta_json may include outcome, assisted, hint_level,\n"
+                "reason_code (Phase 5–7). counts_for_mastery=1 means independent\n"
+                "evidence; assisted corrects stay 0.\n"
+                "\n"
                 "For a restorable backup of progress + parent voice, use:\n"
                 "  ./run --backup\n"
             ),
@@ -334,7 +487,12 @@ def last_read_through(conn) -> dict[str, Any] | None:
 
 
 def tomorrow_note(conn, settings: dict[str, Any]) -> dict[str, Any]:
-    """Parent-only next step. Pace is not shown to the child."""
+    """Parent-only next step. Pace is not shown to the child.
+
+    Deterministic: due reviews + weakest patterns (Phase 6 map) + recent misses.
+    """
+    from app.coach.map import weak_patterns
+
     rows = conn.execute(
         """
         SELECT correct_count, planned_count
@@ -353,13 +511,35 @@ def tomorrow_note(conn, settings: dict[str, Any]) -> dict[str, Any]:
     stage = config.normalize_stage(settings.get("stage", 1))
     label = config.stage_label(level, stage)
     tricky = [item["text"] for item in tricky_words(conn)["items"][:3]]
+    today = local_today()
+    due_n = int(
+        conn.execute(
+            """
+            SELECT COUNT(*) AS n FROM mastery
+            WHERE mastered = 0
+              AND next_review_on IS NOT NULL
+              AND next_review_on <= ?
+            """,
+            (today,),
+        ).fetchone()["n"]
+    )
+    weak = weak_patterns(conn, days=30)[:3]
     if under:
         stay = f"Stay on {label}."
     else:
         stay = f"Keep going on {label}."
+    tip_parts = []
+    if due_n:
+        tip_parts.append(f"{due_n} word{'s' if due_n != 1 else ''} due for review")
+    if weak:
+        tip_parts.append("focus on " + ", ".join(weak))
+    practice_tip = "; ".join(tip_parts) + "." if tip_parts else "A short set on " + label + " is enough."
     return {
         "stay": stay,
         "tricky": tricky,
+        "due_count": due_n,
+        "weak_patterns": weak,
+        "practice_tip": practice_tip,
         "mode_change": str(settings.get("last_mode_change") or ""),
         "read_through": last_read_through(conn),
     }

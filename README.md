@@ -68,7 +68,7 @@ After that, day-to-day is just `./run`.
 
 **Child** — pick a buddy, then Words / Phrases / Rhymes / Stories. Each difficulty has eight sets; finished sets are marked done, started ones look partial. One Start button; refresh resumes an open session. Rhymes play a real nursery poem line by line, then a required read-through. Stories are short decodable narratives in order, then a read-through. Missed words get a kind second try; silence is a retry, not a fail.
 
-**Parent** (`/parent`) — accuracy, mastered words, tricky words, pattern + sound heatmaps, record-your-voice overrides, settings (mode, length, buddy, keep-audio, effort stars), tomorrow note, kept-clip playback, CSV zip (analytics only — use `./run --backup` to restore progress).
+**Parent** (`/parent`) — independent vs assisted accuracy, mastered + retention-after-miss, tricky words, pattern + sound heatmaps, five-minute tomorrow tip (due + weak skills), record-your-voice overrides, settings (mode, length, buddy, keep-audio on this device only, effort stars), kept-clip playback, CSV zip schema v2 (analytics only — use `./run --backup` to restore progress).
 
 **Backup / restore progress** (DB + settings + kept clips + parent voice in `audio/human/`):
 
@@ -126,7 +126,7 @@ python test-coverage/check.py --phase runner
 ## Privacy & kindness
 
 - Temp mic audio is deleted after scoring.  
-- `keep_audio` defaults to off; when on, wavs go to `data/kept/{attempt_id}.wav` for the parent page.  
+- `keep_audio` defaults to off; when on, wavs stay on this device under `data/kept/{attempt_id}.wav` (never uploaded; turning off deletes them).  
 - SQLite stores transcripts and results, never audio bytes.  
 - Default bind is `127.0.0.1` (this computer only). Use `./run --lan` for a tablet on Wi‑Fi.  
 - No visible timers, no lost stars or garden growth, no red fail screens, no buzzers.

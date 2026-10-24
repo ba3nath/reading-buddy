@@ -73,7 +73,7 @@
         </label>
         <label class="check">
           <input name="keep_audio" type="checkbox" />
-          Keep audio after scoring (playable below; turning off deletes kept files)
+          Keep audio after scoring (stored only on this device; playable below; turning off deletes kept files — never uploaded)
         </label>
         <label class="check">
           <input name="auto_strict" type="checkbox" />
@@ -96,25 +96,37 @@
       </form>
     </section>
 
+    <p class="week-strip note" data-week-strip aria-live="polite"></p>
+
     <section class="panel" aria-labelledby="tomorrow-title">
-      <h2 id="tomorrow-title">Tomorrow</h2>
+      <h2 id="tomorrow-title">Five minutes tomorrow</h2>
       <p data-tomorrow-stay></p>
+      <p data-tomorrow-tip></p>
       <p data-tomorrow-mode hidden></p>
       <p data-tomorrow-through hidden></p>
       <ul data-tomorrow-tricky></ul>
     </section>
 
     <section class="panel" aria-labelledby="accuracy-title">
-      <h2 id="accuracy-title">Accuracy by day</h2>
+      <h2 id="accuracy-title">Independent accuracy by day</h2>
+      <p class="note">Bars use independent reads (not stars or garden). Soft/prompted helps are listed separately.</p>
       <div class="bars" data-accuracy></div>
     </section>
 
     <section class="panel" aria-labelledby="mastered-title">
-      <h2 id="mastered-title">Mastered</h2>
-      <h3>This week</h3>
+      <h2 id="mastered-title">Words read independently</h2>
+      <h3>This week (Leitner mastered)</h3>
       <ul data-mastered-week></ul>
-      <h3>All time</h3>
+      <h3>Independent evidence</h3>
+      <ul data-independent></ul>
+      <h3>All mastered</h3>
       <ul data-mastered-all></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="retention-title">
+      <h2 id="retention-title">Remembered after a miss</h2>
+      <p class="note" data-retention-note></p>
+      <ul data-retention></ul>
     </section>
 
     <section class="panel" aria-labelledby="tricky-title">

@@ -39,6 +39,7 @@ from app.parent import (
     list_kept_clips,
     mastered_lists,
     pattern_heatmap,
+    retention_after_delay,
     sound_heatmap,
     tricky_words,
 )
@@ -599,6 +600,11 @@ def parent_accuracy():
 @app.get("/api/parent/mastered")
 def parent_mastered():
     return mastered_lists(get_conn())
+
+
+@app.get("/api/parent/retention")
+def parent_retention():
+    return retention_after_delay(get_conn())
 
 
 @app.get("/api/parent/tricky")
