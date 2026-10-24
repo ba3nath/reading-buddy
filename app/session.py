@@ -31,7 +31,13 @@ from app.db import (
     save_settings,
     touch_mastery,
 )
-from app.matching import MatchResult, normalize_text, tokenize
+from app.matching import (
+    MatchResult,
+    attempt_contract,
+    normalize_text,
+    outcome_from_legacy_result,
+    tokenize,
+)
 
 
 class SessionError(Exception):
@@ -592,8 +598,16 @@ def apply_attempt(
     correct_count = int(session["correct_count"])
     planned_count = int(session["planned_count"])
 
-    # Silence / retry / skip path
+    # Silence / uncertain retry / skip path (legacy result stays ``retry``|``skipped``).
     if is_silence_path or match.result == "retry":
+        retry_outcome = "silence" if is_silence_path else match.outcome
+        retry_reason = (
+            "silence_gate"
+            if is_silence_path
+            else (match.reason_code or "low_asr_confidence")
+        )
+        if retry_outcome not in ("silence", "uncertain"):
+            retry_outcome = "silence" if is_silence_path else "uncertain"
         if is_replay:
             prior = consecutive_replay_retries(
                 conn, session_id, item_id, replay_word
@@ -630,6 +644,12 @@ def apply_attempt(
                     "tries_max": None,
                     "skipped": True,
                     "attempt_id": attempt_id,
+                    **attempt_contract(
+                        outcome="skipped",
+                        reason_code="max_retries",
+                        assisted=False,
+                        mastery_eligible=False,
+                    ),
                 }
             # prior = retries already stored; this insert is +1; next read is +2.
             next_try = prior + 2
@@ -664,6 +684,12 @@ def apply_attempt(
                 "tries_max": config.MAX_RETRIES_PER_ITEM,
                 "skipped": False,
                 "attempt_id": attempt_id,
+                **attempt_contract(
+                    outcome=retry_outcome,  # type: ignore[arg-type]
+                    reason_code=retry_reason,
+                    assisted=False,
+                    mastery_eligible=False,
+                ),
             }
 
         assert queue_index is not None
@@ -709,6 +735,12 @@ def apply_attempt(
                 "tries_max": None,
                 "skipped": True,
                 "attempt_id": attempt_id,
+                **attempt_contract(
+                    outcome="skipped",
+                    reason_code="max_retries",
+                    assisted=False,
+                    mastery_eligible=False,
+                ),
             }
 
         # prior_retries = retries already stored; this insert is +1; next read is +2.
@@ -744,6 +776,12 @@ def apply_attempt(
             "tries_max": config.MAX_RETRIES_PER_ITEM,
             "skipped": False,
             "attempt_id": attempt_id,
+            **attempt_contract(
+                outcome=retry_outcome,  # type: ignore[arg-type]
+                reason_code=retry_reason,
+                assisted=False,
+                mastery_eligible=False,
+            ),
         }
 
     result = match.result
@@ -760,8 +798,9 @@ def apply_attempt(
 
     reinsert_info: dict[str, Any] | None = None
 
+    assisted = False
     if is_replay:
-        # Replay: one non-retry take locks and advances. No close re-ask.
+        # Replay: stars/engagement only — never independent mastery evidence.
         stars_awarded = _effort_stars(
             words_correct,
             result=result,
@@ -770,7 +809,6 @@ def apply_attempt(
         )
         if result == "correct":
             message = config.MSG_CORRECT
-            credit_mastery_correct(conn, item_id)
         elif result == "close":
             message = config.MSG_CLOSE_OK
         else:
@@ -812,10 +850,12 @@ def apply_attempt(
             if replacing_close:
                 flip_prior_lock(conn, session_id, queue_index)
 
+            assisted = bool(replacing_close or replacing_miss)
             hard_bonus = (
                 int(item["hard"] or 0) == 1
                 and result == "correct"
                 and not replacing_close
+                and not assisted
             )
             stars_awarded = _effort_stars(
                 words_correct,
@@ -834,19 +874,20 @@ def apply_attempt(
                     correct_count += 1
                 message = config.MSG_CORRECT
                 again = False
-                # Same-session correct after an earlier miss keeps +1 day review.
-                earlier_miss = conn.execute(
-                    """
-                    SELECT 1 FROM attempts
-                    WHERE session_id = ? AND item_id = ? AND is_replay = 0
-                      AND result = 'missed' AND counts_for_session = 1
-                    LIMIT 1
-                    """,
-                    (session_id, item_id),
-                ).fetchone()
-                credit_mastery_correct(
-                    conn, item_id, keep_plus_one_day=bool(earlier_miss)
-                )
+                # Prompted second-chance success is assisted — not independent mastery.
+                if not assisted:
+                    earlier_miss = conn.execute(
+                        """
+                        SELECT 1 FROM attempts
+                        WHERE session_id = ? AND item_id = ? AND is_replay = 0
+                          AND result = 'missed' AND counts_for_session = 1
+                        LIMIT 1
+                        """,
+                        (session_id, item_id),
+                    ).fetchone()
+                    credit_mastery_correct(
+                        conn, item_id, keep_plus_one_day=bool(earlier_miss)
+                    )
             elif result == "close":
                 # Beginner first close, or strict second close — lock & move on.
                 message = config.MSG_CLOSE_OK
@@ -889,6 +930,21 @@ def apply_attempt(
         latency_ms=latency_ms,
     )
     touch_mastery(conn, item_id, result)
+    outcome = match.outcome
+    reason_code = match.reason_code or ""
+    if not outcome:
+        outcome, reason_code = outcome_from_legacy_result(
+            result, reason_code=reason_code
+        )
+    if again:
+        # Provisional second-chance — never mastery-eligible.
+        mastery_eligible = False
+    elif is_replay:
+        mastery_eligible = False
+    elif assisted:
+        mastery_eligible = False
+    else:
+        mastery_eligible = result == "correct" and counts_for_session == 1
     try:
         log_event(
             conn,
@@ -901,8 +957,14 @@ def apply_attempt(
             result=result if not again else "retry",
             phase="replay" if is_replay else phase,
             latency_ms=latency_ms,
-            counts_for_mastery=bool(counts_for_session) and not again,
-            meta={"again": again, "words_correct": words_correct},
+            counts_for_mastery=bool(mastery_eligible),
+            meta={
+                "again": again,
+                "words_correct": words_correct,
+                "outcome": outcome,
+                "assisted": assisted,
+                "reason_code": reason_code,
+            },
         )
     except Exception:  # noqa: BLE001
         logger.warning(
@@ -932,6 +994,12 @@ def apply_attempt(
         "skipped": False,
         "reinsert": reinsert_info,
         "attempt_id": attempt_id,
+        **attempt_contract(
+            outcome=outcome,  # type: ignore[arg-type]
+            reason_code=reason_code,
+            assisted=assisted,
+            mastery_eligible=mastery_eligible,
+        ),
     }
     # Hard guarantee: locked results never ask for another read.
     if not again:
@@ -1093,6 +1161,8 @@ def apply_passage(
         (duration_seconds, attempt_id),
     )
     conn.commit()
+    outcome = match.outcome or outcome_from_legacy_result(match.result)[0]
+    reason = match.reason_code or outcome_from_legacy_result(match.result)[1]
     return {
         "result": match.result,
         "transcript": match.transcript,
@@ -1110,6 +1180,12 @@ def apply_passage(
         "skipped": False,
         "passage": True,
         "attempt_id": attempt_id,
+        **attempt_contract(
+            outcome=outcome,  # type: ignore[arg-type]
+            reason_code=reason,
+            assisted=False,
+            mastery_eligible=False,
+        ),
     }
 
 

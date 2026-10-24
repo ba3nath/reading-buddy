@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from typing import Literal
+from typing import Any, Literal
 
 from metaphone import doublemetaphone
 
@@ -13,6 +13,8 @@ from app import config
 
 WordResult = Literal["correct", "close", "missed"]
 ItemResult = Literal["correct", "close", "missed", "retry"]
+# Public attempt contract (Phase 5b). Legacy ``result`` stays for DB CHECK.
+Outcome = Literal["correct", "incorrect", "uncertain", "silence", "skipped"]
 Mode = Literal["beginner", "strict"]
 
 _NORMALIZE_RE = re.compile(r"[^a-z0-9\s]+")
@@ -68,6 +70,41 @@ class MatchResult:
     words_total: int
     transcript: str
     replay_words: list[str]
+    outcome: Outcome = "incorrect"
+    reason_code: str = ""
+
+
+def outcome_from_legacy_result(
+    result: str, *, reason_code: str = ""
+) -> tuple[Outcome, str]:
+    """Map stored/legacy ``result`` onto the Phase 5b outcome enum."""
+    if result == "correct":
+        return "correct", reason_code or "accepted"
+    if result == "close":
+        return "incorrect", reason_code or "soft_mismatch"
+    if result == "missed":
+        return "incorrect", reason_code or "reading_mismatch"
+    if result == "retry":
+        return "uncertain", reason_code or "retry"
+    if result == "skipped":
+        return "skipped", reason_code or "max_retries"
+    return "incorrect", reason_code or "unknown"
+
+
+def attempt_contract(
+    *,
+    outcome: Outcome,
+    reason_code: str,
+    assisted: bool = False,
+    mastery_eligible: bool = False,
+) -> dict[str, Any]:
+    """Fields every attempt response should expose alongside legacy ``result``."""
+    return {
+        "outcome": outcome,
+        "reason_code": reason_code,
+        "assisted": bool(assisted),
+        "mastery_eligible": bool(mastery_eligible),
+    }
 
 
 def normalize_text(text: str) -> str:
@@ -280,6 +317,8 @@ def score_attempt(
             words_total=words_total,
             transcript="",
             replay_words=[],
+            outcome="silence",
+            reason_code="forced_retry",
         )
 
     hyp_tokens = tokenize(heard_text)
@@ -293,6 +332,8 @@ def score_attempt(
             words_total=words_total,
             transcript="",
             replay_words=[],
+            outcome="silence",
+            reason_code="empty_transcript",
         )
 
     confs = list(word_confidences or [])
@@ -316,6 +357,8 @@ def score_attempt(
                 words_total=words_total,
                 transcript="",
                 replay_words=[],
+                outcome="uncertain",
+                reason_code="low_asr_confidence",
             )
 
     pairs = align_tokens(target_tokens, hyp_tokens)
@@ -388,6 +431,7 @@ def score_attempt(
     if mode == "strict" and not exact_seq and item_result == "correct":
         item_result = "missed"
     replay_words = [ws.word for ws in word_scores if ws.result == "missed"]
+    outcome, reason = outcome_from_legacy_result(item_result)
 
     return MatchResult(
         result=item_result,
@@ -396,4 +440,6 @@ def score_attempt(
         words_total=words_total,
         transcript=transcript,
         replay_words=replay_words,
+        outcome=outcome,
+        reason_code=reason,
     )

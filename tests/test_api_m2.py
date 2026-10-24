@@ -129,6 +129,10 @@ def test_replay_attempt_stars_without_ratio_change(
     stars_at_complete = done["stars"]
     assert done["replay"]
     word = done["replay"][0]["text"]
+    mastery_before = tmp_env["conn"].execute(
+        "SELECT correct_count, box FROM mastery WHERE item_id = ?",
+        (item["id"],),
+    ).fetchone()
 
     whisper_double.set_transcript(
         AttemptTranscript(
@@ -145,6 +149,7 @@ def test_replay_attempt_stars_without_ratio_change(
     assert body["result"] == "correct"
     assert body["stars_awarded"] == 1
     assert body["stars_total"] == stars_at_complete + 1
+    assert body["mastery_eligible"] is False
 
     row = tmp_env["conn"].execute(
         "SELECT correct_count, planned_count, stars FROM sessions WHERE id = ?",
@@ -168,10 +173,11 @@ def test_replay_attempt_stars_without_ratio_change(
     assert attempt["replay_word"] == word
 
     mastery = tmp_env["conn"].execute(
-        "SELECT correct_count FROM mastery WHERE item_id = ?",
+        "SELECT correct_count, box FROM mastery WHERE item_id = ?",
         (item["id"],),
     ).fetchone()
-    assert mastery["correct_count"] >= 1
+    assert mastery["correct_count"] == mastery_before["correct_count"]
+    assert mastery["box"] == mastery_before["box"]
 
 
 def test_health_includes_audio_flag(client):

@@ -35,12 +35,12 @@ Living plan for the next product arc. Learning **Phases 0–3 are shipped** (pat
 | Debt | Today | Fixed in |
 | --- | --- | --- |
 | Bind host | ~~Default `0.0.0.0`~~ → **done in 4a:** default `127.0.0.1`; `--lan` for Wi‑Fi | Phase 4a ✅ |
-| Replay mastery | Replay `correct` still calls `credit_mastery_correct` | Phase 5 |
+| Replay mastery | ~~Replay credits mastery~~ → **done in 5b:** stars only; `mastery_eligible=false` | Phase 5b ✅ |
 | Model ready gate | ~~Kokoro only~~ → **done in 4b:** Kokoro + Whisper tree under `models/` | Phase 4b ✅ |
 | Restore tests | ~~Backup only~~ → **done in 4a:** fresh restore + refuse without force + force overwrite | Phase 4a ✅ |
 | Orphan `data/tmp` | ~~No startup sweep~~ → **done in 4b:** `sweep_temp_dir` on lifespan | Phase 4b ✅ |
 | Atomic model download | ~~direct urlretrieve~~ → **done in 4b:** `.partial` then rename | Phase 4b ✅ |
-| Outcomes | Attempts use `correct\|close\|missed\|retry\|skipped` only | Phase 5b |
+| Outcomes | ~~legacy result only~~ → **done in 5b:** API `outcome` + flags; DB still stores legacy `result` | Phase 5b ✅ |
 | Matching FP/FN baseline | ~~none~~ → **done in 5a:** `eval/matching/` + budgets (FN includes known strict plural) | Phase 5a ✅ |
 | Offline env | `HF_HUB_OFFLINE=1` already set when serving | — (done) |
 
@@ -598,3 +598,4 @@ Suggested first PRs:
 | 2026-10-24 | Phase 4a started: localhost default + `--lan`; restore/API/audio cleanup tests |
 | 2026-10-24 | Phase 4b: Whisper in `models_ready`, atomic Kokoro download, tmp sweep on startup |
 | 2026-10-24 | Phase 5a: matching benchmark cases + FP/FN budgets (no matcher behavior change) |
+| 2026-10-24 | Phase 5b: outcome contract (silence≠uncertain), mastery_eligible, replay no longer credits mastery |

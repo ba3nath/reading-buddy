@@ -479,6 +479,11 @@ def test_replay_awards_stars_without_changing_ratio(tmp_env):
     assert done["replay"][0]["item_id"] == item["id"]
     word = done["replay"][0]["text"]
 
+    mastery_before = conn.execute(
+        "SELECT correct_count, box FROM mastery WHERE item_id = ?",
+        (item["id"],),
+    ).fetchone()
+
     replay = _apply(
         conn,
         sid,
@@ -491,6 +496,7 @@ def test_replay_awards_stars_without_changing_ratio(tmp_env):
     assert replay["result"] == "correct"
     assert replay["stars_awarded"] == 1
     assert replay["stars_total"] == stars_before + 1
+    assert replay["mastery_eligible"] is False
 
     session = conn.execute(
         "SELECT correct_count, planned_count, stars FROM sessions WHERE id = ?",
@@ -511,11 +517,13 @@ def test_replay_awards_stars_without_changing_ratio(tmp_env):
     assert row["counts_for_session"] == 0
     assert row["replay_word"] == word
 
+    # Replay awards stars for engagement but must not inflate Leitner mastery.
     mastery = conn.execute(
-        "SELECT correct_count FROM mastery WHERE item_id = ?",
+        "SELECT correct_count, box FROM mastery WHERE item_id = ?",
         (item["id"],),
     ).fetchone()
-    assert mastery["correct_count"] >= 1
+    assert mastery["correct_count"] == mastery_before["correct_count"]
+    assert mastery["box"] == mastery_before["box"]
 
 
 def test_word_level_replay_multi_word_item(tmp_env):

@@ -158,6 +158,10 @@ def assert_attempt_shape():
             "retry",
             "again",
             "skipped",
+            "outcome",
+            "assisted",
+            "mastery_eligible",
+            "reason_code",
         }
         assert required <= set(payload.keys())
         assert payload["result"] in {
@@ -167,6 +171,20 @@ def assert_attempt_shape():
             "retry",
             "skipped",
         }
+        assert payload["outcome"] in {
+            "correct",
+            "incorrect",
+            "uncertain",
+            "silence",
+            "skipped",
+        }
+        assert isinstance(payload["assisted"], bool)
+        assert isinstance(payload["mastery_eligible"], bool)
+        assert isinstance(payload["reason_code"], str)
+        if payload["outcome"] in ("uncertain", "silence", "skipped"):
+            assert payload["mastery_eligible"] is False
+        if payload["assisted"]:
+            assert payload["mastery_eligible"] is False
         assert isinstance(payload["transcript"], str)
         assert isinstance(payload["word_scores"], list)
         assert isinstance(payload["words_correct"], int)
