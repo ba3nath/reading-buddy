@@ -98,22 +98,21 @@ def test_miss_second_chance_then_correct_is_assisted(tmp_env):
     assert second["mastery_eligible"] is False
 
 
-def test_strict_close_again_includes_coach_fields(tmp_env):
+def test_strict_miss_again_includes_coach_fields(tmp_env):
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
     data = start_session(conn, level=1)
     item = data["items"][0]
     text = item["text"]
-    # Strict close = exact transcript, low confidence.
     first = apply_attempt(
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.40], mode="strict"),
+        score_attempt(text, "zzzznotaword", [0.9], mode="strict"),
         phase="read",
         queue_index=0,
     )
-    assert first["result"] == "close"
+    assert first["result"] == "missed"
     assert first["again"] is True
     assert first["hint_level"] >= HINT_HIGHLIGHT
     assert "coach_line" in first

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import array
 import inspect
+import math
 
 from app import audio_files, config
 from app.audio_files import (
     _TTS_WORD_OVERRIDES,
     spoken_matches_target,
+    tighten_tail_samples,
     tts_render,
     tts_voice,
 )
@@ -20,17 +23,16 @@ def test_postprocess_keeps_tail_plosives():
     assert "stop_periods=" not in src
     assert "apad" in src
     assert "adelay" in src
-    # Pads after loudnorm so silence doesn't crush quiet plosive tails.
+    assert "tighten_tail_samples" in src
     assert src.index("loudnorm=") < src.index("adelay=")
     assert src.index("loudnorm=") < src.index("apad=")
-    assert "pad_dur={_LISTEN_TRAIL_SEC}" in src or "pad_dur=0.5" in src
     assert "_LISTEN_LEAD_MS" in src
     assert audio_files._LISTEN_LEAD_MS >= 300
     assert audio_files._LISTEN_TRAIL_SEC >= 0.45
-    # Soft loudnorm + native rate (not the old I=-18 / 16 kHz crush).
+    assert audio_files._TAIL_FADE_MS >= 50
+    assert audio_files._TAIL_HANGOVER_MS >= 80
     assert "I=-16" in src
     assert "16000" not in src
-    assert "AUDIO_SAMPLE_RATE" in src
     assert config.AUDIO_SAMPLE_RATE == 24000
 
 
@@ -41,6 +43,24 @@ def test_postprocess_pads_after_loudnorm_not_before():
     delay = src.index("adelay=")
     pad = src.index("apad=")
     assert loud < delay < pad
+
+
+def test_tighten_tail_cuts_smear_keeps_body():
+    """Synthetic speech + quiet smear: cut removes smear, keeps body energy."""
+    rate = 24000
+    body_n = int(rate * 0.40)
+    smear_n = int(rate * 0.25)
+    samples = array.array("h")
+    for i in range(body_n):
+        # ~440 Hz tone at moderate level
+        samples.append(int(8000 * math.sin(2 * math.pi * 440 * i / rate)))
+    for _ in range(smear_n):
+        samples.append(200)  # quiet smear tail
+    out = tighten_tail_samples(samples, rate, hangover_ms=50, fade_ms=40)
+    assert len(out) < len(samples)
+    assert len(out) >= int(body_n * 0.9)
+    # Final samples near zero after fade
+    assert abs(out[-1]) <= abs(out[body_n // 2])
 
 
 def test_default_voice_is_emma():
@@ -63,9 +83,9 @@ def test_tts_render_uses_natural_pacing():
     assert spoken == "cup!"
     assert speed == 1.0
 
-    spoken_the, speed_the = tts_render("the")
-    assert spoken_the == "the."
-    assert speed_the == 0.95
+    spoken_bell, speed_bell = tts_render("bell")
+    assert spoken_bell == "bell."
+    assert speed_bell == 0.95
 
     pig, pig_speed = tts_render("pig")
     assert pig == "pig"
@@ -86,9 +106,12 @@ def test_tts_render_uses_natural_pacing():
     assert tts_render("frog") == ("frog.", 0.95)
 
     long_line, long_line_speed = tts_render("Jack and Jill went up the hill")
-    assert long_line == "Jack and Jill went up the hill"
+    assert long_line == "Jack and Jill went up the hill..."
     assert long_line_speed == 0.95
     assert tts_voice("Jack and Jill went up the hill") == ("bf_emma", "en-gb")
+    # Short phrases stay bare (ellipsis smears ducks/pig).
+    assert tts_render("two wet ducks") == ("two wet ducks", 0.95)
+    assert tts_render("Rain rain go away") == ("rain rain go away", 0.95)
 
 
 def test_hot_sun_phrase_uses_alice_so_sun_stays_sun():
@@ -146,12 +169,10 @@ def test_tts_render_sit_and_top_allowlist():
     assert speed_top == 0.95
 
 
-def test_tts_render_were_stays_single_word():
-    spoken, speed = tts_render("were")
-    assert spoken == "were."
-    assert spoken_matches_target("were", spoken)
+def test_tts_render_shell_stays_single_word():
+    spoken, speed = tts_render("shell")
+    assert spoken_matches_target("shell", spoken)
     assert speed >= 0.92
-    assert tts_voice("were") == ("bm_lewis", "en-gb")
 
 
 def test_tts_render_cat_is_only_cat():

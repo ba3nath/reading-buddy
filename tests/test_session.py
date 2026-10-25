@@ -148,7 +148,8 @@ def test_beginner_humpty_dumpty_session_is_miss_not_close(tmp_env):
     assert second["read_again"] is False
 
 
-def test_strict_close_second_take_no_hard_bonus(tmp_env):
+def test_strict_miss_second_take_no_hard_bonus(tmp_env):
+    """Assisted second take after a miss does not get the hard-word star bonus."""
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
     hard = conn.execute(
@@ -165,13 +166,15 @@ def test_strict_close_second_take_no_hard_bonus(tmp_env):
     set_play_and_ratio_flags(conn, sid, play, [True] * len(play))
     conn.commit()
     text = hard["text"]
-    close_match = score_attempt(text, text, [0.40], mode="strict")
-    assert close_match.result == "close"
-    first = _apply(conn, sid, hard["id"], close_match, qi=0)
+    miss_match = score_attempt(text, "zzzznotaword", [0.9], mode="strict")
+    assert miss_match.result == "missed"
+    first = _apply(conn, sid, hard["id"], miss_match, qi=0)
     assert first["again"] is True
     assert first["stars_awarded"] == 0
 
-    second_match = score_attempt(text, text, [0.95], mode="strict")
+    # Soft-prob exact still counts as correct now; assisted → no hard bonus.
+    second_match = score_attempt(text, text, [0.40], mode="strict")
+    assert second_match.result == "correct"
     second = _apply(conn, sid, hard["id"], second_match, qi=0)
     assert second["result"] == "correct"
     assert second["again"] is False
@@ -187,7 +190,7 @@ def test_strict_close_second_take_no_hard_bonus(tmp_env):
         (sid, hard["id"]),
     ).fetchall()
     assert locks[0]["counts_for_session"] == 0
-    assert locks[0]["result"] == "close"
+    assert locks[0]["result"] == "missed"
     assert locks[0]["queue_index"] == 0
     assert locks[1]["counts_for_session"] == 1
     assert locks[1]["result"] == "correct"

@@ -309,10 +309,10 @@ def score_word(
     )
 
     if mode == "strict":
-        if exact_heard and conf >= config.STRICT_CORRECT_MIN_PROB:
+        # Exact token (or number/ASR alias) wins even when Whisper is unsure —
+        # otherwise the screen shows the right word and still asks read-again.
+        if exact_heard:
             return "correct"
-        if exact_heard and conf < config.STRICT_CORRECT_MIN_PROB:
-            return "close"
         return "missed"
 
     # Beginner — trust an exact (or plural) transcript over Whisper
@@ -441,46 +441,22 @@ def score_attempt(
     # Strict: extras / missing / reorder make the item not exact.
     exact_seq = tokens_equivalent(target_tokens, hyp_tokens)
     if mode == "strict" and exact_seq:
-        # Exact full-line match: use mean confidence so one soft "the"/"big"
-        # under 0.85 does not force a pointless second try on a clear reading.
-        # Multi-word lines get a lower bar — Whisper under-confidences
-        # hickory/dickory / three/red even when the words are right.
-        present = [
-            float(ws.confidence)
-            for ws in word_scores
-            if ws.confidence is not None
-        ]
-        threshold = (
-            config.STRICT_MULTIWORD_EXACT_MIN_MEAN
-            if words_total >= 2
-            else config.STRICT_CORRECT_MIN_PROB
-        )
-        if not present:
-            # Missing ASR probs must not invent mean 0.0 → "close" when the
-            # transcript already matches token-for-token (UI shows "I heard…").
-            verdict: WordResult = "correct"
-        else:
-            mean_conf = sum(present) / len(present)
-            verdict = "correct" if mean_conf >= threshold else "close"
+        # Exact transcript (incl. digit/ASR aliases) is always correct. Soft
+        # Whisper probs used to force "close" → read-again while the UI already
+        # showed the right "I heard …" words — kids said it; trust the text.
         word_scores = [
-            WordScore(ws.word, ws.heard, ws.confidence, verdict)
+            WordScore(ws.word, ws.heard, ws.confidence, "correct")
             for ws in word_scores
         ]
     elif mode == "strict" and not exact_seq:
-        # Re-score: any non-exact token is missed unless exact+low-conf → close
+        # Re-score: exact tokens stay correct (ignore soft probs); others missed.
         revised: list[WordScore] = []
         for ws in word_scores:
             exact = ws.heard == ws.word or is_number_pair(ws.word, ws.heard)
             if exact:
-                conf = ws.confidence if ws.confidence is not None else 0.0
-                if conf >= config.STRICT_CORRECT_MIN_PROB:
-                    revised.append(
-                        WordScore(ws.word, ws.heard, ws.confidence, "correct")
-                    )
-                else:
-                    revised.append(
-                        WordScore(ws.word, ws.heard, ws.confidence, "close")
-                    )
+                revised.append(
+                    WordScore(ws.word, ws.heard, ws.confidence, "correct")
+                )
             else:
                 revised.append(WordScore(ws.word, ws.heard, ws.confidence, "missed"))
         word_scores = revised

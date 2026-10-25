@@ -90,40 +90,28 @@ def test_beginner_close_near_miss_no_second_try(tmp_env):
     _assert_done_no_another(first)
 
 
-def test_strict_close_then_correct_second_chance(tmp_env):
+def test_strict_exact_low_confidence_accepts_without_read_again(tmp_env):
+    """Exact transcript must pass even when Whisper probs are soft."""
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
     data = start_session(conn, level=1)
     assert data["mode"] == "strict"
     item = data["items"][0]
-    qi = 0
     text = item["text"]
 
-    # Strict close = exact transcript, low confidence.
     first = _apply(
         conn,
         data["session_id"],
         item["id"],
         score_attempt(text, text, [0.40], mode="strict"),
-        qi=qi,
+        qi=0,
     )
-    assert first["result"] == "close"
-    _assert_asks_another(first, try_number=2, tries_max=2)
-    assert first["message"] == MSG_CLOSE
-
-    second = _apply(
-        conn,
-        data["session_id"],
-        item["id"],
-        score_attempt(text, text, [0.95], mode="strict"),
-        qi=qi,
-    )
-    assert second["result"] == "correct"
-    assert second["message"] == MSG_CORRECT
-    _assert_done_no_another(second)
+    assert first["result"] == "correct"
+    assert first["message"] == MSG_CORRECT
+    _assert_done_no_another(first)
 
 
-def test_strict_close_then_close_locks_without_one_more(tmp_env):
+def test_strict_miss_then_correct_second_chance(tmp_env):
     conn = tmp_env["conn"]
     save_settings({**load_settings(), "mode": "strict", "auto_strict": False})
     data = start_session(conn, level=1)
@@ -135,9 +123,10 @@ def test_strict_close_then_close_locks_without_one_more(tmp_env):
         conn,
         data["session_id"],
         item["id"],
-        score_attempt(text, text, [0.40], mode="strict"),
+        score_attempt(text, "zzzznotaword", [0.9], mode="strict"),
         qi=qi,
     )
+    assert first["result"] == "missed"
     _assert_asks_another(first, try_number=2, tries_max=2)
 
     second = _apply(
@@ -147,8 +136,7 @@ def test_strict_close_then_close_locks_without_one_more(tmp_env):
         score_attempt(text, text, [0.40], mode="strict"),
         qi=qi,
     )
-    assert second["result"] == "close"
-    assert second["message"] == MSG_CLOSE_OK
+    assert second["result"] == "correct"
     _assert_done_no_another(second)
 
 def test_silence_retry_then_correct_clears_read_again(tmp_env):

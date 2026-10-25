@@ -207,7 +207,6 @@ _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
     "path": ("path!", 1.0),
     "thin": ("thin!", 1.0),
     "when": ("when!", 1.0),
-    "were": ("were.", 0.95),
     "your": ("your.", 0.95),
     # Hard /g/ — period + near-natural speed (slow crawl → "frogeh").
     "dog": ("dog.", 0.95),
@@ -224,7 +223,6 @@ _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
     "sit": ("bf_alice", "en-gb"),
     "top": ("bm_lewis", "en-gb"),
     "path": ("bm_lewis", "en-gb"),
-    "were": ("bm_lewis", "en-gb"),
     "when": ("bm_lewis", "en-gb"),
     "dog": ("bf_alice", "en-gb"),
     "log": ("bf_alice", "en-gb"),
@@ -247,6 +245,8 @@ _TTS_PHRASE_VOICES: dict[str, tuple[str, str]] = {
     # Alice on final /g/ invents "So/It's" before "a wet log".
     "a wet log": ("bf_emma", "en-gb"),
     "my big bag": ("bf_emma", "en-gb"),
+    # Emma can turn "fox" into a slur on this line.
+    "the fox sat on top": ("bm_lewis", "en-gb"),
 }
 
 # Explicit phrase spoken + speed when the default rule is not enough.
@@ -267,6 +267,7 @@ _TTS_PHRASE_RENDERS: dict[str, tuple[str, float]] = {
         "Little Boy Blue come blow your horn",
         0.95,
     ),
+    "the fox sat on top": ("The fox sat on top", 0.95),
 }
 
 _DEFAULT_PHRASE_VOICE: tuple[str, str] = ("bf_emma", "en-gb")
@@ -388,14 +389,19 @@ def tts_render(text: str) -> tuple[str, float]:
             return spoken, 0.95
         return spoken, 1.0
     # Multi-word: honor explicit phrase renders, else bare text @ ~0.95.
+    # Long lines (≥4 words): trailing ellipsis gives Kokoro a falling decay
+    # without the "Period." dummy-trim (that left "period" audible). Short
+    # 2–3 word kid phrases stay bare — ellipsis A/B'd into duckses/piggy.
     key = _phrase_key(stripped)
     if key in _TTS_PHRASE_RENDERS:
+        # Explicit renders already tuned — do not auto-append ellipsis.
         return _TTS_PHRASE_RENDERS[key]
     if len(words) >= 2:
         spoken = stripped.rstrip(".!?")
         if len(words) <= 3:
             return spoken, _phrase_final_speed(words[-1])
-        return spoken, 0.95
+        # Long untuned lines: ellipsis gives a falling decay (short phrases smear).
+        return spoken + "...", 0.95
     return stripped, 0.95
 
 
@@ -404,52 +410,176 @@ def tts_render(text: str) -> tuple[str, float]:
 _LISTEN_LEAD_MS = 350
 _LISTEN_TRAIL_SEC = 0.50
 
+# Tail cleanup: Kokoro often leaves a metallic extra syllable after the real
+# last phoneme. Ellipsis / "Period." dummy-trims A/B'd worse on short kid
+# phrases (ducks→ducts, pig→piggy). Instead: VAD cut after last speech + fade.
+_TAIL_HANGOVER_MS = 100
+_TAIL_FADE_MS = 80
+_TAIL_RMS_WIN_MS = 10
+_TAIL_RMS_REL = 0.06  # fraction of peak RMS; above smear, below quiet /p/
+
+
+def _read_wav_mono_i16(path: Path) -> tuple[array.array, int]:
+    with wave.open(str(path), "rb") as wf:
+        if wf.getsampwidth() != 2:
+            raise AudioError(f"expected 16-bit wav, got sampwidth={wf.getsampwidth()}")
+        rate = wf.getframerate()
+        nch = wf.getnchannels()
+        frames = wf.readframes(wf.getnframes())
+    samples = array.array("h")
+    samples.frombytes(frames)
+    if nch > 1:
+        mono = array.array("h")
+        for i in range(0, len(samples), nch):
+            mono.append(samples[i])
+        samples = mono
+    return samples, rate
+
+
+def _write_wav_mono_i16(path: Path, samples: array.array, rate: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(path), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(rate)
+        wf.writeframes(samples.tobytes())
+
+
+def tighten_tail_samples(
+    samples: array.array,
+    rate: int,
+    *,
+    hangover_ms: int = _TAIL_HANGOVER_MS,
+    fade_ms: int = _TAIL_FADE_MS,
+    win_ms: int = _TAIL_RMS_WIN_MS,
+    rms_rel: float = _TAIL_RMS_REL,
+) -> array.array:
+    """Cut after last real speech (+ hangover), then exponential-ish linear fade.
+
+    Drops Kokoro's trailing smear without a hard noise gate (gates ate /p/ /t/).
+    """
+    if rate <= 0 or len(samples) < rate // 10:
+        return samples
+    win = max(1, int(rate * win_ms / 1000))
+    # Peak RMS over windows
+    peak = 0.0
+    last_loud = -1
+    for i in range(0, len(samples) - win + 1, win):
+        chunk = samples[i : i + win]
+        mean = sum(s * s for s in chunk) / len(chunk)
+        rms = math.sqrt(mean)
+        if rms > peak:
+            peak = rms
+    if peak <= 1.0:
+        return samples
+    thr = peak * rms_rel
+    for i in range(0, len(samples) - win + 1, win):
+        chunk = samples[i : i + win]
+        mean = sum(s * s for s in chunk) / len(chunk)
+        if math.sqrt(mean) >= thr:
+            last_loud = i + win
+    if last_loud < 0:
+        return samples
+    hang = int(rate * hangover_ms / 1000)
+    end = min(len(samples), last_loud + hang)
+    # Never cut away more than the last 35% (safety for soft onsets-only clips).
+    min_keep = max(win, int(len(samples) * 0.65))
+    end = max(end, min_keep)
+    out = array.array("h", samples[:end])
+    fade_n = min(int(rate * fade_ms / 1000), len(out) // 3)
+    if fade_n >= 2:
+        for i in range(fade_n):
+            # Linear fade ≈ short exponential for 50–80 ms tails.
+            gain = (fade_n - 1 - i) / (fade_n - 1)
+            idx = len(out) - fade_n + i
+            out[idx] = int(out[idx] * gain)
+    return out
+
 
 def postprocess_generated_wav(src: Path, dest: Path) -> None:
-    """Mono 16-bit PCM at Kokoro native 24 kHz: gentle trim, soft norm, pad.
+    """Mono 16-bit PCM at Kokoro native 24 kHz: trim, norm, tighten tail, pad.
 
-    Never strip trailing silence — final plosives in cup/map/cat are quiet and
-    get eaten by stop-period silenceremove.
+    Never use stop-period silenceremove — final plosives in cup/map/cat are quiet.
 
-    Keep 24 kHz (do not downsample to 16 kHz). Soft loudnorm (I=-16, wide LRA)
-    preserves dynamics better than the old I=-18 crush. Normalize speech first,
-    *then* pad — padding before loudnorm lets silence dominate and crush tails.
+    Order: start-trim → soft loudnorm → VAD hangover cut + micro fade → lead/trail
+    pads. Keep 24 kHz. Pads after norm so silence does not crush quiet tails.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    # Lead trim only (start_periods). No stop_periods — keeps /p/ /t/ /k/.
-    # Conservative start_threshold so soft onsets (map/cup) are not bitten.
     rate = int(config.AUDIO_SAMPLE_RATE)
-    af = (
-        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-55dB,"
-        "loudnorm=I=-16:TP=-1.5:LRA=14,"
-        f"adelay={_LISTEN_LEAD_MS}|{_LISTEN_LEAD_MS},"
-        f"apad=pad_dur={_LISTEN_TRAIL_SEC}"
-    )
     ffmpeg = resolve_ffmpeg()
     if not ffmpeg:
         raise AudioError("ffmpeg not found on PATH or in common install locations")
-    cmd = [
-        ffmpeg,
-        "-y",
-        "-i",
-        str(src),
-        "-ac",
-        "1",
-        "-ar",
-        str(rate),
-        "-c:a",
-        "pcm_s16le",
-        "-af",
-        af,
-        str(dest),
-    ]
+
+    mid = dest.with_suffix(".norm.wav")
+    tight = dest.with_suffix(".tight.wav")
     try:
-        result = subprocess.run(cmd, capture_output=True, check=False, timeout=60)
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
-        raise AudioError(f"ffmpeg postprocess failed: {exc}") from exc
-    if result.returncode != 0 or not dest.exists():
-        err = (result.stderr or b"").decode("utf-8", errors="replace")[:400]
-        raise AudioError(f"ffmpeg postprocess failed: {err}")
+        # 1) Lead trim + soft loudnorm at native rate (no pad yet).
+        af_norm = (
+            "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-55dB,"
+            "loudnorm=I=-16:TP=-1.5:LRA=14"
+        )
+        cmd_norm = [
+            ffmpeg,
+            "-y",
+            "-i",
+            str(src),
+            "-ac",
+            "1",
+            "-ar",
+            str(rate),
+            "-c:a",
+            "pcm_s16le",
+            "-af",
+            af_norm,
+            str(mid),
+        ]
+        try:
+            result = subprocess.run(cmd_norm, capture_output=True, check=False, timeout=60)
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
+            raise AudioError(f"ffmpeg postprocess failed: {exc}") from exc
+        if result.returncode != 0 or not mid.exists():
+            err = (result.stderr or b"").decode("utf-8", errors="replace")[:400]
+            raise AudioError(f"ffmpeg postprocess failed: {err}")
+
+        # 2) Drop trailing smear; micro-fade the new end.
+        samples, got_rate = _read_wav_mono_i16(mid)
+        samples = tighten_tail_samples(samples, got_rate or rate)
+        _write_wav_mono_i16(tight, samples, got_rate or rate)
+
+        # 3) Lead/trail pads for players / Bluetooth.
+        af_pad = (
+            f"adelay={_LISTEN_LEAD_MS}|{_LISTEN_LEAD_MS},"
+            f"apad=pad_dur={_LISTEN_TRAIL_SEC}"
+        )
+        cmd_pad = [
+            ffmpeg,
+            "-y",
+            "-i",
+            str(tight),
+            "-ac",
+            "1",
+            "-ar",
+            str(rate),
+            "-c:a",
+            "pcm_s16le",
+            "-af",
+            af_pad,
+            str(dest),
+        ]
+        try:
+            result = subprocess.run(cmd_pad, capture_output=True, check=False, timeout=60)
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
+            raise AudioError(f"ffmpeg postprocess failed: {exc}") from exc
+        if result.returncode != 0 or not dest.exists():
+            err = (result.stderr or b"").decode("utf-8", errors="replace")[:400]
+            raise AudioError(f"ffmpeg postprocess failed: {err}")
+    finally:
+        for tmp in (mid, tight):
+            try:
+                if tmp.is_file():
+                    tmp.unlink()
+            except OSError:
+                pass
 
 
 def generated_audio_ready(slugs: list[str] | None = None) -> bool:

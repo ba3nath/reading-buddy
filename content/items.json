@@ -362,37 +362,40 @@
     "sight_word": false
   },
   {
-    "slug": "all",
-    "text": "all",
+    "slug": "ball",
+    "text": "ball",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "ball"
   },
   {
-    "slug": "are",
-    "text": "are",
+    "slug": "barn",
+    "text": "barn",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "barn"
   },
   {
-    "slug": "but",
-    "text": "but",
+    "slug": "bump",
+    "text": "bump",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "bump"
   },
   {
     "slug": "can",
@@ -406,28 +409,30 @@
     "sight_word": true
   },
   {
-    "slug": "for",
-    "text": "for",
+    "slug": "farm",
+    "text": "farm",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "farm"
   },
   {
-    "slug": "from",
-    "text": "from",
+    "slug": "sand",
+    "text": "sand",
     "kind": "word",
     "level": 2,
-    "source": "fry",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "r"
     ],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "sand"
   },
   {
     "slug": "have",
@@ -441,50 +446,54 @@
     "sight_word": true
   },
   {
-    "slug": "her",
-    "text": "her",
+    "slug": "hand",
+    "text": "hand",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "r"
     ],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "hand"
   },
   {
-    "slug": "him",
-    "text": "him",
+    "slug": "hill",
+    "text": "hill",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "hill"
   },
   {
-    "slug": "his",
-    "text": "his",
+    "slug": "horn",
+    "text": "horn",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "horn"
   },
   {
-    "slug": "into",
-    "text": "into",
+    "slug": "under",
+    "text": "under",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "under"
   },
   {
     "slug": "like",
@@ -509,26 +518,28 @@
     "sight_word": true
   },
   {
-    "slug": "not",
-    "text": "not",
+    "slug": "note",
+    "text": "note",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "silent-e",
+    "sight_word": false,
+    "normalized": "note"
   },
   {
-    "slug": "out",
-    "text": "out",
+    "slug": "park",
+    "text": "park",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "park"
   },
   {
     "slug": "said",
@@ -545,118 +556,127 @@
     "sight_word": true
   },
   {
-    "slug": "she",
-    "text": "she",
+    "slug": "shell",
+    "text": "shell",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "digraph-sh",
+    "sight_word": false,
+    "normalized": "shell"
   },
   {
-    "slug": "some",
-    "text": "some",
+    "slug": "soap",
+    "text": "soap",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "s"
     ],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "vowel-team",
+    "sight_word": false,
+    "normalized": "soap"
   },
   {
-    "slug": "that",
-    "text": "that",
+    "slug": "tent",
+    "text": "tent",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "tent"
   },
   {
-    "slug": "the",
-    "text": "the",
+    "slug": "bell",
+    "text": "bell",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "th"
     ],
     "sounds_locked": true,
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "bell"
   },
   {
-    "slug": "there",
-    "text": "there",
+    "slug": "toast",
+    "text": "toast",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "th",
       "r"
     ],
     "sounds_locked": true,
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "vowel-team",
+    "sight_word": false,
+    "normalized": "toast"
   },
   {
-    "slug": "they",
-    "text": "they",
+    "slug": "crown",
+    "text": "crown",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "th"
     ],
     "sounds_locked": true,
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "vowel-team",
+    "sight_word": false,
+    "normalized": "crown"
   },
   {
-    "slug": "this",
-    "text": "this",
+    "slug": "nest",
+    "text": "nest",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "nest"
   },
   {
-    "slug": "was",
-    "text": "was",
+    "slug": "wall",
+    "text": "wall",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "sounds_locked": true,
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "wall"
   },
   {
-    "slug": "were",
-    "text": "were",
+    "slug": "well",
+    "text": "well",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [
       "r"
     ],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "well"
   },
   {
     "slug": "what",
@@ -692,15 +712,16 @@
     "sight_word": true
   },
   {
-    "slug": "with",
-    "text": "with",
+    "slug": "wolf",
+    "text": "wolf",
     "kind": "word",
     "level": 2,
-    "source": "sight",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
     "pattern": "sight",
-    "sight_word": true
+    "sight_word": true,
+    "normalized": "wolf"
   },
   {
     "slug": "would",
@@ -715,15 +736,16 @@
     "sight_word": true
   },
   {
-    "slug": "you",
-    "text": "you",
+    "slug": "yarn",
+    "text": "yarn",
     "kind": "word",
     "level": 2,
-    "source": "dolch",
+    "source": "decodable",
     "pd_status": "n/a",
     "sound_tags": [],
-    "pattern": "sight",
-    "sight_word": true
+    "pattern": "r-controlled",
+    "sight_word": false,
+    "normalized": "yarn"
   },
   {
     "slug": "your",

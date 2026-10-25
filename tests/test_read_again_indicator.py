@@ -59,7 +59,7 @@ def test_beginner_close_does_not_ask_again(
     assert body["message"] == MSG_CLOSE_OK
 
 
-def test_strict_close_asks_for_another_read(
+def test_strict_exact_low_confidence_does_not_ask_read_again(
     client, whisper_double, tone_wav, assert_attempt_shape
 ):
     client.put("/api/parent/settings", json={"mode": "strict", "auto_strict": False})
@@ -67,7 +67,7 @@ def test_strict_close_asks_for_another_read(
     assert start["mode"] == "strict"
     item = start["items"][0]
     qi = 0
-    # Strict close = exact word, low Whisper confidence.
+    # Exact word + soft Whisper prob must still accept (UI shows the right word).
     whisper_double.set_transcript(
         AttemptTranscript(
             transcript=item["text"],
@@ -85,8 +85,6 @@ def test_strict_close_asks_for_another_read(
     assert res.status_code == 200
     body = res.json()
     assert_attempt_shape(body)
-    assert body["result"] == "close"
-    assert body["again"] is True
-    assert body["read_again"] is True
-    assert body["try_number"] == 2
-    assert body["message"] == MSG_CLOSE
+    assert body["result"] == "correct"
+    assert body["again"] is False
+    assert body["read_again"] is False

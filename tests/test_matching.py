@@ -104,19 +104,17 @@ def test_beginner_function_word_swap_still_correct():
     assert result.result == "correct"
 
 
-def test_strict_multiword_threshold_below_mean_is_close():
-    """Mean under STRICT_MULTIWORD_EXACT_MIN_MEAN stays close even if exact."""
-    from app import config
-
-    confs = [0.2, 0.2, 0.2]
-    assert sum(confs) / len(confs) < config.STRICT_MULTIWORD_EXACT_MIN_MEAN
+def test_strict_exact_low_confidence_is_still_correct():
+    """If the transcript matches, soft Whisper probs must not ask read-again."""
     result = score_attempt(
         "Hickory dickory dock",
         "hickory dickory dock",
-        confs,
+        [0.2, 0.2, 0.2],
         mode="strict",
     )
-    assert result.result == "close"
+    assert result.result == "correct"
+    single = score_attempt("cup", "cup", [0.4], mode="strict")
+    assert single.result == "correct"
 
 
 def test_strict_exact_phrase_missing_confidences_is_correct():
@@ -330,10 +328,10 @@ def test_low_confidence_exact_is_correct_beginner():
     assert result.word_scores[0].result == "correct"
 
 
-def test_low_confidence_exact_still_close_strict():
+def test_low_confidence_exact_is_correct_strict():
     result = score_attempt("cat", "cat", [0.40], mode="strict")
-    assert result.result == "close"
-    assert result.word_scores[0].result == "close"
+    assert result.result == "correct"
+    assert result.word_scores[0].result == "correct"
 
 
 def test_strict_exact_line_uses_mean_confidence():
