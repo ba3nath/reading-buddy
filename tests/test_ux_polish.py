@@ -128,6 +128,21 @@ def test_mic_hear_you_feedback_no_timer():
     assert "buzzer" not in JS.lower()
 
 
+def test_wrong_read_feedback_stays_readable():
+    """Wrong takes need a long dwell + keep 'I heard' into listen-again."""
+    assert "RESULT_DWELL_MS" in JS
+    assert "feedback: 4200" in JS or "feedback:4200" in JS
+    assert "locked: 3200" in JS or "locked:3200" in JS
+    assert "lastFeedback" in JS
+    assert "rememberFeedback" in JS
+    assert "hold?.message" in JS or "hold.message" in JS
+    # Result prompts are larger / stronger so kids can finish reading them.
+    assert "result-miss" in CSS and ".prompt" in CSS
+    assert "heard-strong" in CSS
+    assert "heard-strong" in JS
+    assert "RESULT_DWELL_MS.feedback" in JS
+
+
 def test_mic_ready_and_done_are_visually_distinct():
     """Tap to read (go) vs Tap when done (stop) must not share the same color language."""
     assert 'data-mic-mode="ready"' in HTML
@@ -188,8 +203,9 @@ def test_level7_does_not_stack_previous_and_current_audio():
     assert "Listen and sing along…" in JS
     assert "isRhymeSingAlongItem" in JS
     assert "state.level === 3" in JS
-    # Locking results advance directly — only the new screen's showListen plays.
-    assert "setTimeout(() => advance(), 1400)" in JS
+    # Locking results advance via RESULT_DWELL_MS — only the new showListen plays.
+    assert "RESULT_DWELL_MS" in JS
+    assert "RESULT_DWELL_MS.ok" in JS
     assert "maybeSingAlongThen(advance)" not in JS
     assert "celebrateCorrectRead" in JS
     assert "popSuccessFx" in JS

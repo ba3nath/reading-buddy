@@ -37,34 +37,78 @@ def next_hint_level(prior: int, *, kind: str) -> HintLevel:
     return HINT_NONE
 
 
+def _short_heard(heard: str, *, max_chars: int = 40) -> str:
+    h = " ".join((heard or "").strip().split())
+    if not h:
+        return ""
+    if len(h) > max_chars:
+        return h[: max_chars - 1].rstrip() + "…"
+    return h
+
+
+def reading_feedback(
+    target: str, heard: str = "", *, invite_again: bool = True
+) -> str:
+    """One clear line: what we heard vs the target (empty if nothing useful)."""
+    word = (target or "").strip() or "that word"
+    said = _short_heard(heard)
+    if not said:
+        return ""
+    # Same words (case/punct) — no contrast line needed.
+    if said.lower().rstrip(".!?") == word.lower().rstrip(".!?"):
+        return ""
+    if invite_again:
+        return f'I heard "{said}" — try "{word}".'
+    return f'I heard "{said}". The word is "{word}".'
+
+
 def coach_line_for(
     level: int,
     *,
     target: str,
+    heard: str = "",
     pattern: str = "",
     outcome: str = "",
+    invite_again: bool = True,
 ) -> str:
     """Child-facing copy. Never frames ASR uncertainty as a reading failure."""
     word = (target or "").strip() or "that word"
     g = pattern_grapheme(pattern)
+    contrast = reading_feedback(target, heard, invite_again=invite_again)
     if outcome in ("silence", "uncertain") or level <= HINT_LISTEN:
         if outcome == "uncertain":
             return "I wasn't sure I heard you — tap to try once more."
         return "Let's listen again, then you read it."
     if level == HINT_HIGHLIGHT:
+        if contrast:
+            if g and len(g) > 1:
+                return f"{contrast} Look at the {g}."
+            if g:
+                return f"{contrast} Listen for /{g}/."
+            return contrast
         if g and len(g) > 1:
             return f"Look at the {g} in {word}."
         if g:
             return f"Look at the /{g}/ sound in {word}."
         return f"Look carefully at {word}."
     if level == HINT_SOUND:
+        if contrast:
+            if g and len(g) > 1:
+                return f"{contrast} The letters {g} say /{g}/."
+            if g:
+                return f"{contrast} Listen for /{g}/."
+            return contrast
         if g and len(g) > 1:
             return f"The letters {g} say /{g}/. Now you try."
         if g:
             return f"Listen for /{g}/, then read {word}."
         return f"Say the first sound, then read {word}."
     # MODEL
-    return f"I'll say it — {word}. Now you read it."
+    if contrast:
+        return f"{contrast} Listen: {word}."
+    if invite_again:
+        return f"I'll say it — {word}. Now you read it."
+    return f"I'll say it — {word}."
 
 
 def build_hint(
@@ -74,6 +118,7 @@ def build_hint(
     pattern: str = "",
     level: int,
     outcome: str = "",
+    invite_again: bool = True,
 ) -> dict[str, Any]:
     """Return coach fields for an attempt response (optional for old clients)."""
     level_i = max(0, min(4, int(level or 0)))
@@ -82,11 +127,17 @@ def build_hint(
         spans = highlight_for_attempt(target=target, heard=heard, pattern=pattern)
         if not spans and pattern:
             spans = pattern_spans(target, pattern)
+    line = coach_line_for(
+        level_i,
+        target=target,
+        heard=heard,
+        pattern=pattern,
+        outcome=outcome,
+        invite_again=invite_again,
+    )
     return {
         "hint_level": level_i,
-        "coach_line": coach_line_for(
-            level_i, target=target, pattern=pattern, outcome=outcome
-        ),
+        "coach_line": line,
         "highlight_spans": spans,
         "play_model": level_i >= HINT_MODEL,
     }

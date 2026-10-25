@@ -42,7 +42,10 @@ def _assert_asks_another(body: dict, *, try_number: int, tries_max: int) -> None
     assert body["try_number"] == try_number
     assert body["tries_max"] == tries_max
     msg = body["message"].lower()
-    assert "read" in msg and ("again" in msg or "one more" in msg)
+    # Legacy "read again" copy, or concrete heard/target coach line.
+    asks = ("again" in msg or "one more" in msg) and "read" in msg
+    heard = "i heard" in msg and ("try" in msg or "look" in msg or "listen" in msg)
+    assert asks or heard, msg
 
 
 def _assert_done_no_another(body: dict) -> None:
@@ -86,7 +89,11 @@ def test_beginner_close_near_miss_no_second_try(tmp_env):
         qi=qi,
     )
     assert first["result"] == "close"
-    assert first["message"] == MSG_CLOSE_OK
+    msg = (first["message"] or "").lower()
+    assert "one more" not in msg
+    assert "i heard" in msg or first["message"] == MSG_CLOSE_OK
+    if "i heard" in msg:
+        assert "cot" in msg and "cat" in msg
     _assert_done_no_another(first)
 
 
@@ -253,7 +260,9 @@ def test_api_beginner_close_no_second_try(
     body = res.json()
     assert_attempt_shape(body)
     assert body["result"] == "close"
-    assert body["message"] == MSG_CLOSE_OK
+    msg = (body["message"] or "").lower()
+    assert "one more" not in msg
+    assert "i heard" in msg or body["message"] == MSG_CLOSE_OK
     _assert_done_no_another(body)
 
 

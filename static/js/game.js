@@ -81,6 +81,16 @@ const ILLUSTRATION_STOPWORDS = new Set([
   "wonder",
 ]);
 
+/** How long result screens stay readable before listen / advance. */
+const RESULT_DWELL_MS = {
+  ok: 1400,
+  skip: 1400,
+  /** Wrong / almost — kids need time to read "I heard …". */
+  feedback: 4200,
+  /** Locked miss/close still show contrast briefly before next word. */
+  locked: 3200,
+};
+
 const state = {
   id: "boot",
   sessionId: null,
@@ -98,6 +108,8 @@ const state = {
   closeAgainPending: false,
   /** When set, another read is required for the current word. */
   readAgain: null, // { tryNumber, triesMax, reason } | null
+  /** Last wrong-read copy kept through listen-again so it stays readable. */
+  lastFeedback: null, // { message, heard } | null
   replay: [],
   replayIndex: 0,
   phase: "read", // "read" | "replay" | "passage"
@@ -335,10 +347,26 @@ function setHeard(transcript) {
   if (!text) {
     el.hidden = true;
     el.textContent = "";
+    el.classList.remove("heard-strong");
     return;
   }
   el.hidden = false;
+  el.classList.add("heard-strong");
   el.textContent = `I heard "${text}"`;
+}
+
+function rememberFeedback(message, heard) {
+  const msg = String(message || "").trim();
+  const said = String(heard || "").trim();
+  if (!msg && !said) {
+    state.lastFeedback = null;
+    return;
+  }
+  state.lastFeedback = { message: msg, heard: said };
+}
+
+function clearFeedback() {
+  state.lastFeedback = null;
 }
 
 function setWord(
@@ -1108,10 +1136,16 @@ async function showListen() {
   // Always stop any prior clip before swapping the on-screen line + audio.
   stopClip();
   clearPhraseScore();
-  setHeard("");
+  const hold = state.readAgain && state.lastFeedback;
+  // Keep "I heard …" visible on a re-read so kids can compare while listening.
+  if (hold?.heard) setHeard(hold.heard);
+  else setHeard("");
   setState("listen");
   setWord(item.text, { kind: item.kind || "word" });
-  if (state.readAgain) {
+  if (hold?.message) {
+    setMessage(hold.message);
+    setMicLabel("Tap to read again");
+  } else if (state.readAgain) {
     setMessage(rhymeListenMessage(item, { again: true }));
     setMicLabel("Tap to read again");
   } else {
@@ -1131,7 +1165,13 @@ async function showListen() {
 function enterIdle() {
   setState("idle");
   const item = currentItem();
-  if (state.readAgain) {
+  const hold = state.readAgain && state.lastFeedback;
+  if (hold?.message) {
+    // Keep the concrete feedback until they tap the mic.
+    setMessage(hold.message);
+    if (hold.heard) setHeard(hold.heard);
+    setMicLabel("Tap to read again");
+  } else if (state.readAgain) {
     setMessage(
       item && item.kind === "line"
         ? "Your turn again — tap and read the line"
@@ -1254,6 +1294,8 @@ async function onMicTap() {
   setState("recording");
   // They pressed for the follow-up take — don't keep saying "one more".
   hideReadAgainBanner();
+  clearFeedback();
+  setHeard("");
   setMessage(
     state.readAgain
       ? "I hear you — read it clearly, then tap when done"
@@ -1407,9 +1449,13 @@ function applyCoachHint(result, item) {
       highlight: true,
     });
   }
-  if (line && (result.again || result.retry || result.hint_level > 0)) {
-    // Prefer coach_line when it adds pattern/miscue guidance; keep try-count msgs for silence.
-    if (result.outcome === "uncertain" || (result.hint_level || 0) >= 2) {
+  // Prefer the concrete coach line whenever present (especially "I heard …").
+  if (line && (result.again || result.retry || (result.hint_level || 0) > 0)) {
+    if (
+      result.outcome === "uncertain" ||
+      (result.hint_level || 0) >= 2 ||
+      line.includes("I heard")
+    ) {
       setMessage(line);
     }
   }
@@ -1445,7 +1491,8 @@ function handleAttempt(result) {
     setState("result-skip");
     state.closeAgainPending = false;
     clearReadAgain();
-    setTimeout(() => advance(), 1400);
+    clearFeedback();
+    setTimeout(() => advance(), RESULT_DWELL_MS.skip);
     return;
   }
   if (result.retry || result.result === "retry") {
@@ -1454,13 +1501,15 @@ function handleAttempt(result) {
     const tryNumber = Number(result.try_number) || 2;
     const triesMax = Number(result.tries_max) || 3;
     setReadAgain({ tryNumber, triesMax, reason: "retry" });
-    setMessage(result.message || "Please read it again");
+    const msg = result.message || "Please read it again";
+    setMessage(msg);
+    rememberFeedback(msg, result.transcript);
     setMicLabel("Tap to read again");
     setState("result-retry");
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();
       else showListen();
-    }, 1600);
+    }, RESULT_DWELL_MS.feedback);
     return;
   }
   // Hint ladder / second-chance only when again/read_again is true — never on locked close.
@@ -1476,14 +1525,16 @@ function handleAttempt(result) {
       reason: "hint",
     });
     const coach = (result.coach_line || "").trim();
-    setMessage(coach || result.message || "Almost — read it one more time!");
+    const msg = coach || result.message || "Almost — read it one more time!";
+    setMessage(msg);
+    rememberFeedback(msg, result.transcript);
     setMicLabel("Tap to read again");
     setState(result.hint_level >= 2 ? "result-hint" : "result-close");
     state.closeAgainPending = true;
     setTimeout(() => {
       if (state.phase === "replay") showReplayItem();
       else showListen();
-    }, 1600);
+    }, RESULT_DWELL_MS.feedback);
     return;
   }
   if (result.result === "correct") {
@@ -1495,7 +1546,8 @@ function handleAttempt(result) {
     setState("result-correct");
     state.closeAgainPending = false;
     clearReadAgain();
-    setTimeout(() => advance(), 1400);
+    clearFeedback();
+    setTimeout(() => advance(), RESULT_DWELL_MS.ok);
     return;
   }
   // Locked close / miss — move on; never keep "one more" copy.
@@ -1505,11 +1557,16 @@ function handleAttempt(result) {
   if ((Number(result.stars_awarded) || 0) > 0) {
     popStarFloat(Number(result.stars_awarded));
   }
-  setMessage(result.message || "");
+  const lockedMsg = result.message || "";
+  setMessage(lockedMsg);
+  rememberFeedback(lockedMsg, result.transcript);
   setState(result.result === "missed" ? "result-miss" : "result-close");
   state.closeAgainPending = false;
   clearReadAgain();
-  setTimeout(() => advance(), 1400);
+  setTimeout(() => {
+    clearFeedback();
+    advance();
+  }, RESULT_DWELL_MS.locked);
 }
 
 function advance() {

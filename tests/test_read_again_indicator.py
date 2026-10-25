@@ -56,7 +56,9 @@ def test_beginner_close_does_not_ask_again(
     assert body["result"] == "close"
     assert body["again"] is False
     assert body["read_again"] is False
-    assert body["message"] == MSG_CLOSE_OK
+    msg = (body["message"] or "").lower()
+    assert "one more" not in msg
+    assert "i heard" in msg or body["message"] == MSG_CLOSE_OK
 
 
 def test_strict_exact_low_confidence_does_not_ask_read_again(

@@ -888,7 +888,6 @@ def apply_attempt(
         if ask_close_again:
             again = True
             stars_awarded = 0
-            message = config.MSG_CLOSE
             counts_for_session = 1
             hint_bundle = build_hint(
                 target=item_text,
@@ -897,10 +896,11 @@ def apply_attempt(
                 level=next_hint_level(0, kind="close"),
                 outcome="incorrect",
             )
+            # Prefer the concrete "I heard X — try Y" line when available.
+            message = hint_bundle.get("coach_line") or config.MSG_CLOSE
         elif ask_miss_again:
             again = True
             stars_awarded = 0
-            message = config.MSG_MISS_AGAIN
             counts_for_session = 0
             hint_bundle = build_hint(
                 target=item_text,
@@ -909,6 +909,7 @@ def apply_attempt(
                 level=next_hint_level(0, kind="missed"),
                 outcome="incorrect",
             )
+            message = hint_bundle.get("coach_line") or config.MSG_MISS_AGAIN
         else:
             if replacing_close:
                 flip_prior_lock(conn, session_id, queue_index)
@@ -953,18 +954,19 @@ def apply_attempt(
                     )
             elif result == "close":
                 # Beginner first close, or strict second close — lock & move on.
-                message = config.MSG_CLOSE_OK
                 again = False
-                # Still offer a gentle highlight for learning (no second try).
                 hint_bundle = build_hint(
                     target=item_text,
                     heard=transcript,
                     pattern=item_pattern,
                     level=HINT_HIGHLIGHT,
                     outcome="incorrect",
+                    invite_again=False,
                 )
+                coach = (hint_bundle.get("coach_line") or "").strip()
+                # Prefer concrete heard/target copy; else kind move-on line.
+                message = coach if "I heard" in coach else config.MSG_CLOSE_OK
             else:
-                message = config.MSG_MISS
                 again = False
                 prior = HINT_HIGHLIGHT if replacing_miss else 0
                 hint_bundle = build_hint(
@@ -973,7 +975,10 @@ def apply_attempt(
                     pattern=item_pattern,
                     level=next_hint_level(prior, kind="lock"),
                     outcome="incorrect",
+                    invite_again=False,
                 )
+                coach = (hint_bundle.get("coach_line") or "").strip()
+                message = coach if "I heard" in coach else config.MSG_MISS
                 if counts_for_session == 1:
                     apply_day_ladder(conn, item_id, "missed")
                     new_play, new_flags, reinsert_info = maybe_reinsert_miss(

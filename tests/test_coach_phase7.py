@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from app.coach.align import align_miscue, highlight_for_attempt, pattern_spans
-from app.coach.hints import HINT_HIGHLIGHT, HINT_LISTEN, build_hint, next_hint_level
+from app.coach.hints import (
+    HINT_HIGHLIGHT,
+    HINT_LISTEN,
+    build_hint,
+    next_hint_level,
+    reading_feedback,
+)
 from app.db import load_settings, save_settings
 from app.matching import score_attempt
 from app.session import (
@@ -41,7 +47,41 @@ def test_hint_ladder_levels():
     hint = build_hint(target="ship", heard="sip", pattern="digraph-sh", level=2)
     assert hint["hint_level"] == 2
     assert hint["highlight_spans"]
-    assert "ship" in hint["coach_line"].lower() or "sh" in hint["coach_line"].lower()
+    line = hint["coach_line"].lower()
+    assert "ship" in line or "sh" in line
+    assert "i heard" in line and "sip" in line
+
+
+def test_reading_feedback_contrast_and_lock_copy():
+    again = reading_feedback("ship", "sip", invite_again=True)
+    assert 'I heard "sip"' in again
+    assert 'try "ship"' in again
+    locked = reading_feedback("cat", "cot", invite_again=False)
+    assert 'I heard "cot"' in locked
+    assert 'The word is "cat"' in locked
+    assert "try" not in locked.lower()
+    assert reading_feedback("cat", "cat") == ""
+    assert reading_feedback("cat", "") == ""
+
+
+def test_miss_again_message_includes_heard(tmp_env):
+    conn = tmp_env["conn"]
+    data = start_session(conn, level=1)
+    item = next((i for i in data["items"] if i["text"] == "cat"), data["items"][0])
+    qi = data["items"].index(item)
+    first = apply_attempt(
+        conn,
+        data["session_id"],
+        item["id"],
+        score_attempt(item["text"], "dog", [0.95], mode="beginner"),
+        phase="read",
+        queue_index=qi,
+    )
+    assert first["again"] is True
+    msg = (first["message"] or "").lower()
+    assert "i heard" in msg
+    assert "dog" in msg
+    assert item["text"].lower() in msg
 
 
 def test_uncertain_copy_never_says_wrong(tmp_env):

@@ -120,6 +120,12 @@ def convert_to_wav(src: Path, dest: Path) -> None:
 
 
 def wav_duration_and_rms(wav_path: Path) -> tuple[float, float]:
+    metrics = listen_clip_metrics(wav_path)
+    return float(metrics["duration"]), float(metrics["rms"])
+
+
+def listen_clip_metrics(wav_path: Path) -> dict[str, float | int]:
+    """Sample-rate / duration / RMS for a listen or mic wav."""
     with wave.open(str(wav_path), "rb") as wf:
         n_channels = wf.getnchannels()
         sampwidth = wf.getsampwidth()
@@ -127,17 +133,47 @@ def wav_duration_and_rms(wav_path: Path) -> tuple[float, float]:
         n_frames = wf.getnframes()
         frames = wf.readframes(n_frames)
     if n_frames == 0 or framerate == 0:
-        return 0.0, 0.0
+        return {
+            "rate": int(framerate or 0),
+            "channels": int(n_channels or 0),
+            "sampwidth": int(sampwidth or 0),
+            "duration": 0.0,
+            "rms": 0.0,
+            "n_frames": 0,
+        }
     duration = n_frames / float(framerate)
-    # PCM RMS → scale to float -1..1 (same scale as former audioop.rms).
-    if not frames:
-        return duration, 0.0
-    rms_int = _pcm_rms(frames, sampwidth)
-    max_amp = float(1 << (8 * sampwidth - 1))
-    rms = rms_int / max_amp if max_amp else 0.0
-    # If stereo slipped through, still ok — ffmpeg forces mono
-    _ = n_channels
-    return duration, rms
+    rms = 0.0
+    if frames:
+        rms_int = _pcm_rms(frames, sampwidth)
+        max_amp = float(1 << (8 * sampwidth - 1))
+        rms = rms_int / max_amp if max_amp else 0.0
+    return {
+        "rate": int(framerate),
+        "channels": int(n_channels),
+        "sampwidth": int(sampwidth),
+        "duration": float(duration),
+        "rms": float(rms),
+        "n_frames": int(n_frames),
+    }
+
+
+def listen_clip_ok(
+    wav_path: Path,
+    *,
+    expect_rate: int | None = None,
+    min_duration: float = 0.35,
+    min_rms: float = 0.01,
+) -> bool:
+    """True when a kid-facing listen clip looks loud and long enough."""
+    m = listen_clip_metrics(wav_path)
+    rate_ok = True if expect_rate is None else m["rate"] == expect_rate
+    return (
+        rate_ok
+        and m["channels"] == 1
+        and m["sampwidth"] == 2
+        and float(m["duration"]) >= min_duration
+        and float(m["rms"]) >= min_rms
+    )
 
 
 def is_silence(wav_path: Path) -> bool:

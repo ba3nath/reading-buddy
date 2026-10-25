@@ -383,6 +383,9 @@ body[data-state="result-close"] .buddy {
   margin: 0;
   color: var(--ink-soft);
   font-size: 1.1rem;
+  max-width: 36rem;
+  text-wrap: balance;
+  line-height: 1.35;
 }
 
 .read-again {
@@ -420,9 +423,29 @@ body[data-state="scoring"] .read-again {
 }
 
 body[data-state="result-retry"] .prompt,
-body[data-state="result-close"] .prompt {
+body[data-state="result-close"] .prompt,
+body[data-state="result-miss"] .prompt,
+body[data-state="result-hint"] .prompt {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: clamp(1.2rem, 3.4vw, 1.45rem);
+}
+
+/* Keep feedback readable while the model clip plays again. */
+body[data-state="listen"] .prompt,
+body[data-state="idle"] .prompt {
+  font-size: clamp(1.05rem, 2.8vw, 1.25rem);
+}
+
+body[data-state="listen"] .heard.heard-strong,
+body[data-state="idle"] .heard.heard-strong,
+body[data-state="result-retry"] .heard,
+body[data-state="result-close"] .heard,
+body[data-state="result-miss"] .heard,
+body[data-state="result-hint"] .heard {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: clamp(1.15rem, 3vw, 1.35rem);
 }
 
 .word-art.is-word {
@@ -437,9 +460,17 @@ body[data-state="result-close"] .prompt {
 }
 
 .heard {
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--ink-soft);
   font-size: 1.05rem;
+  max-width: 36rem;
+  text-wrap: balance;
+}
+
+.heard.heard-strong {
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 226, 168, 0.55);
 }
 
 .word-art {

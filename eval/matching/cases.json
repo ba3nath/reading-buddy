@@ -139,8 +139,8 @@
     "word_confidences": [0.2],
     "reading_label": "reading_ok",
     "bucket": "soft_conf",
-    "baseline_result": "close",
-    "notes": "Strict soft-conf on exact match → close, not missed (soft path)"
+    "baseline_result": "correct",
+    "notes": "Exact transcript must accept even with soft Whisper probs (no forced re-read)"
   },
   {
     "id": "punct-normalize-beg",

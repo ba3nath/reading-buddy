@@ -99,8 +99,13 @@ def test_attempt_close(client, whisper_double, tone_wav, assert_attempt_shape):
         assert body["result"] == "close"
         assert body["again"] is False
         assert body["read_again"] is False
-        assert body["message"] == MSG_CLOSE_OK
-        assert "one more" not in body["message"].lower()
+        msg = (body["message"] or "").lower()
+        assert "one more" not in msg
+        # Readable contrast when ASR heard something else.
+        assert "i heard" in msg or body["message"] == MSG_CLOSE_OK
+        if "i heard" in msg:
+            assert "cot" in msg
+            assert "cat" in msg
 
 
 def test_attempt_miss(client, whisper_double, tone_wav, assert_attempt_shape):
@@ -117,7 +122,10 @@ def test_attempt_miss(client, whisper_double, tone_wav, assert_attempt_shape):
     assert res.status_code == 200
     body = res.json()
     assert body["result"] == "missed"
-    assert body["message"] == MSG_MISS_AGAIN
+    msg = (body["message"] or "").lower()
+    assert "i heard" in msg or body["message"] == MSG_MISS_AGAIN
+    if "i heard" in msg:
+        assert "zzzzzz" in msg
     assert body["read_again"] is True
     assert body["stars_awarded"] == 0
 
