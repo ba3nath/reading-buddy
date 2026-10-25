@@ -47,9 +47,10 @@ WHISPER_BEAM_SIZE = 3  # short kid words; 1 was too lossy on CPU small.en
 # bf_isabella and picking the clearest (presence × low silence); see m2 notes.
 KOKORO_MODEL_PATH = MODELS_DIR / "kokoro" / "kokoro-v1.0.onnx"
 KOKORO_VOICES_PATH = MODELS_DIR / "kokoro" / "voices-v1.0.bin"
-KOKORO_VOICE_ID = "bf_isabella"
+KOKORO_VOICE_ID = "bf_emma"
 KOKORO_LANG = "en-gb"
-AUDIO_SAMPLE_RATE = 24000  # Kokoro native; served files normalized to 16 kHz mono
+# Kokoro native rate; listen clips are served at this rate (not downsampled).
+AUDIO_SAMPLE_RATE = 24000
 
 MAX_RETRIES_PER_ITEM = 3
 DEFAULT_SESSION_LENGTH = 10

@@ -189,237 +189,84 @@ def resolve_audio_slug(slug: str) -> Path | None:
     return None
 
 
-# Per-word Kokoro en-gb overrides: (spoken_text, speed).
+# Per-word Kokoro overrides: (spoken_text, speed). Speeds stay near natural
+# speech (≈0.95–1.0). Prefer punctuation lengthening over crawling <0.9.
 #
 # IMPORTANT: spoken_text must be ONLY the on-screen word (optional . ! ?).
-# Never add carrier words ("fat cat", "a dog", "please sit") — the child
-# hears the TTS while reading the single word on screen.
+# Never add carrier words — the child hears TTS while reading one word.
 #
-# Clarity levers: punctuation, speed, and voice — not extra words.
-# Tuned by batch Whisper A/B (single-token only) across weak/fail clips.
+# Keep this allowlist small. Default path in tts_render covers most CVCs.
 _TTS_WORD_OVERRIDES: dict[str, tuple[str, float]] = {
-    "a": ('a', 0.88),
-    "all": ('all.', 0.94),
-    "are": ('are!', 1.0),
-    "bed": ('bed.', 0.88),
-    "big": ('big', 0.86),
-    "bird": ('bird.', 0.86),
-    "bike": ('bike.', 0.88),
-    "bin": ('bin.', 0.88),
-    "book": ('book.', 0.82),
-    "box": ('box', 0.88),
-    "bring": ('bring', 0.92),
-    "brush": ('brush!', 0.95),
-    "bug": ('bug', 0.82),
-    "bus": ('bus', 1.0),
-    "can": ('can!', 0.95),
-    "car": ('car.', 0.94),
-    "cat": ('cat.', 0.94),
-    "chair": ('chair.', 0.82),
-    "chip": ('chip!', 0.95),
-    "chop": ('chop', 0.94),
-    "clap": ('clap.', 0.94),
-    "clock": ('clock!', 0.95),
-    "cup": ('cup!', 1.0),
-    "dog": ('dog.', 0.86),
-    "drop": ('drop!', 0.95),
-    "drum": ('drum.', 0.94),
-    "duck": ('duck.', 0.94),
-    "fish": ('fish!', 1.0),
-    "flag": ('flag!', 0.95),
-    "flash": ('flash!', 1.0),
-    "for": ('for', 0.94),
-    "fork": ('fork!', 1.0),
-    "fox": ('fox', 1.0),
-    "frog": ('frog.', 0.94),
-    "from": ('from.', 0.88),
-    "grass": ('grass!', 1.0),
-    "hat": ('hat', 0.94),
-    "have": ('have.', 0.94),
-    "her": ('her.', 0.78),
-    "him": ('him!', 0.95),
-    "home": ('home!', 0.95),
-    "hop": ('hop!', 1.0),
-    "into": ('into.', 0.88),
-    "jam": ('jam.', 0.82),
-    "kid": ('kid!', 1.0),
-    "leg": ('leg.', 0.86),
-    "like": ('like.', 0.94),
-    "log": ('log', 0.82),
-    "mop": ('mop.', 0.88),
-    "much": ('much!', 0.95),
-    "mud": ('mud.', 0.88),
-    "net": ('net.', 0.82),
-    "out": ('out.', 0.94),
-    "path": ('path!', 1.0),
-    "pen": ('pen.', 0.94),
-    "pig": ('pig', 0.86),
-    "plan": ('plan', 0.94),
-    "rain": ('rain.', 0.88),
-    "rat": ('rat?', 0.92),
-    "run": ('run!', 0.95),
-    "said": ('said.', 0.94),
-    "she": ('she?', 0.92),
-    "sheep": ('sheep.', 0.94),
-    "ship": ('ship?', 0.92),
-    "shop": ('shop.', 0.94),
-    "sit": ('sit!', 1.0),
-    "some": ('some', 1.0),
-    "spoon": ('spoon?', 0.92),
-    "stop": ('stop.', 0.94),
-    "sun": ('sun!', 0.95),
-    "swim": ('swim!', 1.0),
-    "tap": ('tap.', 0.94),
-    "the": ('the!', 0.95),
-    "there": ('there.', 0.88),
-    "they": ('they.', 0.82),
-    "thin": ('thin!', 1.0),
-    "three": ('three!', 1.0),
-    "top": ('top.', 0.88),
-    "train": ('train!', 1.0),
-    "trap": ('trap', 0.94),
-    "tree": ('tree?', 0.92),
-    "truck": ('truck.', 0.88),
-    "van": ('van!', 1.0),
-    "was": ('was!', 1.0),
-    "were": ('were.', 0.78),
-    "wet": ('wet', 0.94),
-    "what": ('what.', 0.88),
-    "when": ('when!', 1.0),
-    "will": ('will.', 0.94),
-    "win": ('win!', 0.95),
-    "with": ('with', 0.94),
-    "would": ('would', 0.88),
-    "your": ('your.', 0.78),
+    # Bare "a." adds a burst; leave unpunctuated.
+    "a": ("a", 0.95),
+    # Plosive / short words that clip without a firm release.
+    "cup": ("cup!", 1.0),
+    "sit": ("sit.", 0.95),  # sit! → Whisper "Z"
+    "hop": ("hop!", 1.0),
+    "top": ("top.", 0.95),
+    "path": ("path!", 1.0),
+    "thin": ("thin!", 1.0),
+    "when": ("when!", 1.0),
+    "were": ("were.", 0.95),
+    "your": ("your.", 0.95),
+    # Hard /g/ — period + near-natural speed (slow crawl → "frogeh").
+    "dog": ("dog.", 0.95),
+    "pig": ("pig", 0.95),  # bare + Lewis; perioded Emma/Alice → Peggy
+    "frog": ("frog.", 0.95),
+    "log": ("log.", 0.95),
+    "bug": ("bug.", 0.95),
+    "big": ("big.", 0.95),
 }
 
-# Per-word voice overrides: (voice_id, lang). Default session voice otherwise.
+# Per-word voice overrides. Default is bf_emma (config.KOKORO_VOICE_ID).
+# Only list voices that Emma smears; stay British unless proven otherwise.
 _TTS_VOICE_OVERRIDES: dict[str, tuple[str, str]] = {
-    "all": ('bf_emma', 'en-gb'),
-    "are": ('af_alloy', 'en-us'),
-    "bed": ('bf_emma', 'en-gb'),
-    "big": ('bf_alice', 'en-gb'),
-    "bird": ('bf_emma', 'en-gb'),
-    "bike": ('bf_emma', 'en-gb'),
-    "bin": ('bf_alice', 'en-gb'),
-    "book": ('bf_emma', 'en-gb'),
-    "box": ('bf_emma', 'en-gb'),
-    "bring": ('bf_emma', 'en-gb'),
-    "brush": ('bf_emma', 'en-gb'),
-    "bug": ('bf_alice', 'en-gb'),
-    "bus": ('bf_emma', 'en-gb'),
-    "can": ('bf_emma', 'en-gb'),
-    "cat": ('bf_emma', 'en-gb'),
-    "chair": ('bm_lewis', 'en-gb'),
-    "chip": ('bf_emma', 'en-gb'),
-    "chop": ('bf_emma', 'en-gb'),
-    "clap": ('bf_emma', 'en-gb'),
-    "clock": ('bf_emma', 'en-gb'),
-    "cup": ('bf_emma', 'en-gb'),
-    "dog": ('bf_alice', 'en-gb'),
-    "drop": ('bf_emma', 'en-gb'),
-    "drum": ('bf_emma', 'en-gb'),
-    "duck": ('bf_emma', 'en-gb'),
-    "fish": ('bf_emma', 'en-gb'),
-    "flag": ('bf_alice', 'en-gb'),
-    "flash": ('bf_emma', 'en-gb'),
-    "for": ('af_heart', 'en-us'),
-    "fork": ('af_alloy', 'en-us'),
-    "fox": ('bf_emma', 'en-gb'),
-    "frog": ('bf_emma', 'en-gb'),
-    "from": ('bf_emma', 'en-gb'),
-    "grass": ('bf_alice', 'en-gb'),
-    "have": ('bf_emma', 'en-gb'),
-    "her": ('af_bella', 'en-us'),
-    "him": ('bf_emma', 'en-gb'),
-    "home": ('bf_emma', 'en-gb'),
-    "hop": ('af_bella', 'en-us'),
-    "into": ('bf_emma', 'en-gb'),
-    "kid": ('bf_emma', 'en-gb'),
-    "like": ('bf_emma', 'en-gb'),
-    "log": ('bf_alice', 'en-gb'),
-    "much": ('bf_emma', 'en-gb'),
-    "mud": ('bf_emma', 'en-gb'),
-    "out": ('bf_emma', 'en-gb'),
-    "path": ('bm_lewis', 'en-gb'),
-    "pen": ('bf_emma', 'en-gb'),
-    "pig": ('bf_emma', 'en-gb'),
-    "red": ('bf_emma', 'en-gb'),
-    "plan": ('bf_emma', 'en-gb'),
-    "rain": ('bm_lewis', 'en-gb'),
-    "run": ('bf_emma', 'en-gb'),
-    "said": ('bf_emma', 'en-gb'),
-    "sheep": ('bf_emma', 'en-gb'),
-    "ship": ('bf_emma', 'en-gb'),
-    "shop": ('bf_emma', 'en-gb'),
-    "sit": ('bf_alice', 'en-gb'),
-    "some": ('bf_emma', 'en-gb'),
-    "spoon": ('bf_emma', 'en-gb'),
-    "stop": ('bf_emma', 'en-gb'),
-    "sun": ('bf_emma', 'en-gb'),
-    "swim": ('bf_emma', 'en-gb'),
-    "tap": ('bf_emma', 'en-gb'),
-    "there": ('bf_emma', 'en-gb'),
-    "they": ('bf_emma', 'en-gb'),
-    "thin": ('bf_emma', 'en-gb'),
-    "three": ('bf_alice', 'en-gb'),
-    "top": ('bm_lewis', 'en-gb'),
-    "train": ('bf_emma', 'en-gb'),
-    "trap": ('bf_emma', 'en-gb'),
-    "tree": ('bf_isabella', 'en-gb'),
-    "truck": ('bm_lewis', 'en-gb'),
-    "van": ('bf_emma', 'en-gb'),
-    "was": ('bf_emma', 'en-gb'),
-    "were": ('bm_lewis', 'en-gb'),
-    "wet": ('bf_alice', 'en-gb'),
-    "what": ('bf_emma', 'en-gb'),
-    "when": ('bm_lewis', 'en-gb'),
-    "will": ('bf_emma', 'en-gb'),
-    "win": ('bf_alice', 'en-gb'),
-    "with": ('bf_emma', 'en-gb'),
-    "would": ('bf_emma', 'en-gb'),
-    # Default bf_isabella when absent (batch Whisper winners).
+    "sit": ("bf_alice", "en-gb"),
+    "top": ("bm_lewis", "en-gb"),
+    "path": ("bm_lewis", "en-gb"),
+    "were": ("bm_lewis", "en-gb"),
+    "when": ("bm_lewis", "en-gb"),
+    "dog": ("bf_alice", "en-gb"),
+    "log": ("bf_alice", "en-gb"),
+    "bug": ("bf_alice", "en-gb"),
+    "big": ("bf_alice", "en-gb"),
+    "pig": ("bm_lewis", "en-gb"),  # Alice/Emma → Peggy; Lewis closer
 }
 
-# Short phrases: default voice is Emma (see tts_voice). Isabella + a trailing
-# period often adds junk syllables ("duckses", "pig eh", "bookie", "moppy").
+# Phrase voice overrides — Emma is default; only exceptions that smear.
 _TTS_PHRASE_VOICES: dict[str, tuple[str, str]] = {
-    # Isabella turns a final "sun" into "sunge" / "sandy". Alice keeps the /n/.
     "the hot sun": ("bf_alice", "en-gb"),
     "a hot sun": ("bf_alice", "en-gb"),
-    # Emma pluralizes "pen" → pens; Lewis keeps singular.
     "my blue pen": ("bm_lewis", "en-gb"),
-    # Emma @0.78 can onset like "the three…"; Alice keeps bare "three".
     "three red hats": ("bf_alice", "en-gb"),
-    # Isabella can release "away" with a /t/-like stop ("await").
-    "rain rain go away": ("bf_emma", "en-gb"),
-    # Alice @1.0 on final /g/ makes Whisper invent a leading "It's".
+    "a quick fox": ("bf_alice", "en-gb"),
+    "a tall ship": ("bf_alice", "en-gb"),
+    "one fast van": ("bm_lewis", "en-gb"),
+    "hop to the red box": ("bf_alice", "en-gb"),
+    "little boy blue come blow your horn": ("bm_lewis", "en-gb"),
+    # Alice on final /g/ invents "So/It's" before "a wet log".
     "a wet log": ("bf_emma", "en-gb"),
     "my big bag": ("bf_emma", "en-gb"),
 }
 
-# Explicit phrase spoken + speed when the default phrase rule is not enough.
+# Explicit phrase spoken + speed when the default rule is not enough.
 # Spoken must keep the same on-screen words (optional trailing . ! ? only).
 _TTS_PHRASE_RENDERS: dict[str, tuple[str, float]] = {
-    "a quick fox": ("a quick fox", 0.90),
-    "my blue pen": ("my blue pen", 0.78),
-    "one fast van": ("one fast van", 0.78),
-    "sit and read": ("sit and read", 0.82),
-    "sit on top": ("sit on top", 0.90),
-    "the cold wind": ("the cold wind", 0.82),
-    "the long path": ("the long path.", 0.90),
-    "the red box": ("the red box", 0.82),
-    "three red hats": ("three red hats", 0.90),
-    "rain rain go away": ("rain rain go away", 0.90),
+    "my blue pen": ("my blue pen", 0.95),
+    "three red hats": ("three red hats", 0.95),
+    "the hot sun": ("the hot sun", 0.95),
+    "a hot sun": ("a hot sun", 0.95),
+    "rain rain go away": ("rain rain go away", 0.95),
     "a wet log": ("a wet log", 0.95),
-    "my big bag": ("my big bag", 0.90),
-    # Whisper A/B winners for leftover smears after Emma default.
-    "hop to the red box": ("Hop to the red box", 0.82),
-    "the red pen is big": ("The red pen is big", 0.82),
-    "the dog and the fox can hop": ("The dog and the fox can hop", 0.82),
-    "the cat and the dog can hop": ("The cat and the dog can hop", 0.90),
-    "the bug and the ship can hop": ("The bug and the ship can hop", 0.95),
-    # /g/-final phrases use Alice @ 1.0 via tts_voice + _phrase_final_speed.
+    "my big bag": ("my big bag", 0.95),
+    "a quick fox": ("a quick fox.", 0.95),
+    "a tall ship": ("a tall ship.", 0.95),
+    "one fast van": ("one fast van.", 0.95),
+    "hop to the red box": ("Hop to the red box", 1.0),
+    "little boy blue come blow your horn": (
+        "Little Boy Blue come blow your horn",
+        0.95,
+    ),
 }
 
 _DEFAULT_PHRASE_VOICE: tuple[str, str] = ("bf_emma", "en-gb")
@@ -470,17 +317,21 @@ def _ends_hard_g(word: str) -> bool:
 
 
 def _phrase_final_speed(word: str) -> float:
-    """Phrase-final speed: keep /g/ fast so Kokoro does not add a schwa."""
+    """Phrase-final speed near natural speech; /g/ stays at 1.0 (no schwa)."""
     core = (word or "").rstrip(".!?").lower()
     if _ends_hard_g(core):
         return 1.0
     if _last_word_slow_plosive(core):
-        return 0.94  # /b d/ — slight hold, not the slow 0.78 schwa trap
-    return 0.86
+        return 0.95
+    return 0.95
 
 
 def tts_voice(text: str) -> tuple[str | None, str | None]:
-    """Optional (voice_id, lang) override for one word or a known phrase."""
+    """Optional (voice_id, lang) override for one word or a known phrase.
+
+    Default generator voice is bf_emma (config). Only return an override when
+    Emma smears that token; otherwise None → session default.
+    """
     core = _single_word_core(text)
     if core and core in _TTS_VOICE_OVERRIDES:
         return _TTS_VOICE_OVERRIDES[core]
@@ -491,9 +342,7 @@ def tts_voice(text: str) -> tuple[str | None, str | None]:
     words = (text or "").strip().split()
     if len(words) >= 2:
         last = words[-1].rstrip(".!?").lower()
-        # Alice cuts a clean /g/ release on short phrases; Emma often leaves
-        # "frogeh"/"pigee". Longer lines stay on Emma — Isabella smears
-        # endings (away→await, baa→bar, path→pass).
+        # Alice cuts a clean /g/ release on short phrases; Emma → "frogeh".
         if 2 <= len(words) <= 3 and _ends_hard_g(last):
             return ("bf_alice", "en-gb")
         # Long "… can hop" lines: Emma turns hop→help; Alice keeps hop.
@@ -504,19 +353,15 @@ def tts_voice(text: str) -> tuple[str | None, str | None]:
 
 
 def tts_render(text: str) -> tuple[str, float]:
-    """Pick Kokoro text + speed so short words keep plosives and length.
+    """Pick Kokoro text + speed for natural, clear kid listen clips.
 
-    Bare "cup"/"map"/"the" come out clipped; a terminal period gives natural
-    lengthening, and a slightly slower speed helps kids hear each sound.
-    Voiced plosive endings (dog/pig) need even more time or the burst dies.
+    Prefer near-natural speed (≈0.95–1.0) and a trailing period for length.
+    Slow crawls (<0.9) make short words sound machine-stretched. Overrides
+    must never invent extra words — only the on-screen token (+ optional .!?).
 
-    Some words need explicit overrides (see _TTS_WORD_OVERRIDES). Overrides
-    must never invent extra words — the child hears exactly the on-screen token.
-
-    Short phrases (2–3 words) must not get a forced trailing period: with the
-    default Isabella voice that often invents an extra syllable on the last
-    word (ducks→duckses, mop→moppy, book→bookie). Emma + bare text is cleaner.
-    Phrase-final /g/ is rendered *faster* (Alice @ 1.0) — slowing it adds "eh".
+    Multi-word clips stay bare (no forced period): Emma + natural speed avoids
+    Isabella's trailing-syllable smear (ducks→duckses). Phrase-final /g/ is
+    rendered at 1.0 — slowing it adds "eh".
     """
     stripped = (text or "").strip()
     if not stripped:
@@ -535,26 +380,14 @@ def tts_render(text: str) -> tuple[str, float]:
             return override_spoken, override_speed
         if spoken[-1] not in ".!?":
             spoken = spoken + "."
-        # Final /b d g/ (not /ŋ/): moderate period — bang@1.0 → "froggy"/"biggie",
-        # crawl@0.78 → "frogeh". Prefer overrides above when Whisper-tuned.
+        # Final /b d g/ (not /ŋ/): period + natural speed.
         if core[-1:] in "bdg" and not core.endswith("ng"):
-            return core + ".", 0.86
-        if (
-            len(core) >= 2
-            and core.endswith("e")
-            and core[-2] in "bdgkpt"
-        ):
-            return spoken, 0.78
-        # Tiny function words (sir/the/you) and CVC kid words need more time
-        # so the body is not a clipped blip — still only the one on-screen word.
-        if len(core) <= 3:
-            return spoken, 0.82
+            return core + ".", 0.95
+        # Tiny function / CVC words: period lengthens without dragging.
         if len(core) <= 4:
-            return spoken, 0.86
-        return spoken, 0.88
-    # Multi-word clips: honor explicit phrase renders at any length, then
-    # bare text (no forced extra period) + phrase-final speed. Longer story
-    # lines keep a steady ~0.90 so endings stay clear under Emma.
+            return spoken, 0.95
+        return spoken, 1.0
+    # Multi-word: honor explicit phrase renders, else bare text @ ~0.95.
     key = _phrase_key(stripped)
     if key in _TTS_PHRASE_RENDERS:
         return _TTS_PHRASE_RENDERS[key]
@@ -562,32 +395,33 @@ def tts_render(text: str) -> tuple[str, float]:
         spoken = stripped.rstrip(".!?")
         if len(words) <= 3:
             return spoken, _phrase_final_speed(words[-1])
-        return spoken, 0.90
+        return spoken, 0.95
     return stripped, 0.95
 
 
 # Short listen words need generous silence around the speech so onsets/plosives
-# are not cut off by players, Bluetooth buffering, or aggressive loudnorm.
+# are not cut off by players or Bluetooth buffering.
 _LISTEN_LEAD_MS = 350
 _LISTEN_TRAIL_SEC = 0.50
 
 
 def postprocess_generated_wav(src: Path, dest: Path) -> None:
-    """Mono 16-bit PCM, gentle lead trim, loudness-normalize, then pad.
+    """Mono 16-bit PCM at Kokoro native 24 kHz: gentle trim, soft norm, pad.
 
     Never strip trailing silence — final plosives in cup/map/cat are quiet and
     get eaten by stop-period silenceremove.
 
-    Order matters: normalize the speech first, *then* add lead/trail pads.
-    Padding before loudnorm lets silence dominate the measure and can crush
-    quiet plosive tails (sounds "clipped" even though samples remain).
+    Keep 24 kHz (do not downsample to 16 kHz). Soft loudnorm (I=-16, wide LRA)
+    preserves dynamics better than the old I=-18 crush. Normalize speech first,
+    *then* pad — padding before loudnorm lets silence dominate and crush tails.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     # Lead trim only (start_periods). No stop_periods — keeps /p/ /t/ /k/.
-    # Gentler start_threshold so soft onsets (map/cup) are not bitten.
+    # Conservative start_threshold so soft onsets (map/cup) are not bitten.
+    rate = int(config.AUDIO_SAMPLE_RATE)
     af = (
-        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-50dB,"
-        "loudnorm=I=-18:TP=-2.0:LRA=11,"
+        "silenceremove=start_periods=1:start_duration=0.02:start_threshold=-55dB,"
+        "loudnorm=I=-16:TP=-1.5:LRA=14,"
         f"adelay={_LISTEN_LEAD_MS}|{_LISTEN_LEAD_MS},"
         f"apad=pad_dur={_LISTEN_TRAIL_SEC}"
     )
@@ -602,7 +436,7 @@ def postprocess_generated_wav(src: Path, dest: Path) -> None:
         "-ac",
         "1",
         "-ar",
-        "16000",
+        str(rate),
         "-c:a",
         "pcm_s16le",
         "-af",

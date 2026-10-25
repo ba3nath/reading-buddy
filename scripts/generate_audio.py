@@ -3,7 +3,8 @@
 
 Reads the voice list from the installed kokoro-onnx voices bin.
 Uses config.KOKORO_VOICE_ID (must be present in that list).
-Writes audio/generated/{slug}.wav after ffmpeg mono trim + loudnorm.
+Writes audio/generated/{slug}.wav after ffmpeg mono trim + soft loudnorm
+(24 kHz native; pad after normalize).
 
 Also writes per-word clips for multi-word items when no kind=word item
 already owns that normalized word (needed for word-level replay).
